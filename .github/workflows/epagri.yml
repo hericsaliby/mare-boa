@@ -34,6 +34,7 @@ jobs:
             if [ -s "out/tabua_$c.csv.new" ] && ! grep -qi "<html" "out/tabua_$c.csv.new"; then mv "out/tabua_$c.csv.new" "out/tabua_$c.csv"; else rm -f "out/tabua_$c.csv.new"; cp "old/tabua_$c.csv" out/ 2>/dev/null || true; fi
           done
           python3 tools/historico.py old out
+          python3 tools/mascara.py old out || true
           date -u +%FT%TZ > out/atualizado.txt
           cd out
           git init -q -b dados
