@@ -180,7 +180,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .shell{min-height:100%}
 .side{display:none}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;font-size:11px;font-weight:500;color:var(--ink-3);text-decoration:none}
+.tabs a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;font-size:10.5px;font-weight:500;color:var(--ink-3);text-decoration:none}
 .tabs a[aria-current="page"]{color:var(--accent)}
 .tabs a:focus-visible,.side a:focus-visible{outline:2px solid var(--sand);outline-offset:-2px}
 @media (min-width:900px){
@@ -290,6 +290,20 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .lgpd{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom,0px));z-index:30;margin:0 auto;max-width:720px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:12px 14px;display:flex;gap:12px;align-items:center;margin-left:max(12px,env(safe-area-inset-left,0px));margin-right:max(12px,env(safe-area-inset-right,0px))}
 .lgpd p{margin:0;font-size:14px;line-height:1.4;flex:1}
 @media (min-width:900px){.lgpd{bottom:20px;left:240px}}
+.cmform{display:flex;flex-direction:column;gap:8px}
+.cmform textarea{width:100%;resize:vertical;font:inherit}
+.cmposts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.cmposts li{padding:12px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.cmposts .who{display:flex;gap:8px;align-items:center;font-size:14px}
+.cmposts .av{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:0 0 auto}
+.cmposts .txt{white-space:pre-wrap;word-break:break-word;font-size:15.5px}
+.cmposts .act{display:flex;gap:12px}
+.cmposts .act button{border:0;background:none;color:var(--ink-3);font-size:13px;cursor:pointer;padding:0}
+.partners{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.partner{background:var(--surface-2);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
+.partner .tp{font-size:12.5px;color:var(--accent);font-weight:700}
+.authform{display:flex;flex-direction:column;gap:10px;max-width:420px}
+.authform input[type=tel],.authform input[type=text]{font-size:17px;padding:10px 12px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -298,7 +312,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 <div class="shell">
 <nav class="side" aria-label="Seções">
   <div class="brand"><span class="brandrow"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M6 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 6v7a3 3 0 0 1-6 0" fill="none" stroke="var(--sand)" stroke-width="2.2" stroke-linecap="round"/></svg>Maré Boa</span><small>Pesca na Grande Florianópolis</small></div>
-  <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
+  <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Grupos</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
   <div class="side-foot small muted" id="sideFoot"></div>
 </nav>
 <div class="main">
@@ -439,6 +453,23 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
     </article>
   </section>
 
+  <section class="view" id="v-grupos" aria-label="Grupos" hidden>
+    <article class="card" id="cmAuth"></article>
+    <article class="card" id="cmFeed" hidden>
+      <div class="row"><h2 class="grow">Grupos</h2></div>
+      <div class="days" id="cmGroups" role="group" aria-label="Grupos"></div>
+      <form id="cmForm" class="cmform">
+        <label class="sr" for="cmText">Mensagem</label>
+        <textarea id="cmText" rows="3" maxlength="500" placeholder="Conte como está a pescaria, pergunte, combine uma saída… (não precisa dar a localização)"></textarea>
+        <div class="row"><label class="inline" for="cmPonto">Ponto (opcional)<select id="cmPonto"></select></label><label class="inline" for="cmPeixe">Peixe (opcional)<select id="cmPeixe"></select></label>
+          <span class="grow"></span><span class="small muted" id="cmCount">0/500</span><button class="btn" type="submit">Publicar</button></div>
+        <div class="small" id="cmMsg"></div>
+      </form>
+      <ul class="cmposts" id="cmPosts"></ul>
+    </article>
+    <article class="card" id="cmPartners"><h2>Parceiros locais</h2><div id="cmPartnerList" class="partners"></div><div id="cmPartnerAdmin"></div></article>
+  </section>
+
   <section class="view" id="v-mais" aria-label="Mais" hidden>
     <article class="card"><h2>Preferências</h2>
       <div class="row"><span class="small muted" style="min-width:110px">Modelo do vento</span><div class="seg" id="modelSeg" role="group" aria-label="Modelo de previsão"></div></div>
@@ -523,7 +554,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 </div>
 </div>
 <div class="lgpd" id="lgpdBar" hidden role="region" aria-label="Aviso de privacidade"><p>O Maré Boa guarda seus pontos e seu diário <b>só neste aparelho</b>. Para mostrar a previsão, a localização dos pontos consultados é enviada à Open-Meteo, sem seu nome. <a href="privacidade.html">Saiba mais</a></p><button class="btn" type="button" id="lgpdOk">Entendi</button></div>
-<nav class="tabs" aria-label="Seções"><a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a></nav>
+<nav class="tabs" aria-label="Seções"><a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Grupos</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a></nav>
 </div>
 
 <script>
@@ -1708,8 +1739,8 @@ async function refreshEpagri(){if(!S.data||S.demo)return;await loadEpagri();rebu
 setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
-const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.20";
+const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
+const APP_VERSION="2026-10-25.21";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1718,6 +1749,7 @@ function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  if(v==="mare"||v==="vento"||v==="mais")renderCharts();
  if(v==="resumo")renderSummary();
  if(v==="lua")renderMoon();
+ if(v==="grupos")cmStart();
  if(v!=="mapa")cancelAnimationFrame(OV.raf);
  if(v==="mapa"&&MAP)setTimeout(()=>{ovRefresh();MAP.invalidateSize();if(!MAP._enq){MAP.fitBounds(L.latLngBounds(BASE_SPOTS.map(x=>[x.lat,x.lon])).pad(.05));MAP._enq=true}updateMarkers()},60)}
 document.addEventListener("click",e=>{const a=e.target.closest("[data-view]");if(!a)return;e.preventDefault();showView(a.dataset.view)});
@@ -1943,6 +1975,112 @@ function renderTimeline(){const rows=dayRows(),el=$("#timeline");if(!rows.length
 function tlRead(i){if(!TL)return;const r=TL.rows[i];if(!r)return;renderFactors(i);const l=$("#timeline .tlx");if(l){const x=TL.X(i)+TL.cw/2;l.setAttribute("x1",x);l.setAttribute("x2",x);l.setAttribute("visibility","visible")}
  const sp=spot();$("#tlRead").innerHTML=`<b class="num">${fmtH.format(r.t)}</b> · maré <b>${r.tide!=null?cm(r.tide):"–"}</b> ${r.rate!=null?(r.rate>0?"▲ enchendo":"▼ vazando")+" "+Math.round(Math.abs(r.rate)*100)+" cm/h":""} · vento ${r.d!=null?dir16(r.d):""} <b>${wv(r.eff)} ${WU()}</b> no ponto (rajada ${wv(r.g)}) · nota <b>${N(r.score)}</b><br><span class="muted">${esc(reasons(r,sp).join(" · "))}</span>`}
 {const el=$("#timeline");const mv=e=>{if(!TL)return;const rc=el.getBoundingClientRect(),px=(e.clientX-rc.left)*(TL.W/rc.width);tlRead(clamp(Math.floor((px-50)/TL.cw),0,TL.rows.length-1))};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)}
+
+/* ================== COMUNIDADE (Firebase) ==================
+ Cadastro por telefone (código SMS), perfil com nome e região do CEP (5 primeiros dígitos), grupos com postagens,
+ denúncias, parceiros locais e exclusão de conta. Regras de segurança em firestore.rules.
+ Os pontos de pesca continuam só no aparelho: nas postagens vai, se a pessoa quiser, só o nome do ponto. */
+const FB_CONFIG=null; // ← colar aqui o objeto firebaseConfig do console do Firebase
+const FB_VER="10.12.5",CONSENT_VER="2026-10-25";
+const CM={fb:null,user:null,profile:null,admin:false,gid:null,groups:[],unsub:null,confirm:null};
+async function fbInit(){if(CM.fb)return CM.fb;
+ if(window.__FAKE_FB){CM.fb=window.__FAKE_FB;return CM.fb} // usado nos testes automáticos
+ if(!FB_CONFIG)return null;
+ const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+ const [A,Au,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
+ const app=A.initializeApp(FB_CONFIG),auth=Au.getAuth(app),db=F.getFirestore(app);auth.languageCode="pt";
+ const d=path=>F.doc(db,...path.split("/"));let verifier=null;
+ CM.fb={
+  onAuth:cb=>Au.onAuthStateChanged(auth,cb),
+  async sendCode(phone,btnId){if(!verifier)verifier=new Au.RecaptchaVerifier(auth,btnId,{size:"invisible"});return Au.signInWithPhoneNumber(auth,phone,verifier)},
+  signOut:()=>Au.signOut(auth),
+  async deleteUser(){await Au.deleteUser(auth.currentUser)},
+  async get(path){const x=await F.getDoc(d(path));return x.exists()?x.data():null},
+  set:(path,data)=>F.setDoc(d(path),data),
+  del:path=>F.deleteDoc(d(path)),
+  now:()=>F.serverTimestamp(),
+  async list(col,order){const q=order?F.query(F.collection(db,...col.split("/")),F.orderBy(order)):F.collection(db,...col.split("/"));const r=await F.getDocs(q);return r.docs.map(x=>({id:x.id,...x.data()}))},
+  listen(gid,cb){const q=F.query(F.collection(db,"groups",gid,"posts"),F.orderBy("criadoEm","desc"),F.limit(60));return F.onSnapshot(q,r=>cb(r.docs.map(x=>({id:x.id,...x.data()}))),e=>cb(null,e))},
+  async post(gid,uid,data){const b=F.writeBatch(db),ref=F.doc(F.collection(db,"groups",gid,"posts"));
+   b.set(ref,{...data,uid,criadoEm:F.serverTimestamp()});b.set(d("limits/"+uid),{ultimo:F.serverTimestamp()});b.set(d(`users/${uid}/meusPosts/${ref.id}`),{gid});await b.commit();return ref.id},
+  async add(col,data){const ref=F.doc(F.collection(db,...col.split("/")));await F.setDoc(ref,{...data,criadoEm:F.serverTimestamp()});return ref.id}};
+ return CM.fb}
+const GROUPS_DEFAULT=[{id:"floripa",nome:"Grande Florianópolis",ordem:1},{id:"robalo",nome:"Robalo",ordem:2},{id:"costao",nome:"Costão",ordem:3},{id:"embarcado",nome:"Embarcado",ordem:4},{id:"iscas",nome:"Iscas e equipamentos",ordem:5}];
+const tsMs=x=>x?(x.toMillis?x.toMillis():x.seconds?x.seconds*1000:+x):Date.now();
+const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:fmtDM.format(ms)};
+async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
+ if(!fb){box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. O cadastro vai ser por telefone, com código por SMS.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
+ if(CM.started)return;CM.started=true;fb.onAuth(async u=>{CM.user=u;CM.profile=null;CM.admin=false;
+  if(u){try{CM.profile=await fb.get("users/"+u.uid);CM.admin=!!(await fb.get("admins/"+u.uid).catch(()=>null))}catch(e){console.warn(e)}}
+  cmRender()})}
+function cmRender(){const box=$("#cmAuth"),u=CM.user;
+ if(!u){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Entrar na comunidade</h2><p class="small" style="margin:0">Use seu celular. Enviamos um código por SMS para confirmar que o número é seu.</p>
+  <form class="authform" id="cmPhoneForm" novalidate><label class="inline" for="cmPhone">Celular com DDD<input type="tel" id="cmPhone" inputmode="tel" autocomplete="tel" placeholder="(48) 99999-9999" required></label>
+  <button class="btn" type="submit" id="cmSend">Receber código</button><div class="small" id="cmAuthMsg"></div></form>
+  <form class="authform" id="cmCodeForm" hidden novalidate><label class="inline" for="cmCode">Código recebido por SMS<input type="text" id="cmCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label><button class="btn" type="submit">Confirmar</button></form>`;
+  $("#cmPhoneForm").addEventListener("submit",cmSendCode);$("#cmCodeForm").addEventListener("submit",cmConfirm);cmPartners();return}
+ if(!CM.profile){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Complete seu cadastro</h2>
+  <form class="authform" id="cmProfForm" novalidate><label class="inline" for="cmNome">Nome (como vai aparecer nos grupos)<input type="text" id="cmNome" maxlength="40" required autocomplete="name"></label>
+  <label class="inline" for="cmCep">CEP<input type="text" id="cmCep" inputmode="numeric" maxlength="9" placeholder="88000-000" required autocomplete="postal-code"></label>
+  <p class="small muted" style="margin:0">Do CEP guardamos só os 5 primeiros dígitos (a sua região), para mostrar grupos e parceiros perto de você.</p>
+  <label class="small" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="cmOk" required> <span>Li e aceito a <a href="privacidade.html" target="_blank">Política de Privacidade</a>. Concordo que meu nome e minhas postagens fiquem visíveis para os membros dos grupos. Tenho 18 anos ou mais.</span></label>
+  <button class="btn" type="submit">Criar meu perfil</button><div class="small" id="cmProfMsg"></div></form>
+  <button class="btn ghost" type="button" id="cmOut">Sair</button>`;
+  $("#cmProfForm").addEventListener("submit",cmSaveProfile);$("#cmOut").onclick=()=>CM.fb.signOut();return}
+ box.innerHTML=`<div class="row"><span class="av" style="width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700">${esc(CM.profile.nome.slice(0,1).toUpperCase())}</span>
+  <div class="grow"><b>${esc(CM.profile.nome)}</b>${CM.admin?' <span class="tag good">administrador</span>':""}<div class="small muted">Região do CEP ${esc(CM.profile.regiao)}-xxx</div></div>
+  <button class="btn ghost" type="button" id="cmOut">Sair</button></div>
+  <details><summary class="small">Minha conta</summary><div class="small" style="margin-top:6px">Seu ID: <code>${esc(CM.user.uid)}</code> (para virar administrador, crie no Firestore o documento <code>admins/${esc(CM.user.uid)}</code>).</div>
+   <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="cmDel" style="color:var(--bad);border-color:var(--bad)">Apagar minha conta e minhas postagens</button></div><div class="small" id="cmDelMsg"></div></details>`;
+ $("#cmOut").onclick=()=>CM.fb.signOut();$("#cmDel").onclick=cmDeleteAccount;
+ $("#cmFeed").hidden=false;cmGroups();cmPartners()}
+function phoneE164(v){let d=String(v).replace(/\D/g,"");if(d.startsWith("55")&&d.length>=12)d=d.slice(2);if(d.length<10||d.length>11)return null;return"+55"+d}
+async function cmSendCode(e){e.preventDefault();const m=$("#cmAuthMsg"),ph=phoneE164($("#cmPhone").value);if(!ph){m.textContent="Confira o número: DDD + celular, por exemplo (48) 99999-9999.";return}
+ $("#cmSend").disabled=true;m.textContent="Enviando código…";
+ try{CM.confirm=await CM.fb.sendCode(ph,"cmSend");m.textContent="Código enviado para "+ph.replace(/^\+55(\d{2})(\d+)(\d{4})$/,"($1) $2-$3")+".";$("#cmCodeForm").hidden=false;$("#cmCode").focus()}
+ catch(err){console.warn(err);m.textContent=/too-many|quota/.test(err.code||"")?"Muitas tentativas. Espere alguns minutos e tente de novo.":/invalid-phone/.test(err.code||"")?"Número inválido.":"Não consegui enviar o código agora. Tente de novo em instantes.";$("#cmSend").disabled=false}}
+async function cmConfirm(e){e.preventDefault();const m=$("#cmAuthMsg");try{await CM.confirm.confirm($("#cmCode").value.trim())}catch(err){m.textContent="Código incorreto ou vencido. Confira e tente de novo."}}
+async function cmSaveProfile(e){e.preventDefault();const m=$("#cmProfMsg"),nome=$("#cmNome").value.trim().replace(/\s+/g," "),cep=$("#cmCep").value.replace(/\D/g,"");
+ if(nome.length<2){m.textContent="Escreva seu nome.";return}if(cep.length!==8){m.textContent="O CEP tem 8 números.";return}if(!$("#cmOk").checked){m.textContent="Para participar é preciso aceitar a política.";return}
+ const prof={nome,regiao:cep.slice(0,5),criadoEm:CM.fb.now(),consent:{versao:CONSENT_VER,em:CM.fb.now()}};
+ try{await CM.fb.set("users/"+CM.user.uid,prof);CM.profile={...prof};cmRender()}catch(err){console.warn(err);m.textContent="Não consegui salvar o perfil. Tente de novo."}}
+async function cmGroups(){try{CM.groups=await CM.fb.list("groups","ordem")}catch(e){CM.groups=[]}
+ if(!CM.groups.length&&CM.admin){for(const g of GROUPS_DEFAULT)await CM.fb.set("groups/"+g.id,{nome:g.nome,ordem:g.ordem}).catch(()=>{});CM.groups=GROUPS_DEFAULT}
+ if(!CM.groups.length){$("#cmGroups").innerHTML=`<p class="small muted">Os grupos ainda não foram criados. Um administrador precisa entrar uma vez para criá-los.</p>`;return}
+ if(!CM.gid||!CM.groups.some(g=>g.id===CM.gid))CM.gid=CM.groups[0].id;
+ $("#cmGroups").innerHTML=CM.groups.map(g=>`<button type="button" class="chipbtn" data-gid="${esc(g.id)}" aria-pressed="${g.id===CM.gid}">${esc(g.nome)}</button>`).join("");
+ const mine=SPOTS.filter(x=>x.custom&&!x.temp);$("#cmPonto").innerHTML=`<option value="">—</option>`+[...mine,...BASE_SPOTS].map(x=>`<option>${esc(x.n)}</option>`).join("");
+ $("#cmPeixe").innerHTML=`<option value="">—</option>`+FISH_KEYS.filter(k=>k!=="geral").map(k=>`<option>${FISH[k].n}</option>`).join("");
+ cmListen()}
+function cmListen(){if(CM.unsub)CM.unsub();$("#cmPosts").innerHTML=`<li class="muted small">Carregando…</li>`;
+ CM.unsub=CM.fb.listen(CM.gid,(posts,err)=>{if(err||!posts){$("#cmPosts").innerHTML=`<li class="muted small">Não consegui carregar as mensagens agora.</li>`;return}
+  $("#cmPosts").innerHTML=posts.length?posts.map(x=>`<li><div class="who"><span class="av">${esc((x.nome||"?").slice(0,1).toUpperCase())}</span><b>${esc(x.nome||"")}</b><span class="muted small">${ago(tsMs(x.criadoEm))}</span></div>
+   <div class="txt">${esc(x.texto||"")}</div>${x.ponto||x.peixe?`<div class="small">${x.ponto?`<span class="tag neu">${esc(x.ponto)}</span> `:""}${x.peixe?`<span class="tag good">${esc(x.peixe)}</span>`:""}</div>`:""}
+   <div class="act">${x.uid===CM.user.uid||CM.admin?`<button type="button" data-cmdel="${esc(x.id)}">apagar</button>`:""}${x.uid!==CM.user.uid?`<button type="button" data-cmrep="${esc(x.id)}">denunciar</button>`:""}</div></li>`).join(""):`<li class="muted small">Nenhuma mensagem neste grupo ainda. Comece a conversa!</li>`})}
+async function cmPartners(){const el=$("#cmPartnerList");if(!el)return;let L=[];try{const fb=CM.fb||await fbInit();if(fb)L=(await fb.list("partners","ordem")).filter(x=>x.ativo!==false)}catch(e){}
+ el.innerHTML=L.length?L.map(x=>`<div class="partner"><span class="tp">${esc(x.tipo||"")}</span><b>${esc(x.nome||"")}</b><span class="small">${esc(x.descricao||"")}</span>${x.endereco?`<span class="small muted">${esc(x.endereco)}</span>`:""}${x.telefone?`<span class="small">${esc(x.telefone)}</span>`:""}${x.link&&/^https?:\/\//.test(x.link)?`<a class="small" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">Ver mais</a>`:""}${CM.admin?`<button type="button" class="btn ghost small" data-pdel="${esc(x.id)}">remover</button>`:""}</div>`).join("")
+  :`<p class="small muted" style="margin:0">Lojas de pesca, isca viva, barqueiros e guias da região vão aparecer aqui. Tem um negócio de pesca? Em breve dá para anunciar.</p>`;
+ $("#cmPartnerAdmin").innerHTML=CM.admin?`<details><summary class="small">Adicionar parceiro</summary><form class="form" id="pForm" style="margin-top:8px">
+  <label class="inline" for="pNome">Nome<input type="text" id="pNome" maxlength="60" required></label><label class="inline" for="pTipo">Tipo<input type="text" id="pTipo" maxlength="30" placeholder="Loja de pesca, Isca viva, Guia…" required></label>
+  <label class="inline" for="pTel">Telefone<input type="text" id="pTel" maxlength="20"></label><label class="inline" for="pEnd">Endereço<input type="text" id="pEnd" maxlength="80"></label>
+  <label class="inline" for="pLink">Link (site/Instagram)<input type="url" id="pLink" maxlength="200"></label><label class="inline" for="pDesc" style="grid-column:1/-1">Descrição<input type="text" id="pDesc" maxlength="160"></label>
+  <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar parceiro</button></div></form></details>`:"";
+ const pf=$("#pForm");if(pf)pf.addEventListener("submit",async e=>{e.preventDefault();await CM.fb.add("partners",{nome:$("#pNome").value.trim(),tipo:$("#pTipo").value.trim(),telefone:$("#pTel").value.trim(),endereco:$("#pEnd").value.trim(),link:$("#pLink").value.trim(),descricao:$("#pDesc").value.trim(),ativo:true,ordem:Date.now()});cmPartners()})}
+$("#cmText").addEventListener("input",e=>{$("#cmCount").textContent=e.target.value.length+"/500"});
+$("#cmForm").addEventListener("submit",async e=>{e.preventDefault();const m=$("#cmMsg"),t=$("#cmText").value.trim();if(!t){m.textContent="Escreva uma mensagem.";return}
+ const data={nome:CM.profile.nome,texto:t.slice(0,500)};if($("#cmPonto").value)data.ponto=$("#cmPonto").value.slice(0,60);if($("#cmPeixe").value)data.peixe=$("#cmPeixe").value;
+ try{await CM.fb.post(CM.gid,CM.user.uid,data);$("#cmText").value="";$("#cmCount").textContent="0/500";m.textContent=""}
+ catch(err){console.warn(err);m.textContent=/permission/.test(String(err.code||err.message))?"Espere alguns segundos entre uma mensagem e outra.":"Não consegui publicar agora. Tente de novo."}});
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-gid],[data-cmdel],[data-cmrep],[data-pdel]");if(!b||!CM.fb)return;
+ if(b.dataset.gid){CM.gid=b.dataset.gid;document.querySelectorAll("#cmGroups [data-gid]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.gid===CM.gid));cmListen()}
+ else if(b.dataset.cmdel){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="toque de novo para apagar";return}await CM.fb.del(`groups/${CM.gid}/posts/${b.dataset.cmdel}`).catch(()=>{});CM.fb.del(`users/${CM.user.uid}/meusPosts/${b.dataset.cmdel}`).catch(()=>{})}
+ else if(b.dataset.cmrep){await CM.fb.add("reports",{uid:CM.user.uid,gid:CM.gid,pid:b.dataset.cmrep,motivo:"denúncia pelo app"}).catch(()=>{});b.textContent="denunciado, obrigado";b.disabled=true}
+ else if(b.dataset.pdel){await CM.fb.del("partners/"+b.dataset.pdel).catch(()=>{});cmPartners()}});
+async function cmDeleteAccount(e){const b=e.currentTarget,m=$("#cmDelMsg");if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Toque de novo: apagar tudo, sem volta";m.textContent="Apaga seu perfil, suas postagens e seu login. Pontos e diário deste aparelho não são afetados.";return}
+ b.disabled=true;m.textContent="Apagando…";const uid=CM.user.uid;
+ try{const mine=await CM.fb.list(`users/${uid}/meusPosts`);for(const x of mine){await CM.fb.del(`groups/${x.gid}/posts/${x.id}`).catch(()=>{});await CM.fb.del(`users/${uid}/meusPosts/${x.id}`).catch(()=>{})}
+  await CM.fb.del("limits/"+uid).catch(()=>{});await CM.fb.del("users/"+uid);await CM.fb.deleteUser();m.textContent="Conta apagada."}
+ catch(err){console.warn(err);m.textContent=/recent-login/.test(err.code||"")?"Por segurança, saia, entre de novo com o código e repita.":"Não consegui apagar tudo agora. Tente de novo.";b.disabled=false}}
 
 /* LGPD: aviso no primeiro uso, baixar e apagar todos os dados do aparelho */
 if(!store("pf_lgpd_ok"))$("#lgpdBar").hidden=false;

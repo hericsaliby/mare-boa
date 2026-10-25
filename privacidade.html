@@ -29,7 +29,7 @@ th{color:var(--ink-2);font-weight:600}
   <p class="muted">Última atualização: 25 de outubro de 2026</p>
 
   <div class="card">
-    <p style="margin:0"><b>Em resumo:</b> o Maré Boa não tem cadastro e não guarda nenhum dado seu em servidor. Seus pontos, seu diário de pesca e suas preferências ficam só no seu aparelho. Para mostrar a previsão, o app consulta serviços públicos de tempo e maré, e alguns deles recebem a localização dos pontos consultados.</p>
+    <p style="margin:0"><b>Em resumo:</b> para usar a previsão não precisa de cadastro: seus pontos, seu diário de pesca e suas preferências ficam só no seu aparelho. O cadastro (nome, telefone e CEP) só é pedido se você quiser participar dos <b>Grupos</b>. Nesse caso guardamos o mínimo necessário, e você pode apagar sua conta quando quiser.</p>
   </div>
 
   <h2>Quem é o responsável</h2>
@@ -45,14 +45,33 @@ th{color:var(--ink-2);font-weight:600}
   </ul>
   <p>Você pode baixar uma cópia de tudo ou apagar tudo a qualquer momento em <b>Mais → Privacidade e seus dados</b>. Se você limpar os dados do navegador, essas informações também são apagadas.</p>
 
+  <h2>Grupos e cadastro (opcional)</h2>
+  <p>Só se você entrar em <b>Grupos</b> e aceitar esta política. Base legal: seu consentimento (art. 7º, I, da LGPD).</p>
+  <div class="tw"><table>
+    <tr><th>Dado</th><th>Para quê</th><th>Quem vê</th></tr>
+    <tr><td>Telefone</td><td>Confirmar que você é uma pessoa (código por SMS) e entrar na conta</td><td>Ninguém no app. Fica no Firebase Authentication (Google)</td></tr>
+    <tr><td>Nome</td><td>Aparecer nas suas mensagens</td><td>Membros dos grupos</td></tr>
+    <tr><td>CEP</td><td>Só os 5 primeiros dígitos (região), para organizar a comunidade. O CEP completo não é guardado</td><td>Só você e o administrador</td></tr>
+    <tr><td>Mensagens</td><td>Texto, e se você quiser o nome de um ponto e o peixe</td><td>Membros dos grupos</td></tr>
+    <tr><td>Data do aceite</td><td>Provar o consentimento e a versão da política aceita</td><td>Só você e o administrador</td></tr>
+  </table></div>
+  <ul>
+    <li>Seus pontos marcados no mapa e seu diário <b>não</b> vão para os grupos. Só aparece o que você escrever numa mensagem.</li>
+    <li>Os dados ficam no Google Firebase (operador), em servidores no Brasil (São Paulo) para o banco de dados; a autenticação por telefone pode ser processada fora do Brasil pelo Google.</li>
+    <li>Guardamos enquanto a conta existir. Em <b>Grupos → Minha conta → Excluir conta</b> você apaga o perfil, todas as suas mensagens e o login, na hora.</li>
+    <li>Mensagens denunciadas são vistas pelo administrador, que pode apagá-las.</li>
+    <li>Anúncios de comércios locais, se houver, são apenas exibidos: nenhum dado seu é passado a anunciantes.</li>
+  </ul>
+
   <h2>O que é enviado a outros serviços</h2>
-  <p>Para funcionar, o app busca informações em serviços externos. Como em qualquer acesso à internet, eles recebem o endereço IP do seu aparelho. Nenhum deles recebe seu nome, telefone ou diário.</p>
+  <p>Para funcionar, o app busca informações em serviços externos. Como em qualquer acesso à internet, eles recebem o endereço IP do seu aparelho. Fora o Firebase (só para quem usa Grupos), nenhum deles recebe seu nome, telefone ou diário.</p>
   <div class="tw"><table>
     <tr><th>Serviço</th><th>Para quê</th><th>O que recebe</th></tr>
     <tr><td>Open-Meteo (Suíça)</td><td>Previsão de vento, chuva, ondas, temperatura da água e altitude do terreno</td><td>A localização (latitude e longitude) dos pontos consultados, inclusive dos seus pontos, sem nome</td></tr>
     <tr><td>EPAGRI/CIRAM (Santa Catarina)</td><td>Marégrafos e tábua de marés</td><td>Apenas o pedido dos dados públicos das estações</td></tr>
     <tr><td>GitHub (EUA)</td><td>Hospedagem do app e cópia de reserva dos dados da EPAGRI</td><td>Endereço IP e página acessada</td></tr>
     <tr><td>OpenStreetMap e Esri</td><td>Imagens do mapa</td><td>A área do mapa que você está vendo</td></tr>
+    <tr><td>Google Firebase (só Grupos)</td><td>Login por telefone e mensagens dos grupos</td><td>Telefone, nome, região do CEP e mensagens; o reCAPTCHA do Google é usado contra robôs</td></tr>
     <tr><td>Google Fonts e cdnjs</td><td>Fontes e biblioteca do mapa</td><td>Endereço IP</td></tr>
   </table></div>
   <p>Ao compartilhar uma previsão pelo botão "Compartilhar", o texto vai para o aplicativo que você escolher (por exemplo, WhatsApp). O texto leva o nome do ponto, nunca as coordenadas.</p>
@@ -65,13 +84,13 @@ th{color:var(--ink-2);font-weight:600}
   </ul>
 
   <h2>Seus direitos (LGPD)</h2>
-  <p>A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) garante a você confirmar se há tratamento de dados, acessar, corrigir, levar para outro serviço e apagar seus dados, além de revogar consentimentos. Como seus dados ficam no seu aparelho, você mesmo exerce esses direitos pelos botões "Baixar todos os meus dados" e "Apagar todos os meus dados". Para dúvidas, use o contato acima.</p>
+  <p>A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) garante a você confirmar se há tratamento de dados, acessar, corrigir, levar para outro serviço e apagar seus dados, além de revogar consentimentos. Os dados do aparelho você mesmo controla pelos botões "Baixar todos os meus dados" e "Apagar todos os meus dados". Nos Grupos, você corrige o nome em "Minha conta" e apaga tudo em "Excluir conta". Para outros pedidos, use o contato acima: respondemos em até 15 dias.</p>
 
   <h2>Crianças e adolescentes</h2>
-  <p>O app não foi feito para coletar dados de crianças. Como não há cadastro, nenhum dado de menores é guardado em servidor.</p>
+  <p>Os Grupos são para maiores de 18 anos. Se soubermos de uma conta de menor sem autorização dos responsáveis, ela será apagada.</p>
 
   <h2>Mudanças nesta política</h2>
-  <p>Se o Maré Boa passar a ter cadastro, comunidade ou anúncios, esta política será atualizada antes, explicando quais dados serão coletados, para quê e por quanto tempo, e o app vai pedir o seu consentimento.</p>
+  <p>Se esta política mudar no que diz respeito aos seus dados, o app avisa e pede um novo aceite antes de você continuar usando os Grupos.</p>
 </main>
 </body>
 </html>
