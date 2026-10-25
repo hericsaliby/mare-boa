@@ -207,9 +207,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .sum-big{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1}
 .turns{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column}
 .turns li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:2px 10px;padding:7px 0;border-top:1px solid var(--line)}
-.turns li .rob{grid-column:2;color:var(--ink-3)}
 .turns li.act{background:color-mix(in srgb,var(--sand) 16%,transparent);border-radius:6px}
-.turns li.act .rob{color:var(--ink);font-weight:600}
 .turns li.past{opacity:.5}
 .wstrip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(30px,1fr);gap:2px;overflow-x:auto;font-size:11px;text-align:center}
 .wstrip div{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -1315,7 +1313,6 @@ $("#spotSel").addEventListener("change",e=>selectSpot(e.target.value,false));
 
 /* ================== RESUMO: maré, vento e lua do ponto e do dia escolhidos ================== */
 const ICO=k=>(document.querySelector(`.side a[data-view="${k}"] svg`)||{}).outerHTML||"";
-function robWin(e){return{a:e.t-30*60e3,b:e.t+90*60e3}}
 function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(),D=S.derived[sp.id],rows=dayRows();if(!rows.length)return;
  const now=Date.now(),today=dayKey(now)===S.day,nowH=Math.floor(now/HOUR)*HOUR;
  // ---- MARÉ
@@ -1326,9 +1323,8 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
    <div>Próxima virada: <b>${next.hi?"preamar":"baixamar"} às ${fmtH.format(next.t)}</b> <span class="muted">(em ${dur(next.t-now)})</span>${prev?`<br><span class="small muted">${next.hi?"Enche":"Vaza"} ${dm(next.h-prev.h)} desde ${fmtH.format(prev.t)}</span>`:""}</div>`;
   const E=D.ep;if(E&&E.g.last){const L=E.g.last;h+=`<div class="small">Marégrafo: <b>${Math.round(L.obs)} cm</b> às ${fmtH.format(L.t)}${L.res!=null?` · <b>${L.res>=0?"+":""}${Math.round(L.res)} cm</b> ${L.res>=0?"acima":"abaixo"} do normal`:""}</div>`}}
  else h+=`<div class="sum-big">${exDay.length} viradas</div>`;
- h+=`<ul class="turns">${exDay.map(e=>{const w=robWin(e),act=now>=w.a&&now<=w.b,past=now>w.b;
-   return`<li class="${past?"past":""}${act?" act":""}"><b class="num">${fmtH.format(e.t)}</b><span><b>${e.hi?"Preamar":"Baixamar"}</b> <span class="num muted">${cm(e.h)}</span> · começa a ${e.hi?"vazar":"encher"}</span><span class="small rob">${act?"Agora · ":""}janela do robalo ${fmtH.format(w.a)}–${fmtH.format(w.b)}</span></li>`}).join("")}</ul>
-  <div class="small muted">Janela do robalo: de 30 min antes até 1h30 depois da virada, quando a água volta a correr.</div>`;
+ h+=`<ul class="turns">${exDay.map(e=>{const past=e.t<now,act=next&&e.t===next.t;
+   return`<li class="${past?"past":""}${act?" act":""}"><b class="num">${fmtH.format(e.t)}</b><span><b>${e.hi?"Preamar":"Baixamar"}</b> <span class="num muted">${cm(e.h)}</span> · começa a ${e.hi?"vazar":"encher"}${act?` <span class="small">(próxima)</span>`:""}</span></li>`}).join("")}</ul>`;
  $("#sumTide").innerHTML=h;
  // ---- VENTO NO PONTO
  const ref=today?(D.rows.find(x=>x.t===nowH)||rows[0]):(rows.find(x=>localHour(x.t)===7)||rows[0]);
@@ -1344,7 +1340,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
  $("#sumWind").innerHTML=w;
  // ---- LUA
  const ds=daySolunar(S.day),il=ds.il,pf=ds.pf,ph=moonName(il.phase);
- const corre=pf>.6?`<b>Maré de sizígia:</b> a água corre mais e as viradas são fortes. Bom para robalo nas trocas de maré.`:pf<.35?`<b>Maré de quadratura (lua de quarto):</b> a água corre menos e as viradas são fracas.`:`<b>Maré média:</b> correnteza moderada.`;
+ const corre=pf>.6?`<b>Maré de sizígia:</b> a água corre mais e as viradas são fortes.`:pf<.35?`<b>Maré de quadratura (lua de quarto):</b> a água corre menos e as viradas são fracas.`:`<b>Maré média:</b> correnteza moderada.`;
  const maj=ds.per.filter(p=>p.maj),ev=k=>{const e=ds.evs.find(x=>x.k===k);return e?fmtH.format(e.t):"–"};
  $("#sumMoon").innerHTML=`<div class="sum-h">${ICO("lua")}<h3>Lua</h3><a href="#lua" data-view="lua" class="small">detalhes</a></div>
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
@@ -1361,7 +1357,6 @@ function renderTimeline(){const rows=dayRows(),el=$("#timeline");if(!rows.length
  let g="";
  rows.forEach((r,i)=>{if(sunAlt(r.t+HOUR/2)<-0.8)g+=`<rect x="${X(i)}" y="2" width="${cw}" height="${yN[1]-2}" fill="var(--surface-2)"/>`});
  const exDay=D.ex.filter(e=>dayKey(e.t)===S.day);
- exDay.forEach(e=>{const w=robWin(e),a=Math.max(XT(w.a),pl),b=Math.min(XT(w.b),W-pr);if(b>a)g+=`<rect x="${a}" y="${yM[0]}" width="${b-a}" height="${yM[1]-yM[0]}" fill="var(--sand)" fill-opacity=".22" rx="3"/>`});
  let d="";rows.forEach((r,i)=>{if(r.tide!=null)d+=(d?"L":"M")+(X(i)+cw/2).toFixed(1)+" "+Ym(r.tide).toFixed(1)});
  g+=`<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`;
  exDay.forEach(e=>{const x=XT(e.t)+cw/2,y=Ym(e.h);g+=`<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/><text x="${x}" y="${e.hi?y+14:y-6}" text-anchor="middle" style="fill:var(--ink);font:600 10.5px var(--body)">${fmtH.format(e.t)}</text>`});
