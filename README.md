@@ -1,5 +1,7 @@
 # Maré Boa
 
+© 2026 Maré Boa — todos os direitos reservados (veja LICENSE).
+
 Previsão de pesca para a Grande Florianópolis: junta vento (GFS, ECMWF ou ICON), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
 
 ## Como usar

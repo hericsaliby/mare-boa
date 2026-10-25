@@ -476,7 +476,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="row"><span class="small muted" style="min-width:110px">Unidade do vento</span><div class="seg" id="unitSeg" role="group" aria-label="Unidade do vento"><button type="button" data-u="kmh">km/h</button><button type="button" data-u="kn">nós</button><button type="button" data-u="ms">m/s</button></div></div>
     </article>
     <article class="card" id="privCard"><h2>Privacidade e seus dados</h2>
-      <p class="small" style="margin:0">Seus pontos, seu diário e suas preferências ficam <b>só neste aparelho</b>. Nada é guardado em servidor. Para mostrar a previsão, a localização dos pontos consultados vai para a Open-Meteo (sem nome). <a href="privacidade.html">Política de Privacidade</a></p>
+      <p class="small" style="margin:0">Seus pontos, seu diário e suas preferências ficam <b>só neste aparelho</b>. Só os Grupos (opcional) usam servidor. Para mostrar a previsão, a localização dos pontos consultados vai para a Open-Meteo (sem nome). <a href="privacidade.html">Política de Privacidade</a></p>
       <div class="row"><button class="btn ghost" type="button" id="dataExport">Baixar todos os meus dados</button><button class="btn ghost" type="button" id="dataWipe" style="color:var(--bad);border-color:var(--bad)">Apagar todos os meus dados</button></div>
       <div class="small" id="dataMsg"></div>
     </article>
@@ -547,7 +547,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         </div>
       </div>
     </article>
-    <footer><p style="margin:0 0 6px"><a href="privacidade.html">Política de Privacidade</a> · Versão do app: <b id="appVer"></b>. Se não for a mais nova, puxe a página para baixo para recarregar.</p>
+    <footer><p style="margin:0 0 6px">© 2026 Maré Boa. Todos os direitos reservados. · <a href="privacidade.html">Política de Privacidade</a> · Versão do app: <b id="appVer"></b>. Se não for a mais nova, puxe a página para baixo para recarregar.</p>
     Dados: Open-Meteo (modelos GFS/NOAA, ECMWF IFS, ICON/DWD; ondas e nível do mar do modelo marinho), cálculo de sol e lua no próprio app, calibração opcional com estações EPAGRI/CIRAM. A nota é uma estimativa. Confira a previsão oficial, a Marinha e as condições no local antes de sair. Costão com mar grosso mata: na dúvida, não vá.
   </footer>
   </section>
@@ -1740,7 +1740,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.22";
+const APP_VERSION="2026-10-25.23";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
