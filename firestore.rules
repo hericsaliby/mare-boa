@@ -6,7 +6,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
+    // Conta Google ou e-mail confirmado (o link de confirmação prova que o e-mail é da pessoa)
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
     function me() { return request.auth.uid; }
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(me())); }
     function hasProfile() { return signedIn() && exists(/databases/$(database)/documents/users/$(me())); }

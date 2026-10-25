@@ -315,6 +315,9 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .partners{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
 .partner{background:var(--surface-2);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
 .partner .tp{font-size:12.5px;color:var(--accent);font-weight:700}
+.gbtn{display:inline-flex;align-items:center;gap:10px;justify-content:center;background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600;min-height:44px;padding:8px 16px}
+.ordiv{display:flex;align-items:center;gap:10px}.ordiv::before,.ordiv::after{content:"";flex:1;border-top:1px solid var(--line)}
+.linkbtn{background:none;border:0;color:var(--accent);text-decoration:underline;cursor:pointer;padding:4px}
 .authform{display:flex;flex-direction:column;gap:10px;max-width:420px}
 .authform input[type=tel],.authform input[type=text]{font-size:17px;padding:10px 12px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
@@ -1875,7 +1878,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.31";
+const APP_VERSION="2026-10-25.32";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2112,7 +2115,7 @@ function tlRead(i){if(!TL)return;const r=TL.rows[i];if(!r)return;renderFactors(i
 {const el=$("#timeline");const mv=e=>{if(!TL)return;const rc=el.getBoundingClientRect(),px=(e.clientX-rc.left)*(TL.W/rc.width);tlRead(clamp(Math.floor((px-50)/TL.cw),0,TL.rows.length-1))};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)}
 
 /* ================== COMUNIDADE (Firebase) ==================
- Cadastro por telefone (código SMS), perfil com nome e região do CEP (5 primeiros dígitos), grupos com postagens,
+ Entrada com Google ou e-mail (grátis), perfil com nome e região do CEP (5 primeiros dígitos), grupos com postagens,
  denúncias, parceiros locais e exclusão de conta. Regras de segurança em firestore.rules.
  Os pontos de pesca continuam só no aparelho: nas postagens vai, se a pessoa quiser, só o nome do ponto. */
 // Config pública do app web (não é senha; a proteção está no firestore.rules). Sem Analytics, de propósito (LGPD).
@@ -2125,11 +2128,16 @@ async function fbInit(){if(CM.fb)return CM.fb;
  const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
  const [A,Au,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
  const app=A.initializeApp(FB_CONFIG),auth=Au.getAuth(app),db=F.getFirestore(app);auth.languageCode="pt";
- const d=path=>F.doc(db,...path.split("/"));let verifier=null;
+ const d=path=>F.doc(db,...path.split("/"));
  CM.fb={
   onAuth:cb=>Au.onAuthStateChanged(auth,cb),
-  async sendCode(phone,btnId){if(!verifier)verifier=new Au.RecaptchaVerifier(auth,btnId,{size:"invisible"});
-   try{return await Au.signInWithPhoneNumber(auth,phone,verifier)}catch(e){try{verifier.clear()}catch(_){}verifier=null;throw e}},
+  async google(){const pr=new Au.GoogleAuthProvider();pr.setCustomParameters({prompt:"select_account"});
+   try{await Au.signInWithPopup(auth,pr)}catch(e){if(/popup-blocked|operation-not-supported/.test(e.code||""))return Au.signInWithRedirect(auth,pr);throw e}},
+  emailIn:(e,p)=>Au.signInWithEmailAndPassword(auth,e,p),
+  async emailUp(e,p){const c=await Au.createUserWithEmailAndPassword(auth,e,p);await Au.sendEmailVerification(c.user)},
+  resetPw:e=>Au.sendPasswordResetEmail(auth,e),
+  resend:()=>Au.sendEmailVerification(auth.currentUser),
+  async refresh(){await auth.currentUser.reload();await auth.currentUser.getIdToken(true);return auth.currentUser},
   signOut:()=>Au.signOut(auth),
   async deleteUser(){await Au.deleteUser(auth.currentUser)},
   async get(path){const x=await F.getDoc(d(path));return x.exists()?x.data():null},
@@ -2146,16 +2154,33 @@ const GROUPS_DEFAULT=[{id:"floripa",nome:"Grande Florianópolis",ordem:1},{id:"r
 const tsMs=x=>x?(x.toMillis?x.toMillis():x.seconds?x.seconds*1000:+x):Date.now();
 const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:fmtDM.format(ms)};
 async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
- if(!fb){box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. O cadastro vai ser por telefone, com código por SMS.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
+ if(!fb){box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. Para entrar, basta a conta Google ou um e-mail.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
  if(CM.started)return;CM.started=true;fb.onAuth(async u=>{CM.user=u;CM.profile=null;CM.admin=false;
   if(u){try{CM.profile=await fb.get("users/"+u.uid);CM.admin=!!(await fb.get("admins/"+u.uid).catch(()=>null))}catch(e){console.warn(e)}}
   cmRender()})}
+const G_ICON='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>';
+function cmAuthErr(e){const c=e&&e.code||"";
+ return/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)?"E-mail ou senha incorretos.":/email-already-in-use/.test(c)?"Esse e-mail já tem conta. Toque em Entrar.":/weak-password/.test(c)?"A senha precisa ter pelo menos 6 caracteres.":
+  /invalid-email|missing-email/.test(c)?"Confira o e-mail.":/too-many-requests/.test(c)?"Muitas tentativas. Espere alguns minutos.":/operation-not-allowed/.test(c)?"Esse jeito de entrar ainda não foi ativado no servidor.":/popup-closed|cancelled-popup/.test(c)?"":/network/.test(c)?"Sem conexão. Tente de novo.":"Não deu certo agora. Tente de novo."}
 function cmRender(){const box=$("#cmAuth"),u=CM.user;
- if(!u){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Entrar na comunidade</h2><p class="small" style="margin:0">Use seu celular. Enviamos um código por SMS para confirmar que o número é seu.</p>
-  <form class="authform" id="cmPhoneForm" novalidate><label class="inline" for="cmPhone">Celular com DDD<input type="tel" id="cmPhone" inputmode="tel" autocomplete="tel" placeholder="(48) 99999-9999" required></label>
-  <button class="btn" type="submit" id="cmSend">Receber código</button><div class="small" id="cmAuthMsg"></div></form>
-  <form class="authform" id="cmCodeForm" hidden novalidate><label class="inline" for="cmCode">Código recebido por SMS<input type="text" id="cmCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label><button class="btn" type="submit">Confirmar</button></form>`;
-  $("#cmPhoneForm").addEventListener("submit",cmSendCode);$("#cmCodeForm").addEventListener("submit",cmConfirm);cmPartners();return}
+ if(!u){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Entrar na comunidade</h2><p class="small" style="margin:0">Grátis. Use sua conta Google ou um e-mail.</p>
+  <button class="btn gbtn" type="button" id="cmGoogle">${G_ICON} Entrar com Google</button>
+  <div class="ordiv small muted">ou com e-mail</div>
+  <form class="authform" id="cmMailForm" novalidate><label class="inline" for="cmEmail">E-mail<input type="email" id="cmEmail" autocomplete="email" inputmode="email" required></label>
+  <label class="inline" for="cmPass">Senha<input type="password" id="cmPass" autocomplete="current-password" minlength="6" required></label>
+  <div class="row"><button class="btn" type="submit" id="cmIn">Entrar</button><button class="btn ghost" type="button" id="cmUp">Criar conta</button><button class="linkbtn small" type="button" id="cmForgot">Esqueci a senha</button></div>
+  <div class="small" id="cmAuthMsg" role="status"></div></form>`;
+  const m=$("#cmAuthMsg"),em=()=>$("#cmEmail").value.trim(),pw=()=>$("#cmPass").value;
+  $("#cmGoogle").onclick=async()=>{m.textContent="";try{await CM.fb.google()}catch(e){console.warn(e);m.textContent=cmAuthErr(e)}};
+  $("#cmMailForm").addEventListener("submit",async e=>{e.preventDefault();if(!em()||!pw()){m.textContent="Preencha e-mail e senha.";return}m.textContent="Entrando…";try{await CM.fb.emailIn(em(),pw())}catch(err){m.textContent=cmAuthErr(err)}});
+  $("#cmUp").onclick=async()=>{if(!em()){m.textContent="Escreva o seu e-mail.";return}if(pw().length<6){m.textContent="Crie uma senha com pelo menos 6 caracteres.";return}m.textContent="Criando a conta…";try{await CM.fb.emailUp(em(),pw())}catch(err){m.textContent=cmAuthErr(err)}};
+  $("#cmForgot").onclick=async()=>{if(!em()){m.textContent="Escreva o seu e-mail acima e toque de novo em Esqueci a senha.";return}try{await CM.fb.resetPw(em());m.textContent="Se existir conta com esse e-mail, enviamos um link para criar uma senha nova."}catch(err){m.textContent=cmAuthErr(err)}};
+  cmPartners();return}
+ if(!u.emailVerified){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Confirme seu e-mail</h2><p class="small" style="margin:0">Enviamos um link para <b>${esc(u.email||"")}</b>. Abra o e-mail (veja também o spam), toque no link e volte aqui.</p>
+  <div class="row"><button class="btn" type="button" id="cmChk">Já confirmei</button><button class="btn ghost" type="button" id="cmResend">Enviar de novo</button><button class="btn ghost" type="button" id="cmOut">Sair</button></div><div class="small" id="cmAuthMsg" role="status"></div>`;
+  const m=$("#cmAuthMsg");$("#cmOut").onclick=()=>CM.fb.signOut();
+  $("#cmChk").onclick=async()=>{try{const nu=await CM.fb.refresh();if(nu.emailVerified){CM.user=nu;cmRender()}else m.textContent="Ainda não aparece como confirmado. Toque no link do e-mail e tente de novo."}catch(e){m.textContent=cmAuthErr(e)}};
+  $("#cmResend").onclick=async()=>{try{await CM.fb.resend();m.textContent="Enviado. Pode levar alguns minutos."}catch(e){m.textContent=cmAuthErr(e)}};return}
  if(!CM.profile){$("#cmFeed").hidden=true;box.innerHTML=`<h2>Complete seu cadastro</h2>
   <form class="authform" id="cmProfForm" novalidate><label class="inline" for="cmNome">Nome (como vai aparecer nos grupos)<input type="text" id="cmNome" maxlength="40" required autocomplete="name"></label>
   <label class="inline" for="cmCep">CEP<input type="text" id="cmCep" inputmode="numeric" maxlength="9" placeholder="88000-000" required autocomplete="postal-code"></label>
@@ -2171,12 +2196,6 @@ function cmRender(){const box=$("#cmAuth"),u=CM.user;
    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="cmDel" style="color:var(--bad);border-color:var(--bad)">Apagar minha conta e minhas postagens</button></div><div class="small" id="cmDelMsg"></div></details>`;
  $("#cmOut").onclick=()=>CM.fb.signOut();$("#cmDel").onclick=cmDeleteAccount;
  $("#cmFeed").hidden=false;cmGroups();cmPartners()}
-function phoneE164(v){let d=String(v).replace(/\D/g,"");if(d.startsWith("55")&&d.length>=12)d=d.slice(2);if(d.length<10||d.length>11)return null;return"+55"+d}
-async function cmSendCode(e){e.preventDefault();const m=$("#cmAuthMsg"),ph=phoneE164($("#cmPhone").value);if(!ph){m.textContent="Confira o número: DDD + celular, por exemplo (48) 99999-9999.";return}
- $("#cmSend").disabled=true;m.textContent="Enviando código…";
- try{CM.confirm=await CM.fb.sendCode(ph,"cmSend");m.textContent="Código enviado para "+ph.replace(/^\+55(\d{2})(\d+)(\d{4})$/,"($1) $2-$3")+".";$("#cmCodeForm").hidden=false;$("#cmCode").focus()}
- catch(err){console.warn(err);m.textContent=/operation-not-allowed/.test(err.code||"")?"O envio de SMS ainda não foi liberado no servidor. Tente mais tarde.":/too-many|quota/.test(err.code||"")?"Muitas tentativas. Espere alguns minutos e tente de novo.":/invalid-phone/.test(err.code||"")?"Número inválido.":"Não consegui enviar o código agora. Tente de novo em instantes.";$("#cmSend").disabled=false}}
-async function cmConfirm(e){e.preventDefault();const m=$("#cmAuthMsg");try{await CM.confirm.confirm($("#cmCode").value.trim())}catch(err){m.textContent="Código incorreto ou vencido. Confira e tente de novo."}}
 async function cmSaveProfile(e){e.preventDefault();const m=$("#cmProfMsg"),nome=$("#cmNome").value.trim().replace(/\s+/g," "),cep=$("#cmCep").value.replace(/\D/g,"");
  if(nome.length<2){m.textContent="Escreva seu nome.";return}if(cep.length!==8){m.textContent="O CEP tem 8 números.";return}if(!$("#cmOk").checked){m.textContent="Para participar é preciso aceitar a política.";return}
  const prof={nome,regiao:cep.slice(0,5),criadoEm:CM.fb.now(),consent:{versao:CONSENT_VER,em:CM.fb.now()}};
@@ -2217,7 +2236,7 @@ async function cmDeleteAccount(e){const b=e.currentTarget,m=$("#cmDelMsg");if(b.
  b.disabled=true;m.textContent="Apagando…";const uid=CM.user.uid;
  try{const mine=await CM.fb.list(`users/${uid}/meusPosts`);for(const x of mine){await CM.fb.del(`groups/${x.gid}/posts/${x.id}`).catch(()=>{});await CM.fb.del(`users/${uid}/meusPosts/${x.id}`).catch(()=>{})}
   await CM.fb.del("limits/"+uid).catch(()=>{});await CM.fb.del("users/"+uid);await CM.fb.deleteUser();m.textContent="Conta apagada."}
- catch(err){console.warn(err);m.textContent=/recent-login/.test(err.code||"")?"Por segurança, saia, entre de novo com o código e repita.":"Não consegui apagar tudo agora. Tente de novo.";b.disabled=false}}
+ catch(err){console.warn(err);m.textContent=/recent-login/.test(err.code||"")?"Por segurança, saia, entre de novo e repita.":"Não consegui apagar tudo agora. Tente de novo.";b.disabled=false}}
 
 /* LGPD: aviso no primeiro uso, baixar e apagar todos os dados do aparelho */
 if(!store("pf_lgpd_ok"))$("#lgpdBar").hidden=false;

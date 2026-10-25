@@ -29,7 +29,7 @@ th{color:var(--ink-2);font-weight:600}
   <p class="muted">Última atualização: 25 de outubro de 2026</p>
 
   <div class="card">
-    <p style="margin:0"><b>Em resumo:</b> para usar a previsão não precisa de cadastro: seus pontos, seu diário de pesca e suas preferências ficam só no seu aparelho. O cadastro (nome, telefone e CEP) só é pedido se você quiser participar dos <b>Grupos</b>. Nesse caso guardamos o mínimo necessário, e você pode apagar sua conta quando quiser.</p>
+    <p style="margin:0"><b>Em resumo:</b> para usar a previsão não precisa de cadastro: seus pontos, seu diário de pesca e suas preferências ficam só no seu aparelho. O cadastro (conta Google ou e-mail, nome e CEP) só é pedido se você quiser participar dos <b>Grupos</b>. Nesse caso guardamos o mínimo necessário, e você pode apagar sua conta quando quiser.</p>
   </div>
 
   <h2>Quem é o responsável</h2>
@@ -49,7 +49,7 @@ th{color:var(--ink-2);font-weight:600}
   <p>Só se você entrar em <b>Grupos</b> e aceitar esta política. Base legal: seu consentimento (art. 7º, I, da LGPD).</p>
   <div class="tw"><table>
     <tr><th>Dado</th><th>Para quê</th><th>Quem vê</th></tr>
-    <tr><td>Telefone</td><td>Confirmar que você é uma pessoa (código por SMS) e entrar na conta</td><td>Ninguém no app. Fica no Firebase Authentication (Google)</td></tr>
+    <tr><td>E-mail (ou conta Google)</td><td>Entrar na conta e confirmar que o e-mail é seu. Não usamos para propaganda</td><td>Ninguém no app. Fica no Firebase Authentication (Google)</td></tr>
     <tr><td>Nome</td><td>Aparecer nas suas mensagens</td><td>Membros dos grupos</td></tr>
     <tr><td>CEP</td><td>Só os 5 primeiros dígitos (região), para organizar a comunidade. O CEP completo não é guardado</td><td>Só você e o administrador</td></tr>
     <tr><td>Mensagens</td><td>Texto, e se você quiser o nome de um ponto e o peixe</td><td>Membros dos grupos</td></tr>
@@ -57,7 +57,7 @@ th{color:var(--ink-2);font-weight:600}
   </table></div>
   <ul>
     <li>Seus pontos marcados no mapa e seu diário <b>não</b> vão para os grupos. Só aparece o que você escrever numa mensagem.</li>
-    <li>Os dados ficam no Google Firebase (operador), em servidores no Brasil (São Paulo) para o banco de dados; a autenticação por telefone pode ser processada fora do Brasil pelo Google.</li>
+    <li>Os dados ficam no Google Firebase (operador), em servidores no Brasil (São Paulo) para o banco de dados; o login pode ser processado fora do Brasil pelo Google.</li>
     <li>Guardamos enquanto a conta existir. Em <b>Grupos → Minha conta → Excluir conta</b> você apaga o perfil, todas as suas mensagens e o login, na hora.</li>
     <li>Mensagens denunciadas são vistas pelo administrador, que pode apagá-las.</li>
     <li>Anúncios de comércios locais, se houver, são apenas exibidos: nenhum dado seu é passado a anunciantes.</li>
@@ -71,7 +71,7 @@ th{color:var(--ink-2);font-weight:600}
     <tr><td>EPAGRI/CIRAM (Santa Catarina)</td><td>Marégrafos e tábua de marés</td><td>Apenas o pedido dos dados públicos das estações</td></tr>
     <tr><td>GitHub (EUA)</td><td>Hospedagem do app e dos dados de previsão preparados pelo robô</td><td>Endereço IP e página acessada</td></tr>
     <tr><td>OpenStreetMap e Esri</td><td>Imagens do mapa</td><td>A área do mapa que você está vendo</td></tr>
-    <tr><td>Google Firebase (só Grupos)</td><td>Login por telefone e mensagens dos grupos</td><td>Telefone, nome, região do CEP e mensagens; o reCAPTCHA do Google é usado contra robôs</td></tr>
+    <tr><td>Google Firebase (só Grupos)</td><td>Login e mensagens dos grupos</td><td>E-mail, nome, região do CEP e mensagens</td></tr>
     <tr><td>Google Fonts e cdnjs</td><td>Fontes e biblioteca do mapa</td><td>Endereço IP</td></tr>
   </table></div>
   <p>Ao compartilhar uma previsão pelo botão "Compartilhar", o texto vai para o aplicativo que você escolher (por exemplo, WhatsApp). O texto leva o nome do ponto, nunca as coordenadas.</p>
