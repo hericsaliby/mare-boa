@@ -26,10 +26,17 @@ import numpy as np
 import pygrib
 
 D = sys.argv[1]
-G = {"la0": -29.0, "lo0": -49.75, "st": 0.25, "nla": 11, "nlo": 10}
+# Área única baixada (de Torres a Ubatuba); depois é separada por região para o app baixar só a sua
+G = {"la0": -29.75, "lo0": -50.25, "st": 0.25, "nla": 28, "nlo": 24}
 LATS = [G["la0"] + i * G["st"] for i in range(G["nla"])]
 LONS = [G["lo0"] + j * G["st"] for j in range(G["nlo"])]
-BOX = dict(toplat=-26.5, bottomlat=-29.0, leftlon=360 - 49.75, rightlon=360 - 47.5)
+BOX = dict(toplat=-23.0, bottomlat=-29.75, leftlon=360 - 50.25, rightlon=360 - 44.5)
+# Regiões: grade do modelo (0,25°) e grade da água/correntes (~0,15°)
+REGIOES = {
+    "sc": {"la": (-29.75, -25.75), "lo": (-50.25, -48.0), "mar": {"la0": -29.6, "la1": -25.85, "lo0": -50.0, "lo1": -48.2, "nla": 26, "nlo": 13}},
+    "pr": {"la": (-26.25, -24.75), "lo": (-49.0, -47.75), "mar": {"la0": -26.1, "la1": -24.9, "lo0": -48.95, "lo1": -47.75, "nla": 9, "nlo": 9}},
+    "sp": {"la": (-25.5, -23.0), "lo": (-48.25, -44.5), "mar": {"la0": -25.4, "la1": -23.2, "lo0": -48.2, "lo1": -44.6, "nla": 15, "nlo": 25}},
+}
 SC = {"u": 10, "v": 10, "g": 10, "p": 10, "t": 10, "r": 100, "c": 1, "h": 1, "hs": 100, "tp": 10, "dp": 1}
 UA = {"User-Agent": "mare-boa-bot (github.com/hericsaliby/mare-boa)"}
 NOW = dt.datetime.now(dt.timezone.utc).replace(minute=0, second=0, microsecond=0)
@@ -384,29 +391,28 @@ def from_old(old, before):
 
 
 # ---------------- Água e correntes (Open-Meteo, 3x por semana) ----------------
-OVG = {"la0": -28.5, "la1": -26.9, "lo0": -49.0, "lo1": -47.9, "nla": 17, "nlo": 12}  # ~0,1°, cobre o mapa
-
-
-def mar_run(old):
+def mar_run(old, OVG):
     if old and old.get("grid") == OVG:
         idade = time.time() - old.get("at", 0)
         if idade < 4 * 86400 and not (NOW.weekday() in (0, 2, 4) and idade > 30 * 3600):
-            log("Água/correntes: atualizado há", round(idade / 3600), "h; próxima na seg/qua/sex")
             return old
     la, lo = [], []
     for i in range(OVG["nla"]):
         for j in range(OVG["nlo"]):
             la.append(round(OVG["la0"] + (OVG["la1"] - OVG["la0"]) * i / (OVG["nla"] - 1), 3))
             lo.append(round(OVG["lo0"] + (OVG["lo1"] - OVG["lo0"]) * j / (OVG["nlo"] - 1), 3))
-    q = {"latitude": ",".join(map(str, la)), "longitude": ",".join(map(str, lo)),
-         "hourly": "ocean_current_velocity,ocean_current_direction,sea_surface_temperature",
-         "cell_selection": "sea", "timeformat": "unixtime", "past_days": "3", "forecast_days": "7"}
-    try:
-        js = json.loads(get("https://marine-api.open-meteo.com/v1/marine?" + urllib.parse.urlencode(q)))
-    except Exception as e:
-        log("Água/correntes: erro", e)
-        return old
-    js = js if isinstance(js, list) else [js]
+    js = []
+    for a in range(0, len(la), 120):  # em lotes, com pausa: a Open-Meteo limita consultas por minuto
+        q = {"latitude": ",".join(map(str, la[a:a + 120])), "longitude": ",".join(map(str, lo[a:a + 120])),
+             "hourly": "ocean_current_velocity,ocean_current_direction,sea_surface_temperature",
+             "cell_selection": "sea", "timeformat": "unixtime", "past_days": "3", "forecast_days": "7"}
+        try:
+            r = json.loads(get("https://marine-api.open-meteo.com/v1/marine?" + urllib.parse.urlencode(q)))
+        except Exception as e:
+            log("Água/correntes: erro", e)
+            return old
+        js += r if isinstance(r, list) else [r]
+        time.sleep(30)
     t = js[0]["hourly"]["time"]
     land = [x.get("latitude") is not None and math.hypot(x["latitude"] - la[n], x["longitude"] - lo[n]) > 0.06 for n, x in enumerate(js)]
     rnd = lambda a, d: [None if v is None else round(v, d) for v in a]
@@ -414,8 +420,17 @@ def mar_run(old):
            "sst": [rnd(x["hourly"]["sea_surface_temperature"], 1) for x in js],
            "cv": [rnd(x["hourly"]["ocean_current_velocity"], 2) for x in js],
            "cd": [rnd(x["hourly"]["ocean_current_direction"], 0) for x in js]}
-    log("Água/correntes: atualizado,", len(t), "horários")
     return out
+
+
+def recorte(sec, r):
+    """Só os nós da região (grade própria, mesmo formato)."""
+    i0, i1 = round((r["la"][0] - G["la0"]) / G["st"]), round((r["la"][1] - G["la0"]) / G["st"])
+    j0, j1 = round((r["lo"][0] - G["lo0"]) / G["st"]), round((r["lo"][1] - G["lo0"]) / G["st"])
+    idx = [i * G["nlo"] + j for i in range(i0, i1 + 1) for j in range(j0, j1 + 1)]
+    v = {k: [None if row is None else [row[n] for n in idx] for row in arr] for k, arr in sec["v"].items()}
+    grid = {"la0": G["la0"] + i0 * G["st"], "lo0": G["lo0"] + j0 * G["st"], "st": G["st"], "nla": i1 - i0 + 1, "nlo": j1 - j0 + 1}
+    return grid, {"run": sec["run"], "t": sec["t"], "v": v}
 
 
 def load(name):
@@ -427,7 +442,14 @@ def load(name):
 
 
 def main():
-    old = load("modelos.json") or {}
+    import gzip
+    try:
+        with gzip.open(os.path.join(D, "modelos_base.json.gz"), "rt") as f:
+            old = json.load(f)
+        if old.get("grid") != G:
+            old = {}
+    except Exception:
+        old = {}
     res = {"grid": G, "gerado": NOW.isoformat()}
     for k, fn in (("gfs", gfs_run), ("ecmwf", ec_run), ("ondas", wave_run)):
         try:
@@ -437,12 +459,25 @@ def main():
             res[k] = old.get(k)
         if res[k] is None:
             res.pop(k)
-    with open(os.path.join(D, "modelos.json"), "w") as f:
+    with gzip.open(os.path.join(D, "modelos_base.json.gz"), "wt") as f:
         json.dump(res, f, separators=(",", ":"))
-    mar = mar_run(load("mar.json"))
-    if mar:
-        with open(os.path.join(D, "mar.json"), "w") as f:
-            json.dump(mar, f, separators=(",", ":"))
+    for nome, r in REGIOES.items():
+        out = {"gerado": res["gerado"], "regiao": nome}
+        for k in ("gfs", "ecmwf", "ondas"):
+            if k in res:
+                out["grid"], out[k] = recorte(res[k], r)
+        with open(os.path.join(D, f"modelos_{nome}.json"), "w") as f:
+            json.dump(out, f, separators=(",", ":"))
+        mar = mar_run(load(f"mar_{nome}.json"), r["mar"])
+        if mar:
+            with open(os.path.join(D, f"mar_{nome}.json"), "w") as f:
+                json.dump(mar, f, separators=(",", ":"))
+        log("Região", nome, "ok", "(água/correntes de", time.strftime("%d/%m %H:%M", time.gmtime(mar["at"])) + ")" if mar else "(sem água/correntes)")
+    # nomes antigos (versões do app ainda em cache): SC
+    import shutil
+    shutil.copy(os.path.join(D, "modelos_sc.json"), os.path.join(D, "modelos.json"))
+    if os.path.exists(os.path.join(D, "mar_sc.json")):
+        shutil.copy(os.path.join(D, "mar_sc.json"), os.path.join(D, "mar.json"))
     with open(os.path.join(D, "modelos_log.txt"), "w") as f:
         f.write(NOW.isoformat() + "\n" + "\n".join(LOG) + "\n")
 

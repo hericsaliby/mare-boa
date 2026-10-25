@@ -16,18 +16,23 @@ import numpy as np
 import rasterio
 from PIL import Image
 
+from rasterio.enums import Resampling
+
 OUT = sys.argv[1]
-VERSAO = 2
-W, E, S, N = -49.0, -47.9, -28.5, -26.9   # mesma área da grade de água/correntes
-PX = 0.0008                               # graus de longitude por pixel da máscara
-ST = 0.008                                # célula do relevo.json
-ARC = 3600                                # pixels por grau no Copernicus GLO-30
+VERSAO = 3
+ARC = 1200                                # lê o Copernicus reduzido para ~90 m (memória do robô)
+# região: (oeste, leste, sul, norte, pixel da máscara em graus, célula do relevo em graus)
+REGIOES = {
+    "sc": (-50.0, -48.2, -29.6, -25.85, 0.0015, 0.01),
+    "pr": (-48.95, -47.75, -26.1, -24.9, 0.001, 0.008),
+    "sp": (-48.2, -44.6, -25.4, -23.2, 0.0015, 0.01),
+}
 
 
-def ja_feito():
+def ja_feito(r):
     try:
-        with open(os.path.join(OUT, "relevo.json")) as f:
-            return json.load(f).get("v") == VERSAO and os.path.exists(os.path.join(OUT, "agua.png"))
+        with open(os.path.join(OUT, f"relevo_{r}.json")) as f:
+            return json.load(f).get("v") == VERSAO and os.path.exists(os.path.join(OUT, f"agua_{r}.png"))
     except Exception:
         return False
 
@@ -39,7 +44,7 @@ def tile_url(lat0, lon0):
     return f"https://copernicus-dem-30m.s3.amazonaws.com/{n}/{n}.tif"
 
 
-def mosaico():
+def mosaico(W, E, S, N):
     """Altitudes em grade de 1" cobrindo a área; onde não há tile (mar aberto), 0."""
     la_hi, la_lo = math.ceil(N), math.floor(S)
     lo_lo, lo_hi = math.floor(W), math.ceil(E)
@@ -50,7 +55,7 @@ def mosaico():
             url = tile_url(lat_top - 1, lon_left)
             try:
                 with rasterio.open(url) as r:
-                    a = r.read(1)
+                    a = r.read(1, out_shape=(ARC, ARC), resampling=Resampling.average)
             except Exception as e:
                 print("sem tile (mar aberto?)", url.rsplit("/", 1)[-1], type(e).__name__)
                 continue
@@ -71,11 +76,11 @@ def integral_de(a):
     return out
 
 
-def main():
-    if ja_feito():
-        print("relevo e máscara já prontos")
+def regiao(nome, W, E, S, N, PX, ST):
+    if ja_feito(nome):
+        print(nome, "já pronto")
         return
-    dem, la_hi, lo_lo = mosaico()
+    dem, la_hi, lo_lo = mosaico(W, E, S, N)
     row = lambda lat: np.clip(np.round((la_hi - lat) * ARC).astype(int), 0, dem.shape[0])
     col = lambda lon: np.clip(np.round((lon - lo_lo) * ARC).astype(int), 0, dem.shape[1])
 
@@ -93,7 +98,7 @@ def main():
     alpha = np.clip(np.round(frac * 255), 0, 255).astype(np.uint8)
     img = Image.new("LA", (nx, ny))
     img.putdata(list(zip([255] * (nx * ny), alpha.ravel().tolist())))
-    img.save(os.path.join(OUT, "agua.png"), optimize=True)
+    img.save(os.path.join(OUT, f"agua_{nome}.png"), optimize=True)
 
     # relevo médio em células de ~850 m
     nla, nlo = int(round((N - S) / ST)) + 1, int(round((E - W) / ST)) + 1
@@ -103,11 +108,23 @@ def main():
     R0, R1 = row(la_c + ST / 2), row(la_c - ST / 2)
     C0, C1 = col(lo_c - ST / 2), col(lo_c + ST / 2)
     h = media_em_blocos(alt, R0[:, None], R1[:, None], C0[None, :], C1[None, :])
-    with open(os.path.join(OUT, "relevo.json"), "w") as f:
+    with open(os.path.join(OUT, f"relevo_{nome}.json"), "w") as f:
         json.dump({"v": VERSAO, "la0": S, "lo0": W, "st": ST, "nla": nla, "nlo": nlo,
                    "h": [int(round(x)) for x in h.ravel()],
                    "agua": {"n": N, "s": S, "w": W, "e": E}}, f, separators=(",", ":"))
-    print("agua.png", nx, "x", ny, os.path.getsize(os.path.join(OUT, "agua.png")) // 1024, "KB; relevo", nla, "x", nlo)
+    print(nome, "agua", nx, "x", ny, os.path.getsize(os.path.join(OUT, f"agua_{nome}.png")) // 1024, "KB; relevo", nla, "x", nlo)
+
+
+def main():
+    import shutil
+    for nome, p in REGIOES.items():
+        try:
+            regiao(nome, *p)
+        except Exception as e:
+            print(nome, "falhou:", e)
+    for a, b in (("relevo_sc.json", "relevo.json"), ("agua_sc.png", "agua.png")):  # nomes antigos
+        if os.path.exists(os.path.join(OUT, a)):
+            shutil.copy(os.path.join(OUT, a), os.path.join(OUT, b))
 
 
 if __name__ == "__main__":
