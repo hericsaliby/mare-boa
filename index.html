@@ -129,6 +129,13 @@ summary{cursor:pointer;font-weight:600}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--ink)}
 .leaflet-popup-content{margin:12px 14px;font:14px/1.45 var(--body);min-width:220px}
 .leaflet-container{font:inherit}
+#map{position:relative}
+.ovl{position:absolute;left:0;top:0;pointer-events:none}
+.ovbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px;cursor:pointer}
+.chipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ovlegend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:13px;color:var(--ink-2)}
+.ovlegend .sstbar{display:inline-block;width:140px;height:10px;border-radius:5px;vertical-align:middle;margin:0 6px}
 .leaflet-container a.leaflet-popup-close-button{color:var(--ink-3)}
 .pop h4{margin:0 0 4px;font-size:15px}
 .pop .row{margin-top:8px}
@@ -275,6 +282,9 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .greet .gd{color:var(--ink-3);font-size:14.5px;margin-top:2px}
 .greet p{margin:8px 0 0;font-size:16.5px;line-height:1.5;color:var(--ink-2);max-width:70ch}
 .greet p b{color:var(--ink)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.rulebox{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.rule .small{margin-top:3px;color:var(--ink-2)}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -396,7 +406,14 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <section class="view" id="v-mapa" aria-label="Mapa" hidden>
     <article class="card"><div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><button class="btn ghost basetog" type="button">Mostrar todos os pontos</button></div>
       <span class="small muted">Toque em qualquer lugar para soltar um pin e criar um ponto seu.</span>
+      <div class="ovbar" role="group" aria-label="Camadas do mapa">
+        <button type="button" class="chipbtn" data-ov="wind" aria-pressed="false">Vento animado</button>
+        <button type="button" class="chipbtn" data-ov="cur" aria-pressed="false">Correntes</button>
+        <button type="button" class="chipbtn" data-ov="sst" aria-pressed="false">Temperatura da água</button>
+        <span class="small muted" id="ovInfo"></span>
+      </div>
       <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
+      <div class="ovlegend" id="ovLegend" hidden></div>
       <div class="glink"><input type="text" id="gLink" inputmode="url" autocomplete="off" placeholder="Cole o link completo ou as coordenadas do Google Maps"><input type="text" id="gName" placeholder="Nome (opcional)"><button class="btn" id="gAdd" type="button">Adicionar ponto</button></div>
       <div id="gMsg" class="small"></div>
     <div class="legend"><span>Número = nota no horário escolhido em "Onde ir"</span><span>Seta = para onde o vento sopra</span><span>Pin novo: abrigo calculado pelo relevo e pela distância de água em cada direção</span></div>
@@ -421,6 +438,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="row"><span class="small muted" style="min-width:110px">Modelo do vento</span><div class="seg" id="modelSeg" role="group" aria-label="Modelo de previsão"></div></div>
       <div class="row"><span class="small muted" style="min-width:110px">Unidade do vento</span><div class="seg" id="unitSeg" role="group" aria-label="Unidade do vento"><button type="button" data-u="kmh">km/h</button><button type="button" data-u="kn">nós</button><button type="button" data-u="ms">m/s</button></div></div>
     </article>
+    <article class="card"><h2>Regras e defeso</h2><p class="small muted" style="margin:0">Resumo para a pesca amadora em Santa Catarina. Atualizado em out/2026. Regras mudam e podem variar por local: confira sempre nos links abaixo.</p><div id="rulesList" class="rules"></div><p class="small" id="rulesLinks"></p></article>
     <article class="card"><h2>Detalhes do ponto</h2><div class="kv" id="spotKv"></div>
       <div class="readout" id="readout">Arraste o dedo sobre os gráficos para ver hora a hora.</div><div class="chart" id="chScore"></div></article>
     <article class="card">
@@ -1076,7 +1094,7 @@ function renderMoon(){if(!S.data)return;const today=dayKey(Date.now());
  const nowL=dayKey(now)===S.moonDay?`<line x1="${X(now)}" x2="${X(now)}" y1="4" y2="${H-22}" stroke="var(--ink-3)" stroke-dasharray="3 3"/>`:"";
  $("#chMoon").innerHTML=`<svg height="${H}" viewBox="0 0 ${W} ${H}">${bands}${suns}<path d="M${pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join("L")}" fill="none" stroke="var(--accent)" stroke-width="2"/><text x="0" y="14">alta</text><text x="0" y="${H-26}">baixa</text>${ticks}${nowL}</svg>`;
  $("#moonPhases").innerHTML=nextPhases(now,8).map(o=>`<div>${moonSVG(o.g===0?0:o.g,26)}<span><b>${PH_NAMES[o.g]}</b><br><span class="muted">${fmtDM.format(o.t)}</span></span></div>`).join("")}
-function renderAll(){renderEpStatus();renderMyList();renderMoon();renderModels();renderRank();renderSpot();renderSpecies();renderLog()}
+function renderAll(){renderEpStatus();renderRules();if($("#rulesLinks"))$("#rulesLinks").innerHTML=RULE_LINKS;renderMyList();renderMoon();renderModels();renderRank();renderSpot();renderSpecies();renderLog()}
 function renderUnits(){document.querySelectorAll("#unitSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.u===S.unit));document.querySelectorAll(".wu").forEach(e=>e.textContent=WU())}
 function renderModels(){renderUnits();const el=$("#modelSeg");el.innerHTML=MODELS.map(m=>`<button type="button" data-m="${m.k}" aria-pressed="${m.k===S.model}">${m.n}</button>`).join("");
  $("#rankModel").textContent=(S.fish!=="geral"?"Para "+FISH[S.fish].n.toLowerCase()+" · ":"")+"Modelo "+MODELS.find(m=>m.k===S.model).n+(S.ml&&S.ml.ready?" + seu histórico":"")}
@@ -1453,7 +1471,68 @@ function initMap(){if(MAP)return;
  updateMarkers()}
 function markerIcon(sp,r){return L.divIcon({className:"",iconSize:null,iconAnchor:[20,12],
  html:`<div class="mk${sp.id===S.spot?" sel":""}${sp.temp?" pin":""}" style="${sp.temp?"":pillStyle(r.score)}">${arrow(r.d,11)}${N(r.score)}</div>`})}
-function updateMarkers(){if(!MAP||!S.data)return;const ids=new Set(visSpots().map(s=>s.id));
+/* ================== CAMADAS DO MAPA: vento animado, correntes e temperatura da água ==================
+ Grade de pontos sobre a Grande Florianópolis (Open-Meteo: modelo de vento escolhido e modelo marinho).
+ Correntes e temperatura da água vêm do modelo oceânico global (~8 km): mostram o mar aberto, não o detalhe dentro das baías. */
+const OVG={la0:-28.05,la1:-27.30,lo0:-48.85,lo1:-48.30,nla:11,nlo:9};
+const OV={on:{wind:false,cur:false,sst:false},data:null,loading:false,canvas:null,parts:[],raf:0,model:null};
+async function ovLoad(){if(OV.data&&OV.model===S.model)return true;if(OV.loading)return false;OV.loading=true;$("#ovInfo").textContent="Carregando camadas…";
+ try{const la=[],lo=[];for(let i=0;i<OVG.nla;i++)for(let j=0;j<OVG.nlo;j++){la.push((OVG.la0+(OVG.la1-OVG.la0)*i/(OVG.nla-1)).toFixed(3));lo.push((OVG.lo0+(OVG.lo1-OVG.lo0)*j/(OVG.nlo-1)).toFixed(3))}
+  const common="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=1&forecast_days=7";
+  const [fr,mr]=await Promise.all([fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=wind_speed_10m,wind_direction_10m&models=${S.model}&wind_speed_unit=kmh${common}`),
+   fetchJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${la}&longitude=${lo}&hourly=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea${common}`).catch(()=>null)]);
+  const F=Array.isArray(fr)?fr:[fr],M=mr?(Array.isArray(mr)?mr:[mr]):null;
+  OV.data={t:F[0].hourly.time.map(x=>x*1000),F:F.map(x=>x.hourly),M:M?M.map(x=>x.hourly):null,land:F.map(x=>(x.elevation||0)>2)};OV.model=S.model;$("#ovInfo").textContent="";return true}
+ catch(e){console.warn("camadas",e);$("#ovInfo").textContent="Não consegui carregar as camadas agora.";return false}finally{OV.loading=false}}
+function ovIdx(){const d=OV.data,t=S.data?S.data.t[S.when]:Date.now();let best=0;d.t.forEach((x,k)=>{if(Math.abs(x-t)<Math.abs(d.t[best]-t))best=k});return best}
+// interpolação bilinear na grade; kind: wind→[u,v] km/h (para onde sopra), cur→[u,v] km/h, sst→°C
+function ovAt(kind,lat,lon,k){const fi=(lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1),fj=(lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1);
+ if(fi<0||fj<0||fi>OVG.nla-1||fj>OVG.nlo-1)return null;const i=Math.min(OVG.nla-2,Math.floor(fi)),j=Math.min(OVG.nlo-2,Math.floor(fj)),a=fi-i,b=fj-j;
+ const val=(ii,jj)=>{const n=ii*OVG.nlo+jj;if(kind==="wind"){const h=OV.data.F[n];const sp=h.wind_speed_10m[k],dr=h.wind_direction_10m[k];if(sp==null||dr==null)return null;return[-sp*Math.sin(dr*rad),-sp*Math.cos(dr*rad)]}
+  if(!OV.data.M||OV.data.land[n])return null;const h=OV.data.M[n];if(kind==="cur"){const sp=h.ocean_current_velocity[k],dr=h.ocean_current_direction[k];if(sp==null||dr==null)return null;return[sp*Math.sin(dr*rad),sp*Math.cos(dr*rad)]}
+  const v=h.sea_surface_temperature[k];return v==null?null:[v]};
+ const p=[val(i,j),val(i+1,j),val(i,j+1),val(i+1,j+1)],w=[(1-a)*(1-b),a*(1-b),(1-a)*b,a*b];let s0=0,s1=0,ws=0;p.forEach((q,n)=>{if(q){s0+=q[0]*w[n];s1+=(q[1]||0)*w[n];ws+=w[n]}});
+ if(ws<.3)return null;return[s0/ws,s1/ws]}
+const sstColor=v=>{const c=[[14,[40,80,200]],[18,[40,170,210]],[21,[90,200,140]],[24,[240,200,60]],[27,[230,90,50]]];if(v<=c[0][0])return c[0][1];for(let i=1;i<c.length;i++)if(v<=c[i][0]){const f=(v-c[i-1][0])/(c[i][0]-c[i-1][0]);return c[i-1][1].map((x,n)=>Math.round(x+(c[i][1][n]-x)*f))}return c[c.length-1][1]};
+function ovCanvas(){if(OV.canvas)return OV.canvas;const pane=MAP.createPane("ovPane");pane.style.zIndex=450;pane.style.pointerEvents="none";
+ const c=document.createElement("canvas");c.className="ovl";pane.appendChild(c);OV.canvas=c;
+ const fit=()=>{const r=$("#map").getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);L.DomUtil.setPosition(c,MAP.containerPointToLayerPoint([0,0]));c.width=r.width*dpr;c.height=r.height*dpr;c.style.width=r.width+"px";c.style.height=r.height+"px";c.getContext("2d").setTransform(dpr,0,0,dpr,0,0);OV.parts=[];ovStatic();if(reduceMotion||!(OV.on.wind||OV.on.cur))ovArrows()};
+ MAP.on("movestart",()=>{OV.parts=[];const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height)});MAP.on("moveend zoomend resize",fit);fit();return c}
+let OV_SST=null;
+function ovStatic(){ // desenha a temperatura da água (não animada) numa camada própria
+ if(!OV.data||!OV.on.sst){OV_SST=null;return}const r=$("#map").getBoundingClientRect(),k=ovIdx(),cw=14;const off=document.createElement("canvas");off.width=r.width;off.height=r.height;const x=off.getContext("2d");
+ for(let py=0;py<r.height;py+=cw)for(let px=0;px<r.width;px+=cw){const ll=MAP.containerPointToLatLng([px+cw/2,py+cw/2]),v=ovAt("sst",ll.lat,ll.lng,k);if(!v)continue;const c=sstColor(v[0]);x.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},.42)`;x.fillRect(px,py,cw,cw)}
+ OV_SST=off}
+const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function ovFrame(){const c=OV.canvas;if(!c)return;const x=c.getContext("2d"),r=$("#map").getBoundingClientRect(),W=r.width,H=r.height,k=ovIdx();
+ const kinds=[OV.on.wind&&"wind",OV.on.cur&&"cur"].filter(Boolean);
+ // rastro: apaga aos poucos
+ x.save();x.globalCompositeOperation="destination-in";x.fillStyle="rgba(0,0,0,.90)";x.fillRect(0,0,W,H);x.restore();
+ if(OV_SST){x.save();x.globalCompositeOperation="destination-over";x.drawImage(OV_SST,0,0,W,H);x.restore()}
+ const want=kinds.length?Math.round(W*H/900):0;while(OV.parts.length<want)OV.parts.push({x:Math.random()*W,y:Math.random()*H,a:Math.random()*60,k:kinds[OV.parts.length%kinds.length]});if(OV.parts.length>want)OV.parts.length=want;
+ x.lineWidth=1.4;x.lineCap="round";
+ for(const p of OV.parts){if(!kinds.includes(p.k))p.k=kinds[0];const ll=MAP.containerPointToLatLng([p.x,p.y]),v=ovAt(p.k,ll.lat,ll.lng,k);p.a++;
+  if(!v||p.a>70||p.x<0||p.y<0||p.x>W||p.y>H){p.x=Math.random()*W;p.y=Math.random()*H;p.a=0;continue}
+  const sc=p.k==="wind"?.06:.9,nx=p.x+v[0]*sc,ny=p.y-v[1]*sc,spd=Math.hypot(v[0],v[1]);
+  x.strokeStyle=p.k==="wind"?`rgba(255,255,255,${Math.min(.95,.35+spd/40)})`:`rgba(0,200,255,${Math.min(.95,.45+spd/2)})`;
+  x.beginPath();x.moveTo(p.x,p.y);x.lineTo(nx,ny);x.stroke();if(p.k==="wind"){x.strokeStyle="rgba(10,40,50,.25)";x.beginPath();x.moveTo(p.x+.8,p.y+.8);x.lineTo(nx+.8,ny+.8);x.stroke()}p.x=nx;p.y=ny}
+ OV.raf=requestAnimationFrame(ovFrame)}
+function ovArrows(){ // sem animação (preferência do sistema): setas paradas
+ const c=OV.canvas,x=c.getContext("2d"),r=$("#map").getBoundingClientRect(),k=ovIdx();x.clearRect(0,0,r.width,r.height);if(OV_SST)x.drawImage(OV_SST,0,0,r.width,r.height);
+ for(const kind of ["wind","cur"]){if(!OV.on[kind])continue;for(let py=20;py<r.height;py+=42)for(let px=20;px<r.width;px+=42){const ll=MAP.containerPointToLatLng([px,py]),v=ovAt(kind,ll.lat,ll.lng,k);if(!v)continue;const a=Math.atan2(-v[1],v[0]),L=14;
+  x.strokeStyle=kind==="wind"?"#fff":"#00c8ff";x.lineWidth=2;x.beginPath();x.moveTo(px-Math.cos(a)*L/2,py-Math.sin(a)*L/2);x.lineTo(px+Math.cos(a)*L/2,py+Math.sin(a)*L/2);x.stroke();
+  x.beginPath();x.arc(px+Math.cos(a)*L/2,py+Math.sin(a)*L/2,2.5,0,7);x.fillStyle=x.strokeStyle;x.fill()}}}
+function ovLegend(){const L=$("#ovLegend");const any=OV.on.wind||OV.on.cur||OV.on.sst;L.hidden=!any;if(!any||!OV.data)return;const k=ovIdx(),c=MAP.getCenter();let h="";
+ if(OV.on.wind){const v=ovAt("wind",c.lat,c.lng,k);h+=`<span><b>Vento</b> (linhas brancas)${v?` · centro do mapa: ${wv(Math.hypot(v[0],v[1]))} ${WU()}`:""}</span>`}
+ if(OV.on.cur){const v=ovAt("cur",c.lat,c.lng,k);h+=`<span><b style="color:#00a8d8">Correntes</b> (linhas azuis)${v?` · centro: ${(Math.hypot(v[0],v[1])/3.6).toFixed(2).replace(".",",")} m/s`:" · sem dado dentro das baías"}</span>`}
+ if(OV.on.sst){h+=`<span><b>Água</b> 14 °C<span class="sstbar" style="background:linear-gradient(90deg,rgb(40,80,200),rgb(40,170,210),rgb(90,200,140),rgb(240,200,60),rgb(230,90,50))"></span>27 °C</span>`}
+ h+=`<span class="muted">${fmtDH.format(OV.data.t[k])} · modelo oceânico de ~8 km: mostra o mar aberto, não o detalhe das baías</span>`;L.innerHTML=h}
+async function ovRefresh(){if(!MAP)return;const any=OV.on.wind||OV.on.cur||OV.on.sst;document.querySelectorAll("[data-ov]").forEach(b=>b.setAttribute("aria-pressed",OV.on[b.dataset.ov]));
+ cancelAnimationFrame(OV.raf);if(!any){if(OV.canvas){OV.canvas.getContext("2d").clearRect(0,0,OV.canvas.width,OV.canvas.height)}ovLegend();return}
+ if(!(await ovLoad()))return;ovCanvas();ovStatic();ovLegend();OV.parts=[];if(reduceMotion||!(OV.on.wind||OV.on.cur)){ovArrows()}else ovFrame()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-ov]");if(!b)return;OV.on[b.dataset.ov]=!OV.on[b.dataset.ov];ovRefresh()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelAnimationFrame(OV.raf);else if(S.view==="mapa")ovRefresh()});
+function updateMarkers(){if(!MAP||!S.data)return;if(OV.data&&(OV.on.wind||OV.on.cur||OV.on.sst)){ovStatic();ovLegend()}const ids=new Set(visSpots().map(s=>s.id));
  for(const id in MK)if(!ids.has(id)){MAP.removeLayer(MK[id]);delete MK[id]}
  for(const sp of visSpots()){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
   if(!MK[sp.id])MK[sp.id]=L.marker([sp.lat,sp.lon],{title:sp.n}).addTo(MAP).on("click",ev=>{L.DomEvent.stopPropagation(ev);const s2=SPOTS.find(x=>x.id===sp.id);if(!s2)return;selectSpot(s2.id,false);openPopup(s2)});
@@ -1594,7 +1673,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.17";
+const APP_VERSION="2026-10-25.18";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1603,7 +1682,8 @@ function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  if(v==="mare"||v==="vento"||v==="mais")renderCharts();
  if(v==="resumo")renderSummary();
  if(v==="lua")renderMoon();
- if(v==="mapa"&&MAP)setTimeout(()=>{MAP.invalidateSize();if(!MAP._enq){MAP.fitBounds(L.latLngBounds(BASE_SPOTS.map(x=>[x.lat,x.lon])).pad(.05));MAP._enq=true}updateMarkers()},60)}
+ if(v!=="mapa")cancelAnimationFrame(OV.raf);
+ if(v==="mapa"&&MAP)setTimeout(()=>{ovRefresh();MAP.invalidateSize();if(!MAP._enq){MAP.fitBounds(L.latLngBounds(BASE_SPOTS.map(x=>[x.lat,x.lon])).pad(.05));MAP._enq=true}updateMarkers()},60)}
 document.addEventListener("click",e=>{const a=e.target.closest("[data-view]");if(!a)return;e.preventDefault();showView(a.dataset.view)});
 addEventListener("hashchange",()=>showView(location.hash.slice(1),false));
 function renderSpotSel(){const sel=$("#spotSel");const V=visSpots();const key=V.map(s=>s.id+s.n).join();
@@ -1638,6 +1718,24 @@ $("#shareBtn").addEventListener("click",async()=>{const txt=shareText(),msg=$("#
 $("#fishSel").innerHTML=FISH_KEYS.map(k=>`<option value="${k}">${k==="geral"?"Peixe: qualquer":FISH[k].n}</option>`).join("");$("#fishSel").value=S.fish;$("#fishSel").classList.toggle("on",S.fish!=="geral");
 $("#fishSel").addEventListener("change",e=>{S.fish=e.target.value;store("pf_fish",S.fish);e.target.classList.toggle("on",S.fish!=="geral");if(!S.data)return;rebuild();renderAll();showView(S.view||"resumo",false)});
 const FISH_SRC=`<a href="https://repository.library.noaa.gov/view/noaa/71460" target="_blank" rel="noopener">NOAA (temperatura)</a> · <a href="https://busqueda.bvsalud.org/portal/resource/pt/mdl-27221331" target="_blank" rel="noopener">Dantas &amp; Barletta 2016</a> · <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4226575/" target="_blank" rel="noopener">PLoS ONE 2014 (desova e lua)</a>`;
+/* ================== REGRAS E DEFESO ==================
+ Só o que foi confirmado em fonte oficial aparece como regra; o resto fica marcado "a confirmar".
+ Atualizado em out/2026. Regras mudam: sempre conferir no Ibama, MPA e Polícia Militar Ambiental. */
+const RULE_LINKS=`<a href="https://www.gov.br/ibama/pt-br/assuntos/biodiversidade/biodiversidade-aquatica/periodos-de-defeso/defesos-marinhos" target="_blank" rel="noopener">Ibama: defesos marinhos</a> · <a href="https://www.gov.br/mpa/pt-br" target="_blank" rel="noopener">Ministério da Pesca</a> · <a href="https://www.pm.sc.gov.br/" target="_blank" rel="noopener">Polícia Militar Ambiental SC</a>`;
+const RULES={
+ robalo:{lvl:"ok",t:"Sem defeso em SC",d:"Não encontramos defeso de robalo para a pesca amadora em Santa Catarina em norma oficial (o defeso de 1º/maio a 30/jun da IN Ibama 10/2009 vale para o Espírito Santo). Fontes de pesca citam tamanho mínimo e cota diária: confira antes de levar o peixe."},
+ linguado:{lvl:"conf",t:"Sem defeso específico encontrado",d:"Não achamos regra específica de defeso para linguado em SC. Confira tamanho mínimo e cota."},
+ tainha:{lvl:"info",t:"Safra comercial com cotas (maio a julho)",d:"A pesca comercial da tainha tem cotas por modalidade (Portaria Interministerial MPA/MMA nº 51/2026) e pode ser encerrada antes ao atingir a cota. Para a pesca amadora não achamos defeso específico; confira cota e tamanho mínimo."},
+ corvina:{lvl:"conf",t:"Sem defeso específico encontrado",d:"Não achamos regra específica de defeso para corvina em SC. Confira tamanho mínimo e cota."},
+ anchova:{lvl:"conf",t:"Sem defeso específico encontrado",d:"Não achamos regra específica de defeso para anchova em SC. Confira tamanho mínimo e cota."},
+ garoupa:{lvl:"warn",t:"Espécie ameaçada: pesca regulada",d:"A garoupa-verdadeira está na lista nacional de espécies ameaçadas (vulnerável). A pesca é regulada pela Portaria Interministerial nº 41/2018 e pode ser proibida ou limitada conforme o caso. Confira as regras antes de pescar; na dúvida, solte o peixe."}};
+const SHRIMP={a:[1,28],b:[4,30]}; // defeso do camarão Sul/Sudeste: 28/jan a 30/abr (Portaria SAP/MAPA nº 656/2022)
+function shrimpDefeso(ms){const m=+fmtKey.format(ms).slice(5,7),d=+fmtKey.format(ms).slice(8,10);return(m>1||d>=28)&&(m<4||(m===4&&d<=30))&&m<=4}
+function rulesHTML(k,compact){const R=RULES[k];if(!R)return"";const cls={ok:"good",info:"neu",conf:"neu",warn:"bad"}[R.lvl];
+ return`<div class="rule"><span class="tag ${cls}">${R.lvl==="conf"?"a confirmar":R.lvl==="warn"?"atenção":"regra"}</span> <b>${R.t}</b>${compact?"":`<div class="small">${esc(R.d)}</div>`}</div>`}
+function renderRules(){const el=$("#rulesList");if(!el)return;const now=Date.now();
+ el.innerHTML=Object.keys(RULES).map(k=>`<div class="rulebox"><b>${FISH[k].n}</b>${rulesHTML(k)}</div>`).join("")+
+  `<div class="rulebox"><b>Camarão (isca)</b><div class="rule"><span class="tag ${shrimpDefeso(now)?"bad":"good"}">${shrimpDefeso(now)?"em defeso agora":"regra"}</span> <b>Defeso de 28 de janeiro a 30 de abril</b><div class="small">Sul e Sudeste (Portaria SAP/MAPA nº 656/2022). Nesse período, use camarão de procedência legal (cultivo ou estoque declarado) ou outra isca.</div></div></div>`}
 function renderFishCard(){const el=$("#sumFish");if(!el)return;const F=FISH[S.fish];if(!F||!F.w){el.hidden=true;return}el.hidden=false;
  const sp=spot(),rows=dayRows();const hab=F.hab[sp.t]??.6;
  // melhores horários do dia para o peixe
@@ -1648,6 +1746,8 @@ function renderFishCard(){const el=$("#sumFish");if(!el)return;const F=FISH[S.fi
  el.innerHTML=`<div class="sum-h"><h3>${F.n} neste ponto</h3><span class="tag ${hab>=.8?"good":hab>=.55?"warn":"bad"}">${hab>=.8?"lugar bom para "+F.n.toLowerCase():hab>=.55?"lugar razoável":"lugar fraco para "+F.n.toLowerCase()}</span></div>
   <div>${top.length?"Melhores horários do dia: "+top.map(w=>`<b>${fmtH.format(w.a.t)}–${fmtH.format(w.b.t+HOUR)}</b> <span class="num muted">(${N(w.s/w.n)})</span>`).join(" · "):`Nenhum horário bom hoje. Melhor hora: <b>${fmtH.format(best.t)}</b> (nota ${N(best.score)})`}</div>
   ${best.fishWhy?`<div class="small">${best.fishWhy.length?"A favor às "+fmtH.format(best.t)+": "+esc(best.fishWhy.join(" · ")):""}${best.fishNeg.length?`<br><span style="color:var(--warn)">Contra: ${esc(best.fishNeg.join(" · "))}</span>`:""}</div>`:""}
+  ${rulesHTML(S.fish,true)}${shrimpDefeso(noonOf(S.day))?`<div class="small" style="color:var(--warn)">Camarão em defeso (28/jan a 30/abr): use isca de procedência legal.</div>`:""}
+  <details><summary class="small">Regras e defeso do ${F.n.toLowerCase()}</summary>${rulesHTML(S.fish)}<div class="small muted">Atualizado em out/2026. Regras mudam: confira em ${RULE_LINKS}.</div></details>
   <details><summary class="small">O que pesa para o ${F.n.toLowerCase()}</summary><ul class="small">${F.info.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${S.fish==="robalo"?`<div class="small muted">Fontes: ${FISH_SRC}. O resto vem da prática de pesca.</div>`:""}</details>`}
 
 /* ================== RESUMO: maré, vento e lua do ponto e do dia escolhidos ================== */
