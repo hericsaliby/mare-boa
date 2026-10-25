@@ -24,6 +24,10 @@ jobs:
           done
           if [ ! -f old/tabua.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/index.php/tabua-de-mares/" -o out/tabua.html || true; else cp old/tabua.html out/; fi
           if [ ! -f old/tabuamare.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/ciram_arquivos/oceano/tabuamare/tabuamare.html" -o out/tabuamare.html || true; else cp old/tabuamare.html out/; fi
+          for c in Florianopolis Imbituba; do
+            curl -sSL -A "$UA" -D "out/tabua_$c.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/ciram_arquivos/oceano/tabuamare/csv/Tabua_Mare_$c.csv" -o "out/tabua_$c.csv.new" || true
+            if [ -s "out/tabua_$c.csv.new" ] && ! grep -qi "<html" "out/tabua_$c.csv.new"; then mv "out/tabua_$c.csv.new" "out/tabua_$c.csv"; else rm -f "out/tabua_$c.csv.new"; cp "old/tabua_$c.csv" out/ 2>/dev/null || true; fi
+          done
           python3 tools/historico.py old out
           date -u +%FT%TZ > out/atualizado.txt
           cd out
