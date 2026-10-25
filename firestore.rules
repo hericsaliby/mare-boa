@@ -18,7 +18,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && (me() == uid || isAdmin());
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent'])
+        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent', 'codigo'])
         && request.resource.data.nome is string
         && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 40
         && request.resource.data.regiao is string && request.resource.data.regiao.matches('^[0-9]{5}$')
@@ -32,14 +32,14 @@ service cloud.firestore {
       }
     }
 
-    // Controle de frequência: no mínimo 20 s entre mensagens
+    // Controle de frequência: no mínimo 5 s entre mensagens
     match /limits/{uid} {
       allow read, delete: if signedIn() && me() == uid;
       allow create: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time;
       allow update: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time
-        && request.time > resource.data.ultimo + duration.value(20, 's');
+        && request.time > resource.data.ultimo + duration.value(5, 's');
     }
 
     // Administradores: criados só pelo console do Firebase
@@ -48,18 +48,56 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Grupos: qualquer um vê a lista; só administrador cria/edita
-    match /groups/{gid} {
-      allow read: if true;
-      allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['nome', 'ordem', 'descricao'])
-        && request.resource.data.nome is string && request.resource.data.nome.size() <= 40;
-      allow delete: if isAdmin();
+    // Código de amigo: quem sabe o código acha o nome e o ID da pessoa para adicionar num grupo.
+    // Ninguém consegue listar os códigos.
+    match /codigos/{code} {
+      allow get: if hasProfile();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['uid', 'nome']) && code.size() >= 6;
+      allow delete: if signedIn() && resource.data.uid == me();
+    }
 
-      // Mensagens: só quem tem perfil lê e escreve; ninguém edita; dono ou administrador apaga
+    // Grupos
+    // - públicos (Geral, Vendas e trocas): todos com perfil leem e escrevem; só o administrador cria
+    // - privados: qualquer pessoa cria; só os membros veem; o dono adiciona e tira gente;
+    //   quem tem o link de convite entra sozinho; qualquer membro pode sair
+    function grupo(gid) { return get(/databases/$(database)/documents/groups/$(gid)).data; }
+    function podeVer(g) { return hasProfile() && (g.tipo == 'publico' || me() in g.membros); }
+    function so(campos) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos); }
+    match /groups/{gid} {
+      allow get, list: if resource.data.tipo == 'publico' || (signedIn() && me() in resource.data.membros);
+      allow create: if (isAdmin() && request.resource.data.tipo == 'publico'
+            && request.resource.data.keys().hasOnly(['nome', 'ordem', 'descricao', 'tipo']))
+        || (hasProfile() && request.resource.data.tipo == 'privado'
+            && request.resource.data.keys().hasOnly(['nome', 'tipo', 'dono', 'membros', 'nomes', 'convite', 'criadoEm'])
+            && request.resource.data.dono == me() && request.resource.data.membros == [me()]
+            && request.resource.data.nome is string && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 40
+            && request.resource.data.convite is string && request.resource.data.convite.size() >= 10
+            && request.resource.data.criadoEm == request.time);
+      allow update: if (isAdmin() && resource.data.tipo == 'publico')
+        // dono: muda nome, membros e convite (continua dono e membro; até 100 pessoas)
+        || (hasProfile() && resource.data.tipo == 'privado' && resource.data.dono == me()
+            && so(['nome', 'membros', 'nomes', 'convite'])
+            && me() in request.resource.data.membros && request.resource.data.membros.size() <= 100
+            && request.resource.data.nome is string && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 40)
+        // entrar com o link de convite (só a si mesmo)
+        || (hasProfile() && resource.data.tipo == 'privado' && !(me() in resource.data.membros)
+            && so(['membros', 'nomes', 'ultimoConvite'])
+            && request.resource.data.ultimoConvite == resource.data.convite
+            && request.resource.data.membros.toSet() == resource.data.membros.toSet().union([me()].toSet())
+            && request.resource.data.membros.size() == resource.data.membros.size() + 1
+            && request.resource.data.membros.size() <= 100)
+        // sair do grupo (só a si mesmo; o dono apaga o grupo em vez de sair)
+        || (signedIn() && resource.data.tipo == 'privado' && me() in resource.data.membros && resource.data.dono != me()
+            && so(['membros', 'nomes'])
+            && request.resource.data.membros.toSet() == resource.data.membros.toSet().difference([me()].toSet()));
+      allow delete: if isAdmin() || (signedIn() && resource.data.dono == me());
+
+      // Mensagens: quem pode ver o grupo lê e escreve; ninguém edita; autor, dono do grupo ou administrador apaga
       match /posts/{pid} {
-        allow read: if hasProfile();
-        allow create: if hasProfile()
+        allow read: if podeVer(grupo(gid));
+        allow create: if podeVer(grupo(gid))
           && request.resource.data.uid == me()
           && request.resource.data.keys().hasOnly(['uid', 'nome', 'texto', 'ponto', 'peixe', 'criadoEm'])
           && request.resource.data.nome == profile().nome
@@ -70,7 +108,7 @@ service cloud.firestore {
           && request.resource.data.criadoEm == request.time
           && getAfter(/databases/$(database)/documents/limits/$(me())).data.ultimo == request.time;
         allow update: if false;
-        allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+        allow delete: if signedIn() && (resource.data.uid == me() || isAdmin() || grupo(gid).get('dono', '') == me());
       }
     }
 
