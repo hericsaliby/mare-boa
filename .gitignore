@@ -1,0 +1,21 @@
+# Nunca subir pontos de pesca, exportações ou dados pessoais
+*.kml
+*.kmz
+*.gpx
+Saved Places.json
+*meus-pontos*
+*meus-dados*
+diario-pesca*.json
+calib*.json
+*.csv
+!tools/*.csv
+.env*
+*.pem
+*.key
+serviceAccount*.json
+firebase-adminsdk*.json
+# Lixo
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/

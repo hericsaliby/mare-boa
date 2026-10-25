@@ -7,13 +7,18 @@ on:
     branches: [main]
     paths: [".github/workflows/epagri.yml", "tools/historico.py"]
 permissions:
-  contents: write
+  contents: read
 concurrency: epagri
 jobs:
   coleta:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # só para atualizar o branch "dados"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Copia os marégrafos da EPAGRI para o branch "dados" e mantém o histórico
         run: |
           git clone -q --depth 1 -b dados "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" old || mkdir -p old
