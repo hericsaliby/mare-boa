@@ -59,7 +59,7 @@ h2{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.02e
 h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin:0;font-weight:600}
 .grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:16px}
 @media (min-width:960px){.grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}}
-section.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .muted{color:var(--ink-3)}
 .small{font-size:13px}
@@ -167,29 +167,154 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .meas{display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--sand) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--sand) 45%,var(--line));border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:14px}
 .meas .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);font-weight:600}
 .meas .v b{font-family:var(--display);font-size:24px;font-weight:600}
+/* ---------- casca do app: menu lateral (desktop) / abas embaixo (celular) ---------- */
+.shell{min-height:100%}
+.side{display:none}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;font-size:11px;font-weight:500;color:var(--ink-3);text-decoration:none}
+.tabs a[aria-current="page"]{color:var(--accent)}
+.tabs a:focus-visible,.side a:focus-visible{outline:2px solid var(--sand);outline-offset:-2px}
+@media (min-width:900px){
+ .shell{display:grid;grid-template-columns:220px minmax(0,1fr)}
+ .side{display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;align-self:start;padding:18px 12px;border-right:1px solid var(--line);background:var(--surface)}
+ .tabs{display:none}
+ .brand-m{display:none}
+}
+.side .brand{font-family:var(--display);font-weight:700;font-size:28px;line-height:1;padding:4px 12px 18px}
+.side .brand small{display:block;font-family:var(--body);font-weight:400;font-size:12px;color:var(--ink-3);margin-top:4px}
+.side a{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:500;font-size:15px}
+.side a:hover{background:var(--surface-2)}
+.side a[aria-current="page"]{background:var(--accent-soft);color:var(--ink)}
+.side-foot{margin-top:auto;padding:10px 12px;line-height:1.4}
+.ctx{position:sticky;top:0;z-index:15;background:var(--bg);border-bottom:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right,0px)) 6px max(16px,env(safe-area-inset-left,0px))}
+.ctx-row{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
+.ctx .days{max-width:1100px;margin:6px auto 0}
+.ctx .day{min-width:58px;padding:4px 8px}
+@media (max-width:560px){.ctx .status{display:none}}
+.brand-m{font-family:var(--display);font-weight:700;font-size:21px;white-space:nowrap}
+.spotpick{flex:1;min-width:0}
+.spotpick select{width:100%;max-width:440px;font-weight:600;font-size:15px;padding:8px 10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.content{max-width:1100px;margin:0 auto;padding-block:14px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:899px){.content{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.view{display:flex;flex-direction:column;gap:14px}
+.view>.card{gap:12px}
+.hero.card{flex-direction:row;align-items:center;gap:16px}
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.sum{gap:8px}
+.sum-h{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.sum-h h3{flex:1}
+.sum-big{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1}
+.turns{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column}
+.turns li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:2px 10px;padding:7px 0;border-top:1px solid var(--line)}
+.turns li .rob{grid-column:2;color:var(--ink-3)}
+.turns li.act{background:color-mix(in srgb,var(--sand) 16%,transparent);border-radius:6px}
+.turns li.act .rob{color:var(--ink);font-weight:600}
+.turns li.past{opacity:.5}
+.wstrip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(30px,1fr);gap:2px;overflow-x:auto;font-size:11px;text-align:center}
+.wstrip div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.wstrip b{display:block;width:100%;color:#fff;border-radius:4px;padding:3px 0;font-weight:600;font-variant-numeric:tabular-nums}
+.wbig{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wbig .chip{color:#fff;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;min-width:78px}
+.wbig .chip b{font-family:var(--display);font-size:24px;line-height:1}
+.wbig .chip span{font-size:11.5px;opacity:.92}
+.tidebox.flat{border:0;padding:0}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap">
-  <h1 class="brand">Maré Boa<small>Vento, mar e maré para pescar na Grande Florianópolis</small></h1>
-  <div class="grow"></div>
-  <div class="seg" id="modelSeg" role="group" aria-label="Modelo de previsão"></div>
-  <div class="seg" id="unitSeg" role="group" aria-label="Unidade do vento"><button type="button" data-u="kmh">km/h</button><button type="button" data-u="kn">nós</button><button type="button" data-u="ms">m/s</button></div>
-  <span class="status" id="status">Carregando…</span>
-</div></header>
-
-<main class="wrap">
+<div class="shell">
+<nav class="side" aria-label="Seções">
+  <div class="brand">Maré Boa<small>Pesca na Grande Florianópolis</small></div>
+  <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
+  <div class="side-foot small muted" id="sideFoot"></div>
+</nav>
+<div class="main">
+<header class="ctx">
+  <div class="ctx-row">
+    <span class="brand-m">Maré Boa</span>
+    <label class="spotpick" for="spotSel"><span class="sr">Ponto</span><select id="spotSel" aria-label="Ponto de pesca"></select></label>
+    <span class="status" id="status">Carregando…</span>
+  </div>
+  <div class="days" id="days" role="group" aria-label="Dia"></div>
+</header>
+<div class="content">
   <div id="banner" class="banner" hidden></div>
-  <section class="card" aria-labelledby="h-mapa" style="margin-top:16px">
-    <div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><span class="small muted">Toque em qualquer lugar para soltar um pin e ver a previsão daquele ponto.</span></div>
-    <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
-    <div class="legend"><span>Número = nota no horário escolhido em "Onde ir"</span><span>Seta = para onde o vento sopra</span><span>Pin novo: abrigo calculado pelo relevo e pela distância de água em cada direção</span></div>
+
+  <section class="view" id="v-resumo" aria-label="Resumo">
+    <div class="hero card">
+      <div class="score-big num" id="spotScore"></div>
+      <div style="min-width:0;flex:1"><div class="row" style="gap:8px"><h2 id="spotName"></h2><span id="spotType" class="tag neu"></span></div><div id="spotVerdict" style="font-weight:600;margin-top:4px"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div></div>
+    </div>
+    <div class="trio">
+      <article class="card sum" id="sumTide" aria-label="Maré"></article>
+      <article class="card sum" id="sumWind" aria-label="Vento no ponto"></article>
+      <article class="card sum" id="sumMoon" aria-label="Lua"></article>
+    </div>
+    <article class="card">
+      <div class="row"><h3 class="grow">Linha do tempo do dia</h3><span class="small muted">toque para ver a hora</span></div>
+      <div class="chart" id="timeline"></div>
+      <div class="readout" id="tlRead">Toque na linha do tempo para ver cada hora.</div>
+    </article>
+    <article class="card"><h3>Melhores janelas (7 dias)</h3><ul class="windows" id="windows"></ul></article>
   </section>
-  <div class="grid">
-    <!-- coluna 1: onde ir -->
-    <section class="card" aria-labelledby="h-onde">
+
+  <section class="view" id="v-mare" aria-label="Maré" hidden>
+    <article class="card"><div class="tidebox flat">
+        <div class="row"><h3 class="grow">Maré</h3><span class="small muted" id="tideSrc"></span></div>
+        <div id="tideNow" class="tidenow"></div>
+        
+      </div>
+      </article>
+    <article class="card"><h3>Maré (m, nível médio)</h3><div class="legend"><span><i style="background:var(--sand)"></i>Medido no marégrafo EPAGRI</span><span><i style="background:none;border-top:2px dashed var(--accent);height:0"></i>Previsão</span></div><div class="chart" id="chTide"></div>
+      <div class="tw"><table class="t" id="tideTable"></table></div></article>
+    <article class="card"><div class="cols2">
+          <div style="min-width:0"><b class="small">Próximas 12 horas</b><div class="tw"><table class="t" id="tideNext"></table></div></div>
+          <div style="min-width:0"><b class="small">Tábua dos próximos dias</b><div class="tw tide7" id="tide7"></div></div>
+        </div></article>
+    
+  </section>
+
+  <section class="view" id="v-vento" aria-label="Vento" hidden>
+    <article class="card"><h3>Vento (<span class="wu">km/h</span>)</h3><div class="windnow" id="windNow"></div>
+        <div class="legend"><span><i style="background:var(--ink-2)"></i>Vento (modelo escolhido)</span><span><i style="background:var(--bad)"></i>Rajada</span><span><i style="background:var(--accent)"></i>Vento no ponto (com abrigo)</span><span><i style="background:var(--s1);height:8px"></i>Faixa entre modelos</span></div>
+        <div class="chart" id="chWind"></div>
+        <div class="tw" id="windTab"></div></article>
+    <article class="card"><h3>Abrigo do ponto</h3><div class="rose-wrap">
+        <div id="rose" aria-label="Exposição ao vento"></div>
+        <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
+          <p class="notes" id="spotNotes"></p>
+          <div class="small muted">Rosa: setores escuros = vento dessa direção entra direto no ponto. Seta = vento previsto agora.</div>
+          <div class="row small"><a id="windyLink" target="_blank" rel="noopener">Abrir no Windy</a> · <a href="https://ciram.epagri.sc.gov.br/" target="_blank" rel="noopener">EPAGRI/CIRAM</a> · <a href="https://www.marinha.mil.br/chm/tabuas-de-mare" target="_blank" rel="noopener">Tábua da Marinha</a></div>
+        </div>
+      </div>
+
+      </article>
+    <article class="card"><h3>Ondas no ponto (m)</h3><div class="chart" id="chWave"></div></article>
+  </section>
+
+  <section class="view" id="v-lua" aria-label="Lua" hidden>
+    <article class="card">
+      <div class="row"><h2 id="h-lua" class="grow">Lua e solunar</h2><span class="small muted">Visão do hemisfério sul</span></div>
+      <div class="moonhero" id="moonHero"></div>
+      <div class="days" id="moonDays" role="group" aria-label="Dia da lua"></div>
+      <div class="cols2">
+        <div style="min-width:0"><b class="small" id="moonDayTitle"></b><div class="tw"><table class="t" id="moonPeriods"></table></div></div>
+        <div style="min-width:0"><b class="small">Atividade ao longo do dia</b><div class="chart" id="chMoon"></div>
+          <div class="legend"><span><i style="background:var(--accent);height:8px"></i>Período principal (lua no meridiano)</span><span><i style="background:var(--s2);height:8px"></i>Secundário (nascer/pôr da lua)</span><span><i style="background:var(--sand)"></i>Amanhecer/entardecer</span></div></div>
+      </div>
+      <div><b class="small">Próximas fases</b><div class="phases" id="moonPhases"></div></div>
+      <p class="small muted" style="margin:0;max-width:80ch">Períodos principais: cerca de 2 horas em torno da passagem da lua sobre ou sob a região. Secundários: cerca de 1 hora em torno do nascer e do pôr da lua. Lua nova e cheia trazem marés maiores e mais correnteza. Quando um período coincide com o amanhecer ou o entardecer, o dia tende a ser melhor.</p>
+    </article>
+  </section>
+
+  <section class="view" id="v-mapa" aria-label="Mapa" hidden>
+    <article class="card"><div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><span class="small muted">Toque em qualquer lugar para soltar um pin.</span></div>
+      <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
+    <div class="legend"><span>Número = nota no horário escolhido em "Onde ir"</span><span>Seta = para onde o vento sopra</span><span>Pin novo: abrigo calculado pelo relevo e pela distância de água em cada direção</span></div>
+  </article>
+    <article class="card">
       <div class="row"><h2 id="h-onde" class="grow">Onde ir</h2><span class="small muted" id="rankModel"></span></div>
       <label class="inline" for="when">Horário: <b id="whenLbl" class="num"></b>
         <input type="range" id="when" min="0" max="0" step="1" value="0">
@@ -201,67 +326,22 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         <button class="btn ghost" data-jump="m17">Amanhã 17h</button>
       </div>
       <ul class="rank" id="rank"></ul>
-    </section>
+    </article>
+  </section>
 
-    <!-- coluna 2: ponto selecionado -->
-    <section class="card" aria-labelledby="spotName">
-      <div class="row"><h2 id="spotName" class="grow"></h2><span id="spotType" class="tag neu"></span></div>
-      <div class="hero">
-        <div class="score-big num" id="spotScore"></div>
-        <div style="min-width:0"><div id="spotVerdict" style="font-weight:600"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div></div>
-      </div>
-      <div class="kv" id="spotKv"></div>
-      <div class="tidebox">
-        <div class="row"><h3 class="grow">Maré</h3><span class="small muted" id="tideSrc"></span></div>
-        <div id="tideNow" class="tidenow"></div>
-        <div class="cols2">
-          <div style="min-width:0"><b class="small">Próximas 12 horas</b><div class="tw"><table class="t" id="tideNext"></table></div></div>
-          <div style="min-width:0"><b class="small">Tábua dos próximos dias</b><div class="tw tide7" id="tide7"></div></div>
-        </div>
-      </div>
-      <div class="rose-wrap">
-        <div id="rose" aria-label="Exposição ao vento"></div>
-        <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
-          <p class="notes" id="spotNotes"></p>
-          <div class="small muted">Rosa: setores escuros = vento dessa direção entra direto no ponto. Seta = vento previsto agora.</div>
-          <div class="row small"><a id="windyLink" target="_blank" rel="noopener">Abrir no Windy</a> · <a href="https://ciram.epagri.sc.gov.br/" target="_blank" rel="noopener">EPAGRI/CIRAM</a> · <a href="https://www.marinha.mil.br/chm/tabuas-de-mare" target="_blank" rel="noopener">Tábua da Marinha</a></div>
-        </div>
-      </div>
-
-      <div class="days" id="days" role="group" aria-label="Dia"></div>
-      <div class="readout" id="readout">Arraste o dedo sobre os gráficos para ver hora a hora.</div>
-      <div class="chart" id="chScore"></div>
-      <div><h3>Maré (m, nível médio)</h3><div class="legend"><span><i style="background:var(--sand)"></i>Medido no marégrafo EPAGRI</span><span><i style="background:none;border-top:2px dashed var(--accent);height:0"></i>Previsão</span></div><div class="chart" id="chTide"></div></div>
-      <div><h3>Vento (<span class="wu">km/h</span>)</h3>
-        <div class="windnow" id="windNow"></div>
-        <div class="legend"><span><i style="background:var(--ink-2)"></i>Vento (modelo escolhido)</span><span><i style="background:var(--bad)"></i>Rajada</span><span><i style="background:var(--accent)"></i>Vento no ponto (com abrigo)</span><span><i style="background:var(--s1);height:8px"></i>Faixa entre modelos</span></div>
-        <div class="chart" id="chWind"></div>
-        <div class="tw" id="windTab"></div></div>
-      <div><h3>Ondas no ponto (m)</h3><div class="chart" id="chWave"></div></div>
-      <div class="tw"><table class="t" id="tideTable"></table></div>
-      <div><h3>Melhores janelas (7 dias)</h3><ul class="windows" id="windows"></ul></div>
-    </section>
-
-    <section class="card" aria-labelledby="h-lua" style="grid-column:1/-1">
-      <div class="row"><h2 id="h-lua" class="grow">Lua e solunar</h2><span class="small muted">Visão do hemisfério sul</span></div>
-      <div class="moonhero" id="moonHero"></div>
-      <div class="days" id="moonDays" role="group" aria-label="Dia da lua"></div>
-      <div class="cols2">
-        <div style="min-width:0"><b class="small" id="moonDayTitle"></b><div class="tw"><table class="t" id="moonPeriods"></table></div></div>
-        <div style="min-width:0"><b class="small">Atividade ao longo do dia</b><div class="chart" id="chMoon"></div>
-          <div class="legend"><span><i style="background:var(--accent);height:8px"></i>Período principal (lua no meridiano)</span><span><i style="background:var(--s2);height:8px"></i>Secundário (nascer/pôr da lua)</span><span><i style="background:var(--sand)"></i>Amanhecer/entardecer</span></div></div>
-      </div>
-      <div><b class="small">Próximas fases</b><div class="phases" id="moonPhases"></div></div>
-      <p class="small muted" style="margin:0;max-width:80ch">Períodos principais: cerca de 2 horas em torno da passagem da lua sobre ou sob a região. Secundários: cerca de 1 hora em torno do nascer e do pôr da lua. Lua nova e cheia trazem marés maiores e mais correnteza. Quando um período coincide com o amanhecer ou o entardecer, o dia tende a ser melhor.</p>
-    </section>
-
-    <section class="card" aria-labelledby="h-esp">
+  <section class="view" id="v-mais" aria-label="Mais" hidden>
+    <article class="card"><h2>Preferências</h2>
+      <div class="row"><span class="small muted" style="min-width:110px">Modelo do vento</span><div class="seg" id="modelSeg" role="group" aria-label="Modelo de previsão"></div></div>
+      <div class="row"><span class="small muted" style="min-width:110px">Unidade do vento</span><div class="seg" id="unitSeg" role="group" aria-label="Unidade do vento"><button type="button" data-u="kmh">km/h</button><button type="button" data-u="kn">nós</button><button type="button" data-u="ms">m/s</button></div></div>
+    </article>
+    <article class="card"><h2>Detalhes do ponto</h2><div class="kv" id="spotKv"></div>
+      <div class="readout" id="readout">Arraste o dedo sobre os gráficos para ver hora a hora.</div><div class="chart" id="chScore"></div></article>
+    <article class="card">
       <h2 id="h-esp">Espécies da época</h2>
       <div class="species" id="species"></div>
       <div class="small muted">Regras gerais da região. Seu diário ajusta o que vale para você.</div>
-    </section>
-
-    <section class="card" aria-labelledby="h-diario">
+    </article>
+    <article class="card">
       <h2 id="h-diario">Diário de pesca e aprendizado</h2>
       <p class="notes">Registre cada saída (até 7 dias atrás). O app guarda as condições daquela hora e treina um modelo (regressão logística) com seus resultados. Com 8 ou mais registros, com saídas boas e ruins, a nota passa a misturar as regras com o que funciona para você.</p>
       <form class="form" id="logForm">
@@ -276,9 +356,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="tw"><table class="t" id="logTable"></table></div>
       <div class="row"><button class="btn ghost" id="expLog" type="button">Exportar diário (JSON)</button>
         <label class="btn ghost" for="impLog" style="display:inline-block">Importar diário<input type="file" id="impLog" accept=".json,application/json" hidden></label></div>
-    </section>
-
-    <section class="card" aria-labelledby="h-dados" style="grid-column:1/-1">
+    </article>
+    <article class="card">
       <h2 id="h-dados">Dados, EPAGRI e tábua de maré</h2>
       <div class="cols">
         <div id="meus"><b>Meus pontos (privados)</b>
@@ -325,12 +404,15 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
           <div class="row" style="margin-top:6px"><button class="btn ghost" id="tideApply" type="button">Usar esta tábua</button><button class="btn ghost" id="tideClear" type="button">Voltar ao modelo</button><span id="tideMsg" class="small muted"></span></div>
         </div>
       </div>
-    </section>
-  </div>
-  <footer>
+    </article>
+    <footer>
     Dados: Open-Meteo (modelos GFS/NOAA, ECMWF IFS, ICON/DWD; ondas e nível do mar do modelo marinho), cálculo de sol e lua no próprio app, calibração opcional com estações EPAGRI/CIRAM. A nota é uma estimativa. Confira a previsão oficial, a Marinha e as condições no local antes de sair. Costão com mar grosso mata: na dúvida, não vá.
   </footer>
-</main>
+  </section>
+</div>
+</div>
+<nav class="tabs" aria-label="Seções"><a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a></nav>
+</div>
 
 <script>
 "use strict";
@@ -497,6 +579,7 @@ async function load(){
  S.day=dayKey(S.data.t[S.when]);
  setStatus((S.demo?"Exemplo · ":"Atualizado ")+fmtH.format(Date.now()));
  renderAll();
+ showView(S.view||"resumo",false);
 }
 function parseData(fr,mr){
  const t=fr[0].hourly.time.map(x=>x*1000);
@@ -849,7 +932,7 @@ function renderSpot(){
  $("#spotNotes").innerHTML=esc(sp.notes)+(sp.custom?`<br><span class="row" style="margin-top:6px">${sp.temp?`<input type="text" id="pinName2" placeholder="Nome do ponto" style="flex:1;min-width:140px"><button class="btn" type="button" data-pinsave="2">Salvar ponto</button>`:`<button class="btn ghost" type="button" data-deldspot="${sp.id}">Remover este ponto</button>`}<label class="inline" for="pinType" style="flex-direction:row;align-items:center;gap:6px">Tipo <select id="pinType">${Object.entries(TYPE_LBL).map(([k,v])=>`<option value="${k}"${k===sp.t?" selected":""}>${v}</option>`).join("")}</select></label></span>`:"");
  $("#windyLink").href=`https://www.windy.com/${sp.lat}/${sp.lon}?gfs,${sp.lat},${sp.lon},12`;
  $("#rose").innerHTML=roseSVG(sp,r.d);
- renderTide(sp,D,r);renderDays();renderCharts();renderWindows()}
+ renderTide(sp,D,r);renderDays();renderCharts();renderWindows();renderSpotSel();renderSummary()}
 function modelSpread(r){if(r.all.length<2)return"–";const mx=Math.max(...r.all),mn=Math.min(...r.all);const s=mx-mn;return s<7?"Alta":s<15?"Média":"Baixa ("+wv(mn)+"–"+wv(mx)+" "+WU()+")"}
 function roseSVG(sp,d){const R=56,cx=70,cy=70;let p="";
  for(let k=0;k<8;k++){const a0=(k*45-22.5-90)*rad,a1=(k*45+22.5-90)*rad,v=sp.wx[k];
@@ -1012,10 +1095,10 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b
  if(b.dataset.mday){S.moonDay=b.dataset.mday;renderMoon()}
  else if(b.dataset.u){S.unit=b.dataset.u;store("pf_unit",S.unit);renderAll()}
  else if(b.dataset.m){S.model=b.dataset.m;store("pf_model",S.model);rebuild();renderAll()}
- else if(b.dataset.spot){if(MAP)MAP.closePopup();selectSpot(b.dataset.spot)}
+ else if(b.dataset.spot){if(MAP)MAP.closePopup();selectSpot(b.dataset.spot,false);showView("resumo")}
  else if(b.dataset.pinsave)savePin(($("#pinName")||{}).value||($("#pinName2")||{}).value||"");
  else if(b.dataset.deldspot){SPOTS=SPOTS.filter(x=>x.id!==b.dataset.deldspot);saveCustom();S.spot="ribeirao";renderAll()}
- else if(b.dataset.day){S.day=b.dataset.day;renderDays();renderCharts()}
+ else if(b.dataset.day){S.day=b.dataset.day;renderDays();renderCharts();renderSummary()}
  else if(b.dataset.jump){const t=S.data.t,now=Date.now(),today=dayKey(now);let target=now;
   const at=(dk,h)=>t.find(x=>dayKey(x)===dk&&localHour(x)===h);const tomorrow=dayKey(now+24*HOUR);
   if(b.dataset.jump==="t17")target=at(today,17)||now;if(b.dataset.jump==="m05")target=at(tomorrow,5)||now;if(b.dataset.jump==="m17")target=at(tomorrow,17)||now;
@@ -1024,7 +1107,7 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b
 });
 $("#when").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot()});
 ["#chScore","#chTide","#chWind","#chWave"].forEach(id=>{const el=$(id);const mv=e=>{if(!CH.rows.length)return;const rc=el.getBoundingClientRect();const px=(e.clientX-rc.left)*(CH.W/rc.width);const ci=clamp(Math.round((px-CH.padL)/((CH.W-CH.padL-CH.padR)/(CH.rows.length-1))),0,CH.rows.length-1);updateReadout(ci)};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)});
-let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>S.data&&renderCharts(),150)});
+let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data){renderCharts();renderTimeline();if(S.view==="lua")renderMoon()}},150)});
 $("#logForm").addEventListener("submit",e=>{e.preventDefault();const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
  const rows=S.derived[sp].rows;const r=rows.find(x=>Math.abs(x.t-t)<HOUR/2+1);
  const item={id:Math.random().toString(36).slice(2),t,spot:sp,sp:$("#lgSp").value,res:+$("#lgRes").value,note:$("#lgNote").value,f:r&&!S.demo?featOf(r):null,model:S.model};
@@ -1099,7 +1182,7 @@ function updateMarkers(){if(!MAP||!S.data)return;const ids=new Set(SPOTS.map(s=>
  for(const sp of SPOTS){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
   if(!MK[sp.id])MK[sp.id]=L.marker([sp.lat,sp.lon],{title:sp.n}).addTo(MAP).on("click",ev=>{L.DomEvent.stopPropagation(ev);const s2=SPOTS.find(x=>x.id===sp.id);if(!s2)return;selectSpot(s2.id,false);openPopup(s2)});
   MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id].setZIndexOffset(sp.id===S.spot?1000:0)}}
-function selectSpot(id,scroll=true){S.spot=id;store("pf_spot",S.spot);S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot();renderLog();if(scroll&&innerWidth<960)$("#spotName").scrollIntoView({behavior:"smooth",block:"start"})}
+function selectSpot(id,scroll=true){S.spot=id;store("pf_spot",S.spot);S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot();renderLog();if(scroll)showView("resumo")}
 function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdict(r.score);
  return`<div class="pop"><h4>${esc(sp.n)}</h4><div><span class="tag ${r.danger?"bad":cls}">${r.danger?"Perigoso":v}</span> <b class="num">${r.score.toFixed(1)}</b>/10 · ${fmtDH.format(r.t)}</div>
  <div class="small">${esc(reasons(r,sp).join(" · "))}</div>
@@ -1210,7 +1293,95 @@ function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;const id="c"
 async function refreshEpagri(){if(!S.data||S.demo)return;await loadEpagri();rebuild();renderAll()}
 setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
+/* ================== TELAS (menu lateral / abas) ================== */
+const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
+function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
+ VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
+ document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
+ if(push){try{history.replaceState(null,"","#"+v)}catch(e){}window.scrollTo(0,0)}
+ if(!S.data)return;
+ if(v==="mare"||v==="vento"||v==="mais")renderCharts();
+ if(v==="resumo")renderSummary();
+ if(v==="lua")renderMoon();
+ if(v==="mapa"&&MAP)setTimeout(()=>{MAP.invalidateSize();if(!MAP._enq){MAP.fitBounds(L.latLngBounds(BASE_SPOTS.map(x=>[x.lat,x.lon])).pad(.05));MAP._enq=true}updateMarkers()},60)}
+document.addEventListener("click",e=>{const a=e.target.closest("[data-view]");if(!a)return;e.preventDefault();showView(a.dataset.view)});
+addEventListener("hashchange",()=>showView(location.hash.slice(1),false));
+function renderSpotSel(){const sel=$("#spotSel");const key=SPOTS.map(s=>s.id+s.n).join();
+ if(sel.dataset.k!==key){const groups={};SPOTS.forEach(s=>{const g=s.custom?"Meus pontos":s.r.split(" · ")[0];(groups[g]=groups[g]||[]).push(s)});
+  sel.innerHTML=Object.entries(groups).map(([g,l])=>`<optgroup label="${esc(g)}">${l.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("")}</optgroup>`).join("");sel.dataset.k=key}
+ sel.value=spot().id;
+ $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}`}
+$("#spotSel").addEventListener("change",e=>selectSpot(e.target.value,false));
+
+/* ================== RESUMO: maré, vento e lua do ponto e do dia escolhidos ================== */
+const ICO=k=>(document.querySelector(`.side a[data-view="${k}"] svg`)||{}).outerHTML||"";
+function robWin(e){return{a:e.t-30*60e3,b:e.t+90*60e3}}
+function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(),D=S.derived[sp.id],rows=dayRows();if(!rows.length)return;
+ const now=Date.now(),today=dayKey(now)===S.day,nowH=Math.floor(now/HOUR)*HOUR;
+ // ---- MARÉ
+ const exDay=D.ex.filter(e=>dayKey(e.t)===S.day),next=D.ex.find(e=>e.t>now);
+ let h=`<div class="sum-h">${ICO("mare")}<h3>Maré</h3><a href="#mare" data-view="mare" class="small">detalhes</a></div>`;
+ if(today&&next){const r=D.rows.find(x=>x.t===nowH);const prev=[...D.ex].reverse().find(e=>e.t<=now);
+  h+=`<div class="sum-big ${next.hi?"up":"dn"}">${next.hi?"▲ Enchendo":"▼ Vazando"}${r&&r.tide!=null?` <span class="num" style="font-size:18px">${cm(r.tide)}</span>`:""}</div>
+   <div>Próxima virada: <b>${next.hi?"preamar":"baixamar"} às ${fmtH.format(next.t)}</b> <span class="muted">(em ${dur(next.t-now)})</span>${prev?`<br><span class="small muted">${next.hi?"Enche":"Vaza"} ${dm(next.h-prev.h)} desde ${fmtH.format(prev.t)}</span>`:""}</div>`;
+  const E=D.ep;if(E&&E.g.last){const L=E.g.last;h+=`<div class="small">Marégrafo: <b>${Math.round(L.obs)} cm</b> às ${fmtH.format(L.t)}${L.res!=null?` · <b>${L.res>=0?"+":""}${Math.round(L.res)} cm</b> ${L.res>=0?"acima":"abaixo"} do normal`:""}</div>`}}
+ else h+=`<div class="sum-big">${exDay.length} viradas</div>`;
+ h+=`<ul class="turns">${exDay.map(e=>{const w=robWin(e),act=now>=w.a&&now<=w.b,past=now>w.b;
+   return`<li class="${past?"past":""}${act?" act":""}"><b class="num">${fmtH.format(e.t)}</b><span><b>${e.hi?"Preamar":"Baixamar"}</b> <span class="num muted">${cm(e.h)}</span> · começa a ${e.hi?"vazar":"encher"}</span><span class="small rob">${act?"Agora · ":""}janela do robalo ${fmtH.format(w.a)}–${fmtH.format(w.b)}</span></li>`}).join("")}</ul>
+  <div class="small muted">Janela do robalo: de 30 min antes até 1h30 depois da virada, quando a água volta a correr.</div>`;
+ $("#sumTide").innerHTML=h;
+ // ---- VENTO NO PONTO
+ const ref=today?(D.rows.find(x=>x.t===nowH)||rows[0]):(rows.find(x=>localHour(x.t)===7)||rows[0]);
+ const strip=today?D.rows.filter(x=>x.t>=nowH).slice(0,13):rows.filter(x=>localHour(x.t)>=5&&localHour(x.t)<=20);
+ const dayl=rows.filter(x=>localHour(x.t)>=5&&localHour(x.t)<=20);let best=null,cur=null;
+ for(const x of dayl){if(x.eff!=null&&x.eff<=15){if(!cur)cur={a:x,b:x,n:0};cur.b=x;cur.n++;if(!best||cur.n>best.n)best={...cur}}else cur=null}
+ const gmax=dayl.reduce((m,x)=>Math.max(m,x.g||0),0);
+ let w=`<div class="sum-h">${ICO("vento")}<h3>Vento no ponto</h3><a href="#vento" data-view="vento" class="small">detalhes</a></div>
+  <div class="wbig">${ref.d!=null?`<span style="color:var(--ink)">${arrow(ref.d,30)}</span>`:""}<div><div class="sum-big" style="font-size:24px">${ref.d!=null?"Vento "+dir8(ref.d):"–"}</div><div class="small muted">${today?"agora":fmtH.format(ref.t)} · ${ref.exp<.3?"ponto abrigado desse vento":ref.exp>.75?"ponto exposto a esse vento":"exposição média"}</div></div></div>
+  <div class="wbig"><div class="chip" style="background:${windColor(ref.eff)}"><b>${wv(ref.eff)}</b><span>no ponto ${WU()}</span></div><div class="chip" style="background:${windColor(ref.raw)}"><b>${wv(ref.raw)}</b><span>aberto</span></div><div class="chip" style="background:${windColor(ref.g)}"><b>${wv(ref.g)}</b><span>rajada</span></div></div>
+  <div class="wstrip">${strip.map(x=>`<div><span class="muted">${String(localHour(x.t)).padStart(2,"0")}h</span><b style="background:${windColor(x.eff)}">${wv(x.eff)}</b><span style="color:var(--ink-2)">${arrow(x.d,12)}</span></div>`).join("")}</div>
+  <div class="small">${best&&best.n>=2?`Vento fraco no ponto: <b>${fmtH.format(best.a.t)}–${fmtH.format(best.b.t+HOUR)}</b>`:"Sem período de vento fraco entre 5h e 21h"} · rajada máx. <b>${wv(gmax)} ${WU()}</b></div>`;
+ $("#sumWind").innerHTML=w;
+ // ---- LUA
+ const ds=daySolunar(S.day),il=ds.il,pf=ds.pf,ph=moonName(il.phase);
+ const corre=pf>.6?`<b>Maré de sizígia:</b> a água corre mais e as viradas são fortes. Bom para robalo nas trocas de maré.`:pf<.35?`<b>Maré de quadratura (lua de quarto):</b> a água corre menos e as viradas são fracas.`:`<b>Maré média:</b> correnteza moderada.`;
+ const maj=ds.per.filter(p=>p.maj),ev=k=>{const e=ds.evs.find(x=>x.k===k);return e?fmtH.format(e.t):"–"};
+ $("#sumMoon").innerHTML=`<div class="sum-h">${ICO("lua")}<h3>Lua</h3><a href="#lua" data-view="lua" class="small">detalhes</a></div>
+  <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
+  <div class="small">${corre}</div>
+  <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
+ renderTimeline()}
+
+/* linha do tempo: maré + janelas do robalo, vento no ponto, lua/sol e nota, hora a hora */
+let TL=null;
+function renderTimeline(){const rows=dayRows(),el=$("#timeline");if(!rows.length||!el)return;const sp=spot(),D=S.derived[sp.id];
+ const W=Math.max(300,el.clientWidth||600),pl=50,pr=8,cw=(W-pl-pr)/rows.length,X=i=>pl+cw*i,t0=rows[0].t,XT=t=>pl+cw*((t-t0)/HOUR);
+ const yM=[6,74],yV=[82,104],yL=[110,124],yN=[130,144],H=166;
+ const th=rows.map(r=>r.tide).filter(v=>v!=null);const lo=th.length?Math.min(...th):0,hi=th.length?Math.max(...th):1,Ym=v=>yM[1]-(yM[1]-yM[0]-6)*((v-lo)/((hi-lo)||1))-3;
+ let g="";
+ rows.forEach((r,i)=>{if(sunAlt(r.t+HOUR/2)<-0.8)g+=`<rect x="${X(i)}" y="2" width="${cw}" height="${yN[1]-2}" fill="var(--surface-2)"/>`});
+ const exDay=D.ex.filter(e=>dayKey(e.t)===S.day);
+ exDay.forEach(e=>{const w=robWin(e),a=Math.max(XT(w.a),pl),b=Math.min(XT(w.b),W-pr);if(b>a)g+=`<rect x="${a}" y="${yM[0]}" width="${b-a}" height="${yM[1]-yM[0]}" fill="var(--sand)" fill-opacity=".22" rx="3"/>`});
+ let d="";rows.forEach((r,i)=>{if(r.tide!=null)d+=(d?"L":"M")+(X(i)+cw/2).toFixed(1)+" "+Ym(r.tide).toFixed(1)});
+ g+=`<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`;
+ exDay.forEach(e=>{const x=XT(e.t)+cw/2,y=Ym(e.h);g+=`<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/><text x="${x}" y="${e.hi?y+14:y-6}" text-anchor="middle" style="fill:var(--ink);font:600 10.5px var(--body)">${fmtH.format(e.t)}</text>`});
+ const step=cw<20?2:1;
+ rows.forEach((r,i)=>{g+=`<rect x="${X(i)+.5}" y="${yV[0]}" width="${cw-1}" height="${yV[1]-yV[0]}" rx="2" style="fill:${windColor(r.eff)}"/>`;
+  if(i%step===0)g+=`<text x="${X(i)+cw*step/2}" y="${yV[1]-6}" text-anchor="middle" style="fill:#fff;font:600 10px var(--body)">${wv(r.eff)}</text>`});
+ const ds=daySolunar(S.day);ds.per.forEach(p=>{const a=Math.max(XT(p.a),pl),b=Math.min(XT(p.b)+cw,W-pr);if(b>a)g+=`<rect x="${a}" y="${yL[0]}" width="${b-a}" height="${yL[1]-yL[0]}" rx="3" style="fill:${p.maj?"var(--accent)":"var(--s2)"}"/>`});
+ ds.sun.forEach(e=>{const x=XT(e.t)+cw/2;g+=`<rect x="${x-1.5}" y="${yL[0]-2}" width="3" height="${yL[1]-yL[0]+4}" fill="var(--sand)"/>`});
+ rows.forEach((r,i)=>{g+=`<rect x="${X(i)+.5}" y="${yN[0]}" width="${cw-1}" height="${yN[1]-yN[0]}" rx="2" style="fill:var(--s${clamp(Math.round(r.score/2),0,5)})"/>`});
+ [["Maré",(yM[0]+yM[1])/2],["Vento",(yV[0]+yV[1])/2],["Lua",(yL[0]+yL[1])/2],["Nota",(yN[0]+yN[1])/2]].forEach(([t,y])=>g+=`<text x="0" y="${y+4}" style="fill:var(--ink-2);font:600 11px var(--body)">${t}</text>`);
+ rows.forEach((r,i)=>{const hh=localHour(r.t);if(hh%3===0)g+=`<text x="${X(i)+cw/2}" y="${H-4}" text-anchor="middle">${String(hh).padStart(2,"0")}h</text>`});
+ if(dayKey(Date.now())===S.day){const x=XT(Date.now());g+=`<line x1="${x}" x2="${x}" y1="2" y2="${yN[1]}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 2"/>`}
+ g+=`<line class="tlx" visibility="hidden" x1="0" x2="0" y1="2" y2="${yN[1]}" stroke="var(--sand)" stroke-width="2"/>`;
+ el.innerHTML=`<svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Linha do tempo do dia">${g}</svg>`;TL={rows,X,cw,W}}
+function tlRead(i){if(!TL)return;const r=TL.rows[i];if(!r)return;const l=$("#timeline .tlx");if(l){const x=TL.X(i)+TL.cw/2;l.setAttribute("x1",x);l.setAttribute("x2",x);l.setAttribute("visibility","visible")}
+ const sp=spot();$("#tlRead").innerHTML=`<b class="num">${fmtH.format(r.t)}</b> · maré <b>${r.tide!=null?cm(r.tide):"–"}</b> ${r.rate!=null?(r.rate>0?"▲ enchendo":"▼ vazando")+" "+Math.round(Math.abs(r.rate)*100)+" cm/h":""} · vento ${r.d!=null?dir16(r.d):""} <b>${wv(r.eff)} ${WU()}</b> no ponto (rajada ${wv(r.g)}) · nota <b>${r.score.toFixed(1)}</b><br><span class="muted">${esc(reasons(r,sp).join(" · "))}</span>`}
+{const el=$("#timeline");const mv=e=>{if(!TL)return;const rc=el.getBoundingClientRect(),px=(e.clientX-rc.left)*(TL.W/rc.width);tlRead(clamp(Math.floor((px-50)/TL.cw),0,TL.rows.length-1))};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)}
+
 load();
+showView(location.hash.slice(1)||"resumo",false);
 </script>
 </body>
 </html>

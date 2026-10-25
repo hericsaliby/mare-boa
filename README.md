@@ -12,6 +12,8 @@ Previsão de pesca para a Grande Florianópolis: junta vento (GFS, ECMWF ou ICON
 
 ## O que tem
 
+O app é dividido em telas, com menu lateral no computador e abas embaixo no celular: **Resumo**, **Maré**, **Vento**, **Lua**, **Mapa** e **Mais**. No topo ficam o ponto e o dia escolhidos, que valem para todas as telas. O Resumo responde as três perguntas principais: a que horas a maré vira (com a janela do robalo, de 30 min antes até 1h30 depois de cada virada), como vai estar o vento no ponto e se a lua deixa a maré correr mais (cheia/nova) ou menos (quarto), mais uma linha do tempo do dia com tudo junto.
+
 | Parte | Como funciona |
 |---|---|
 | **Mapa** | Mapa (ruas ou satélite) com todos os pontos e a nota do horário escolhido. Toque em qualquer lugar para soltar um pin: o app busca a previsão daquele local e calcula o abrigo sozinho. Depois é só dar um nome e salvar como "meu ponto". |
