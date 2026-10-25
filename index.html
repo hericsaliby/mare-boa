@@ -1878,7 +1878,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.32";
+const APP_VERSION="2026-10-25.33";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2205,7 +2205,7 @@ async function cmGroups(){try{CM.groups=await CM.fb.list("groups","ordem")}catch
  if(!CM.groups.length){$("#cmGroups").innerHTML=`<p class="small muted">Os grupos ainda não foram criados. Um administrador precisa entrar uma vez para criá-los.</p>`;return}
  if(!CM.gid||!CM.groups.some(g=>g.id===CM.gid))CM.gid=CM.groups[0].id;
  $("#cmGroups").innerHTML=CM.groups.map(g=>`<button type="button" class="chipbtn" data-gid="${esc(g.id)}" aria-pressed="${g.id===CM.gid}">${esc(g.nome)}</button>`).join("");
- const mine=SPOTS.filter(x=>x.custom&&!x.temp);$("#cmPonto").innerHTML=`<option value="">—</option>`+[...mine,...BASE_SPOTS].map(x=>`<option>${esc(x.n)}</option>`).join("");
+ const mine=SPOTS.filter(x=>x.custom&&!x.temp);$("#cmPonto").innerHTML=`<option value="">${mine.length?"—":"— (salve pontos no mapa para aparecerem aqui)"}</option>`+mine.map(x=>`<option>${esc(x.n)}</option>`).join("");
  $("#cmPeixe").innerHTML=`<option value="">—</option>`+FISH_KEYS.filter(k=>k!=="geral").map(k=>`<option>${FISH[k].n}</option>`).join("");
  cmListen()}
 function cmListen(){if(CM.unsub)CM.unsub();$("#cmPosts").innerHTML=`<li class="muted small">Carregando…</li>`;
