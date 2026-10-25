@@ -23,6 +23,7 @@ jobs:
             curl -sS -A "$UA" -D "out/$1.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/graficos/$2.php" -o "out/$1.json" || true
           done
           if [ ! -f old/tabua.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/index.php/tabua-de-mares/" -o out/tabua.html || true; else cp old/tabua.html out/; fi
+          if [ ! -f old/tabuamare.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/ciram_arquivos/oceano/tabuamare/tabuamare.html" -o out/tabuamare.html || true; else cp old/tabuamare.html out/; fi
           python3 tools/historico.py old out
           date -u +%FT%TZ > out/atualizado.txt
           cd out
