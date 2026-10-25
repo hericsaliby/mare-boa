@@ -9,7 +9,7 @@ permissions:
 jobs:
   pesquisa:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
@@ -26,6 +26,17 @@ jobs:
           g marinha_mare.html "https://www.marinha.mil.br/chm/dados-do-segnav/dados-de-mare-mapa"
           g marinha_tabuas.html "https://www.marinha.mil.br/chm/tabuas-de-mare"
           g epagri_maregrafos.html "https://ciram.epagri.sc.gov.br/index.php/maregrafos/"
+          g simepar_home.html "https://www.simepar.br/"
+          g simepar_mare.html "https://www.simepar.br/prognozweb/simepar/forecast_by_counties/4118204"
+          g simcosta_home.html "https://simcosta.furg.br/"
+          g simcosta_api.html "https://simcosta.furg.br/api"
+          g simcosta_estacoes.json "https://simcosta.furg.br/api/stations"
+          g ioc_parg_7d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=parg&timestart=2026-10-19&timestop=2026-10-26&format=json"
+          g ioc_pont_1d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=pont&timestart=2026-10-25&timestop=2026-10-26&format=json"
+          g ioc_pont_40d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=pont&timestart=2026-09-15&timestop=2026-10-26&format=json"
+          g uhslc_281.csv "https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_rqds.csv?time,sea_level&uhslc_id=281&time%3E=2015-01-01"
+          for u in $(grep -oiE 'href="[^"]+"' simepar_home.html simcosta_home.html 2>/dev/null | cut -d'"' -f2 | grep -iE 'mare|maré|tide|oceano|litoral|costeir|estac|api|dados' | sort -u | head -30); do
+            case "$u" in http*) url="$u";; *) continue;; esac; g "link_$(echo "$url" | tr -c 'A-Za-z0-9' '_' | cut -c1-80).html" "$url"; done
           g ibge_rmpg.html "https://www.ibge.gov.br/geociencias/informacoes-sobre-posicionamento-geodesico/rede-geodesica/10842-rmpg-rede-maregrafica-permanente-para-geodesia.html"
           # páginas de estações do FEMAR citadas no índice (SP, PR, SC)
           for u in $(grep -oiE 'href="[^"]+"' femar_indice.html femar_estacoes.html 2>/dev/null | cut -d'"' -f2 | grep -iE 'paranagu|santos|canan|ubatuba|sebasti|guaratuba|iguape|bertioga|pontal|antonina|galheta|cotinga|superagui|francisco|itaja|imbituba|florian|laguna' | sort -u | head -60); do
