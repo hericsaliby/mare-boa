@@ -317,7 +317,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   </section>
 
   <section class="view" id="v-mapa" aria-label="Mapa" hidden>
-    <article class="card"><div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><span class="small muted">Toque em qualquer lugar para soltar um pin.</span></div>
+    <article class="card"><div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><button class="btn ghost basetog" type="button">Esconder pontos padrão</button></div>
+      <span class="small muted">Toque em qualquer lugar para soltar um pin.</span>
       <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
       <div class="glink"><input type="text" id="gLink" inputmode="url" autocomplete="off" placeholder="Cole o link completo ou as coordenadas do Google Maps"><input type="text" id="gName" placeholder="Nome (opcional)"><button class="btn" id="gAdd" type="button">Adicionar ponto</button></div>
       <div id="gMsg" class="small"></div>
@@ -376,6 +377,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
           <div id="gMsg2" class="small" style="margin-bottom:6px"></div>
           <div class="row"><button class="btn ghost" id="myExport" type="button">Exportar meus pontos</button>
             <label class="btn" for="myImport">Importar pontos<input type="file" id="myImport" accept=".json,.geojson,.kml,.csv,.txt,application/json,application/vnd.google-earth.kml+xml,text/csv" hidden></label></div>
+          <div class="row" style="margin-top:8px"><button class="btn ghost basetog" type="button">Esconder pontos padrão</button><span class="small muted" id="baseInfo"></span></div>
           <div id="myMsg" class="small" style="margin-top:6px"></div>
           <details style="margin-top:8px"><summary class="small">Como trazer meus lugares do Google Maps</summary>
             <ol class="small" style="padding-left:18px;margin:6px 0 0">
@@ -560,7 +562,7 @@ function astroEvents(t0,t1){
  return ev}
 
 /* ================== ESTADO ================== */
-const S={fish:(()=>{try{const f=JSON.parse(localStorage.getItem("pf_fish"));return f&&FISH_KEYS.includes(f)?f:"geral"}catch(e){return"geral"}})(),unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:store("pf_model")||"gfs_seamless",spot:store("pf_spot")||"ribeirao",when:0,day:null,
+const S={hideBase:store("pf_hidebase")===true,fish:(()=>{try{const f=JSON.parse(localStorage.getItem("pf_fish"));return f&&FISH_KEYS.includes(f)?f:"geral"}catch(e){return"geral"}})(),unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:store("pf_model")||"gfs_seamless",spot:store("pf_spot")||"ribeirao",when:0,day:null,
  log:store("pf_log")||[],calib:store("pf_calib_kmh")||{},tideTable:store("pf_tide")||null,gauge:store("pf_gauge")||null,useCal:store("pf_usecal")!==false,events:[],ml:null,derived:{}};
 
 /* ================== BUSCA DE DADOS ================== */
@@ -918,7 +920,9 @@ function arrow(d,size=14){if(d==null)return"";return`<svg width="${size}" height
 /* ================== RENDER ================== */
 function setStatus(s){$("#status").textContent=s}
 function showBanner(s,w){const b=$("#banner");b.textContent=s;b.hidden=false;b.classList.toggle("warn",!!w)}
-function spot(){return SPOTS.find(s=>s.id===S.spot)||SPOTS[0]}
+/* pontos visíveis: com "esconder pontos padrão" ligado, só os pontos do usuário (os dados dos padrão continuam carregados) */
+function visSpots(){const mine=SPOTS.filter(s=>s.custom);return S.hideBase&&mine.length?mine:SPOTS}
+function spot(){const V=visSpots();return V.find(s=>s.id===S.spot)||V[0]}
 function renderEpStatus(){const el=$("#epStatus");if(!el)return;const ks=Object.keys(S.ep||{});
  el.innerHTML=ks.length?"Leitura automática ativa: "+ks.map(k=>{const g=S.ep[k];return`${EP_ST[k].n}${g.last?` (última medição ${fmtDH.format(g.last.t)}, via ${S.epInfo&&S.epInfo[k]||"cache"})`:""}`}).join(" · "):`<span style="color:var(--warn)">Não consegui ler os marégrafos agora. A maré usa o modelo global; dá para informar o resíduo manualmente.</span>`}
 /* ================== LUA E SOLUNAR ================== */
@@ -970,7 +974,7 @@ function renderModels(){renderUnits();const el=$("#modelSeg");el.innerHTML=MODEL
 function renderRank(){
  updateMarkers();
  const t=S.data.t,i=S.when;const sl=$("#when");sl.max=t.length-1;sl.value=i;$("#whenLbl").textContent=fmtDH.format(t[i]);
- const list=SPOTS.map(sp=>({sp,r:S.derived[sp.id].rows[i]})).sort((a,b)=>b.r.score-a.r.score);
+ const list=visSpots().filter(sp=>S.derived[sp.id]).map(sp=>({sp,r:S.derived[sp.id].rows[i]})).sort((a,b)=>b.r.score-a.r.score);
  $("#rank").innerHTML=list.map(({sp,r})=>{const[v]=verdict(r.score);return`<li><button class="spot" data-spot="${sp.id}" aria-current="${sp.id===S.spot}">
   <span class="pill" style="${pillStyle(r.score)}">${r.score.toFixed(1)}</span>
   <span style="min-width:0"><span class="nm">${esc(sp.n)}</span><br><span class="why">${esc(v)} · ${esc(reasons(r,sp).slice(0,3).join(" · "))}</span></span>
@@ -1244,9 +1248,9 @@ function initMap(){if(MAP)return;
  updateMarkers()}
 function markerIcon(sp,r){return L.divIcon({className:"",iconSize:null,iconAnchor:[20,12],
  html:`<div class="mk${sp.id===S.spot?" sel":""}${sp.temp?" pin":""}" style="${sp.temp?"":pillStyle(r.score)}">${arrow(r.d,11)}${r.score.toFixed(1)}</div>`})}
-function updateMarkers(){if(!MAP||!S.data)return;const ids=new Set(SPOTS.map(s=>s.id));
+function updateMarkers(){if(!MAP||!S.data)return;const ids=new Set(visSpots().map(s=>s.id));
  for(const id in MK)if(!ids.has(id)){MAP.removeLayer(MK[id]);delete MK[id]}
- for(const sp of SPOTS){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
+ for(const sp of visSpots()){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
   if(!MK[sp.id])MK[sp.id]=L.marker([sp.lat,sp.lon],{title:sp.n}).addTo(MAP).on("click",ev=>{L.DomEvent.stopPropagation(ev);const s2=SPOTS.find(x=>x.id===sp.id);if(!s2)return;selectSpot(s2.id,false);openPopup(s2)});
   MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id].setZIndexOffset(sp.id===S.spot?1000:0)}}
 function selectSpot(id,scroll=true){S.spot=id;store("pf_spot",S.spot);S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot();renderLog();if(scroll)showView("resumo")}
@@ -1303,7 +1307,14 @@ async function dropPin(lat,lon){
  catch(err){PIN.setContent(`<div class="pop">Não consegui buscar a previsão deste ponto: ${esc(err.message)}</div>`)}}
 function saveCustom(){store("pf_custom",SPOTS.filter(s=>s.custom&&!s.temp))}
 /* ---------- Meus pontos: lista, backup e importação (Google Maps KML / GeoJSON / CSV) ---------- */
-function renderMyList(){const L=SPOTS.filter(s=>s.custom&&!s.temp);const ul=$("#myList");if(!ul)return;
+function renderBaseTog(){const mine=SPOTS.filter(s=>s.custom&&!s.temp).length;
+ document.querySelectorAll(".basetog").forEach(b=>{b.textContent=S.hideBase?"Mostrar pontos padrão":"Esconder pontos padrão";b.setAttribute("aria-pressed",S.hideBase)});
+ const bi=$("#baseInfo");if(bi)bi.textContent=S.hideBase?(mine?"Mostrando só os seus pontos.":"Você ainda não tem pontos seus; os padrão continuam aparecendo."):"Os 18 pontos que vêm com o app estão aparecendo."}
+document.addEventListener("click",e=>{const b=e.target.closest(".basetog");if(!b)return;
+ const mine=SPOTS.filter(s=>s.custom&&!s.temp).length;
+ if(!S.hideBase&&!mine){const m=$("#gMsg")||$("#myMsg");if(m)m.textContent="Adicione pelo menos um ponto seu antes de esconder os pontos padrão.";return}
+ S.hideBase=!S.hideBase;store("pf_hidebase",S.hideBase);if(!visSpots().some(x=>x.id===S.spot))S.spot=visSpots()[0].id;renderAll()});
+function renderMyList(){renderBaseTog();const L=SPOTS.filter(s=>s.custom&&!s.temp);const ul=$("#myList");if(!ul)return;
  ul.innerHTML=L.length?L.map(s=>`<li><span title="${esc(s.n)}">${esc(s.n)}</span><span class="small muted" style="flex:0 0 auto">${TYPE_LBL[s.t]}</span><button type="button" data-spot="${s.id}">ver</button><button type="button" data-deldspot="${s.id}">remover</button></li>`).join(""):`<li class="muted">Nenhum ponto seu ainda. Toque no mapa para marcar ou importe do Google Maps.</li>`}
 const inRegion=(lat,lon)=>lat>-28.4&&lat<-26.9&&lon>-49.1&&lon<-48.1;
 function coordFromText(t){t=String(t||"");let m=t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),\+?(-?\d+\.\d+)/)||t.match(/(-?\d{1,2}\.\d{2,})\s*,\s*\+?(-?\d{1,3}\.\d{2,})/);
@@ -1342,9 +1353,9 @@ async function importPlaces(txt,label,msgSel="#myMsg"){if(importing)return;const
  if(!add.length){msg.textContent=`Nenhum ponto novo para importar (${res.pts.length} lidos, ${out} fora da Grande Florianópolis, ${dup} já existiam, ${res.skipped} sem coordenadas).`;return}
  importing=true;const created=[];
  for(let k=0;k<add.length;k++){const p=add[k];msg.textContent=`Analisando relevo ${k+1} de ${add.length}…`;
-  let sp;if(p.full&&p.wx){sp={...p,id:"c"+Date.now().toString(36)+k,custom:true,temp:false};delete sp.full}
+  let sp;if(p.full&&p.wx){sp={...p,id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+k,custom:true,temp:false};delete sp.full}
   else{const mc=pinMarineCoord(p.lat,p.lon);let ex=null;if(!S.demo){try{ex=await terrainExposure(p.lat,p.lon)}catch(e){}}
-   sp=makePinSpot(p.lat,p.lon,ex,mc);sp.id="c"+Date.now().toString(36)+k;sp.temp=false;sp.r="Meu ponto";sp.n=(p.n||sp.n).slice(0,60)}
+   sp=makePinSpot(p.lat,p.lon,ex,mc);sp.id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+k;sp.temp=false;sp.r="Meu ponto";sp.n=(p.n||sp.n).slice(0,60)}
   created.push(sp)}
  SPOTS=SPOTS.filter(s=>!s.temp).concat(created);saveCustom();importing=false;
  msg.textContent=`${created.length} pontos importados${out?`, ${out} fora da região ignorados`:""}${dup?`, ${dup} repetidos`:""}${res.skipped?`, ${res.skipped} sem coordenadas`:""}. Buscando a previsão…`;
@@ -1364,7 +1375,7 @@ $("#myPasteBtn").addEventListener("click",()=>importPlaces($("#myPaste").value,"
 $("#myExport").addEventListener("click",()=>{const L=SPOTS.filter(s=>s.custom&&!s.temp);if(!L.length){$("#myMsg").textContent="Você ainda não tem pontos para exportar.";return}
  const blob=new Blob([JSON.stringify({app:"mare-boa",v:1,tipo:"meus-pontos",exportado:new Date().toISOString(),spots:L},null,1)],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="meus-pontos-pesca.json";document.body.appendChild(a);a.click();a.remove();$("#myMsg").textContent=`${L.length} pontos exportados em meus-pontos-pesca.json. Guarde em lugar seguro; para restaurar, use "Importar pontos".`});
-function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;const id="c"+Date.now().toString(36);
+function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;const id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  S.data.spots[id]=S.data.spots[sp.id];S.derived[id]=S.derived[sp.id];delete S.data.spots[sp.id];delete S.derived[sp.id];
  sp.id=id;sp.temp=false;sp.r="Meu ponto";if(name.trim())sp.n=name.trim().slice(0,60);saveCustom();
  if(MAP)MAP.closePopup();S.spot=id;store("pf_spot",id);renderAll();setTimeout(()=>openPopup(sp),50)}
@@ -1375,7 +1386,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.4";
+const APP_VERSION="2026-10-25.5";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1387,8 +1398,8 @@ function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  if(v==="mapa"&&MAP)setTimeout(()=>{MAP.invalidateSize();if(!MAP._enq){MAP.fitBounds(L.latLngBounds(BASE_SPOTS.map(x=>[x.lat,x.lon])).pad(.05));MAP._enq=true}updateMarkers()},60)}
 document.addEventListener("click",e=>{const a=e.target.closest("[data-view]");if(!a)return;e.preventDefault();showView(a.dataset.view)});
 addEventListener("hashchange",()=>showView(location.hash.slice(1),false));
-function renderSpotSel(){const sel=$("#spotSel");const key=SPOTS.map(s=>s.id+s.n).join();
- if(sel.dataset.k!==key){const groups={};SPOTS.forEach(s=>{const g=s.custom?"Meus pontos":s.r.split(" · ")[0];(groups[g]=groups[g]||[]).push(s)});
+function renderSpotSel(){const sel=$("#spotSel");const V=visSpots();const key=V.map(s=>s.id+s.n).join();
+ if(sel.dataset.k!==key){const groups={};V.forEach(s=>{const g=s.custom?"Meus pontos":s.r.split(" · ")[0];(groups[g]=groups[g]||[]).push(s)});
   sel.innerHTML=Object.entries(groups).map(([g,l])=>`<optgroup label="${esc(g)}">${l.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("")}</optgroup>`).join("");sel.dataset.k=key}
  sel.value=spot().id;
  $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}<br>versão ${APP_VERSION}`;const fv=$("#appVer");if(fv)fv.textContent=APP_VERSION}
