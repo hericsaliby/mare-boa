@@ -221,6 +221,9 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .wbig .chip b{font-family:var(--display);font-size:24px;line-height:1}
 .wbig .chip span{font-size:11.5px;opacity:.92}
 .tidebox.flat{border:0;padding:0}
+.glink{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.glink input{flex:1 1 220px;min-width:0}
+.glink input#gName,.glink input#gName2{flex:0 1 170px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -316,6 +319,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <section class="view" id="v-mapa" aria-label="Mapa" hidden>
     <article class="card"><div class="row"><h2 id="h-mapa" class="grow">Mapa</h2><span class="small muted">Toque em qualquer lugar para soltar um pin.</span></div>
       <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
+      <div class="glink"><input type="text" id="gLink" inputmode="url" autocomplete="off" placeholder="Cole o link completo ou as coordenadas do Google Maps"><input type="text" id="gName" placeholder="Nome (opcional)"><button class="btn" id="gAdd" type="button">Adicionar ponto</button></div>
+      <div id="gMsg" class="small"></div>
     <div class="legend"><span>Número = nota no horário escolhido em "Onde ir"</span><span>Seta = para onde o vento sopra</span><span>Pin novo: abrigo calculado pelo relevo e pela distância de água em cada direção</span></div>
   </article>
     <article class="card">
@@ -367,6 +372,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         <div id="meus"><b>Meus pontos (privados)</b>
           <p class="small muted">Os pontos que você marca ficam salvos só neste celular ou computador. Não vão para o GitHub nem para ninguém que receber o link. Faça backup de vez em quando: se limpar os dados do navegador, eles somem.</p>
           <ul class="mylist" id="myList"></ul>
+          <div class="glink"><input type="text" id="gLink2" inputmode="url" autocomplete="off" placeholder="Link completo ou coordenadas do Google Maps"><input type="text" id="gName2" placeholder="Nome (opcional)"><button class="btn" id="gAdd2" type="button">Adicionar</button></div>
+          <div id="gMsg2" class="small" style="margin-bottom:6px"></div>
           <div class="row"><button class="btn ghost" id="myExport" type="button">Exportar meus pontos</button>
             <label class="btn" for="myImport">Importar pontos<input type="file" id="myImport" accept=".json,.geojson,.kml,.csv,.txt,application/json,application/vnd.google-earth.kml+xml,text/csv" hidden></label></div>
           <div id="myMsg" class="small" style="margin-top:6px"></div>
@@ -1299,8 +1306,10 @@ function saveCustom(){store("pf_custom",SPOTS.filter(s=>s.custom&&!s.temp))}
 function renderMyList(){const L=SPOTS.filter(s=>s.custom&&!s.temp);const ul=$("#myList");if(!ul)return;
  ul.innerHTML=L.length?L.map(s=>`<li><span title="${esc(s.n)}">${esc(s.n)}</span><span class="small muted" style="flex:0 0 auto">${TYPE_LBL[s.t]}</span><button type="button" data-spot="${s.id}">ver</button><button type="button" data-deldspot="${s.id}">remover</button></li>`).join(""):`<li class="muted">Nenhum ponto seu ainda. Toque no mapa para marcar ou importe do Google Maps.</li>`}
 const inRegion=(lat,lon)=>lat>-28.4&&lat<-26.9&&lon>-49.1&&lon<-48.1;
-function coordFromText(t){t=String(t||"");let m=t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),\+?(-?\d+\.\d+)/)||t.match(/(-?\d{1,2}\.\d{3,})\s*,\s*\+?(-?\d{1,3}\.\d{3,})/);
+function coordFromText(t){t=String(t||"");let m=t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),\+?(-?\d+\.\d+)/)||t.match(/(-?\d{1,2}\.\d{2,})\s*,\s*\+?(-?\d{1,3}\.\d{2,})/);
  return m?{lat:+m[1],lon:+m[2]}:null}
+function placeName(u){const m=String(u).match(/\/maps\/place\/([^/@?]+)/);if(!m)return"";try{const n=decodeURIComponent(m[1].replace(/\+/g," ")).trim();return coordFromText(n)?"":n}catch(e){return""}}
+const isShortLink=t=>/(maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs)/i.test(t);
 function splitCSV(line){const out=[];let cur="",q=false;for(const ch of line){if(ch==='"'){q=!q;continue}if(ch===","&&!q){out.push(cur);cur="";continue}cur+=ch}out.push(cur);return out}
 function parsePlaces(txt,name){const out=[];let skipped=0;const t=txt.trim();
  if(/^\s*</.test(t)){ // KML
@@ -1319,11 +1328,12 @@ function parsePlaces(txt,name){const out=[];let skipped=0;const t=txt.trim();
   const hasHdr=iLat>=0||iName>=0||iUrl>=0;
   for(const l of lines.slice(hasHdr?1:0)){let lat,lon,nm="";
    if(hasHdr){const c=splitCSV(l);nm=iName>=0?c[iName]:"";if(iLat>=0&&iLon>=0){lat=+c[iLat];lon=+c[iLon]}else{const k=coordFromText(iUrl>=0?c[iUrl]:l);if(k){lat=k.lat;lon=k.lon}}}
-   else{const k=coordFromText(l);if(k){lat=k.lat;lon=k.lon;nm=l.split(/[;\t]/)[0];if(coordFromText(nm))nm=""}}
+   else{const k=coordFromText(l);if(k){lat=k.lat;lon=k.lon;nm=l.split(/[;\t]/)[0];if(coordFromText(nm))nm=placeName(l)}}
    if(lat==null||lon==null||isNaN(lat)||isNaN(lon)){skipped++;continue}out.push({n:String(nm).trim(),lat,lon})}}
  return{pts:out,skipped}}
 let importing=false;
-async function importPlaces(txt,label){if(importing)return;const msg=$("#myMsg");let res;
+async function importPlaces(txt,label,msgSel="#myMsg"){if(importing)return;const msg=$(msgSel);let res;
+ if(isShortLink(txt)&&!coordFromText(txt)){msg.innerHTML=SHORT_HELP;return}
  try{res=parsePlaces(txt,label)}catch(e){msg.textContent="Não consegui ler o arquivo: "+e.message;return}
  const mine=SPOTS.filter(s=>s.custom&&!s.temp);const add=[];let out=0,dup=0;
  for(const p of res.pts){if(!inRegion(p.lat,p.lon)){out++;continue}
@@ -1338,8 +1348,18 @@ async function importPlaces(txt,label){if(importing)return;const msg=$("#myMsg")
   created.push(sp)}
  SPOTS=SPOTS.filter(s=>!s.temp).concat(created);saveCustom();importing=false;
  msg.textContent=`${created.length} pontos importados${out?`, ${out} fora da região ignorados`:""}${dup?`, ${dup} repetidos`:""}${res.skipped?`, ${res.skipped} sem coordenadas`:""}. Buscando a previsão…`;
- await load();msg.textContent=`${created.length} pontos importados e com previsão. Eles aparecem no mapa e no ranking.`}
+ await load();msg.textContent=`${created.length===1?`"${created[0].n}" adicionado`:created.length+" pontos importados"} e com previsão. Aparece no mapa, no ranking e em "Meus pontos".`;
+ if(created.length===1){selectSpot(created[0].id,false);if(MAP&&S.view==="mapa")MAP.setView([created[0].lat,created[0].lon],13)}}
+const SHORT_HELP=`Esse é um link curto do Google (maps.app.goo.gl), que não traz as coordenadas. Faça assim:<ol style="margin:4px 0 0;padding-left:18px"><li>Abra o link no <b>navegador</b> (Safari/Chrome), não no app do Google Maps.</li><li>Espere o mapa carregar com o pin.</li><li>Toque na barra de endereço, copie o endereço completo (começa com google.com/maps/place/...) e cole aqui.</li></ol>Outro jeito: no app do Google Maps, toque e segure no ponto até aparecer o alfinete; as coordenadas (ex.: -27.716, -48.563) aparecem no topo. Copie e cole aqui.`;
+function addFromGoogle(inpSel,nameSel,msgSel){const t=$(inpSel).value.trim(),msg=$(msgSel);if(!t){msg.textContent="Cole o link ou as coordenadas do Google Maps.";return}
+ if(isShortLink(t)&&!coordFromText(t)){msg.innerHTML=SHORT_HELP;return}
+ const c=coordFromText(t);if(!c){msg.textContent="Não achei coordenadas nesse texto. Cole o endereço completo do Google Maps (google.com/maps/place/...) ou as coordenadas, por exemplo -27.716, -48.563.";return}
+ if(!inRegion(c.lat,c.lon)){msg.textContent=`Esse ponto (${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}) fica fora da Grande Florianópolis.`;return}
+ const nm=($(nameSel).value.trim()||placeName(t)||"Ponto do Google").replace(/;/g,",");
+ importPlaces(`${nm}; ${c.lat}, ${c.lon}`,"link",msgSel).then(()=>{$(inpSel).value="";$(nameSel).value=""})}
 $("#myImport").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;if(/\.kmz$/i.test(f.name)){$("#myMsg").textContent="Arquivo KMZ é compactado. No Meus Mapas, marque \"Exportar como KML\" antes de baixar.";return}importPlaces(await f.text(),f.name);e.target.value=""});
+$("#gAdd").addEventListener("click",()=>addFromGoogle("#gLink","#gName","#gMsg"));
+$("#gAdd2").addEventListener("click",()=>addFromGoogle("#gLink2","#gName2","#gMsg2"));
 $("#myPasteBtn").addEventListener("click",()=>importPlaces($("#myPaste").value,"colado"));
 $("#myExport").addEventListener("click",()=>{const L=SPOTS.filter(s=>s.custom&&!s.temp);if(!L.length){$("#myMsg").textContent="Você ainda não tem pontos para exportar.";return}
  const blob=new Blob([JSON.stringify({app:"mare-boa",v:1,tipo:"meus-pontos",exportado:new Date().toISOString(),spots:L},null,1)],{type:"application/json"});
@@ -1355,7 +1375,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.3";
+const APP_VERSION="2026-10-25.4";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
