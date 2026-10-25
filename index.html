@@ -205,6 +205,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .view>.card{gap:12px}
 .hero.card{flex-direction:row;align-items:center;gap:16px}
 .trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+@media (min-width:1100px){.trio{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sum{gap:8px}
 .sum-h{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
 .sum-h h3{flex:1}
@@ -234,6 +235,10 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .hlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
 .hlist .res{min-width:40px}
 .similar{background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:8px;padding:8px 10px;font-size:14px}
+.frontcard{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--surface))}
+.frontcard .fh{display:flex;gap:10px;align-items:center}
+.frontcard .fh b{font-family:var(--display);font-size:22px;font-weight:600}
+.day .fr{display:block;font-size:10px;font-weight:600;color:var(--warn);letter-spacing:.03em}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -263,11 +268,13 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="score-big num" id="spotScore"></div>
       <div style="min-width:0;flex:1"><div class="row" style="gap:8px"><h2 id="spotName"></h2><span id="spotType" class="tag neu"></span></div><div id="spotVerdict" style="font-weight:600;margin-top:4px"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div></div>
     </div>
+    <article class="card frontcard" id="frontAlert" hidden></article>
     <article class="card fishcard" id="sumFish" hidden></article>
     <div class="trio">
       <article class="card sum" id="sumTide" aria-label="Maré"></article>
       <article class="card sum" id="sumWind" aria-label="Vento no ponto"></article>
       <article class="card sum" id="sumMoon" aria-label="Lua"></article>
+      <article class="card sum" id="sumPres" aria-label="Pressão"></article>
     </div>
     <article class="card">
       <div class="row"><h3 class="grow">Linha do tempo do dia</h3><span class="small muted">toque para ver a hora</span></div>
@@ -526,13 +533,13 @@ const SPECIES=[
  {n:"Garoupa",m:[11,12,1,2,3,4],tmp:[21,28],pl:"costões e ilhas",tip:"Mar calmo, água limpa e quente."},
  {n:"Papa-terra (betara)",m:[1,2,3,4,5,6,7,8,9,10,11,12],tmp:[15,28],pl:"praias de tombo",tip:"Mar mexido moderado, valas na arrebentação."},
  {n:"Pampo",m:[10,11,12,1,2,3],tmp:[21,28],pl:"praias abertas",tip:"Mar limpo com ondulação leve."},
- {n:"Linguado",m:[9,10,11,12],tmp:[18,24],pl:"baías, fundo de areia",tip:"Maré enchendo, água clara."},
+ {n:"Linguado",m:[9,10,11,12,1,2,3],tmp:[18,25],pl:"baías, canais e bancos de areia",tip:"Maré enchendo, água clara, mar calmo."},
  {n:"Miraguaia",m:[6,7,8,9],tmp:[15,20],pl:"praias e canais",tip:"Inverno, à noite, com mar mexido."}
 ];
 
 /* ================== UTIL ================== */
 const HOME_SPOT="pontes"; // ponto padrão: Pontes, referência do marégrafo de Florianópolis
-const FISH_KEYS=["geral","robalo","tainha","corvina","anchova","garoupa"];
+const FISH_KEYS=["geral","robalo","linguado","tainha","corvina","anchova","garoupa"];
 const UNITS={kmh:{l:"km/h",f:1},kn:{l:"nós",f:1/1.852},ms:{l:"m/s",f:1/3.6}};
 const UF=()=>UNITS[S.unit].f,WU=()=>UNITS[S.unit].l;
 const wv=v=>v==null?"–":Math.round(v*UF());
@@ -815,8 +822,33 @@ function solScore(ms){let best=.35,why=null;
   if(v>best){best=v;why=w}}
  return{v:best,why}}
 
+/* ================== FRENTE FRIA ==================
+ Detecta na previsão das Pontes: vento virando de norte/nordeste para sul (S/SO/SE) e ganhando força,
+ com a pressão no mínimo e subindo depois. Véspera = até 36 h antes; passagem = até 18 h depois. */
+const isSouth=d=>d!=null&&d>=135&&d<=250, isNorth=d=>d!=null&&(d>=300||d<=100);
+function findFronts(mk){const o=S.data&&S.data.spots[HOME_SPOT];if(!o)return[];const t=S.data.t,n=t.length,W=o.wind[mk],D=o.dir[mk],G=o.gust[mk],P=o.pres;
+ const out=[];for(let i=12;i<n-6;i++){
+  if(!isSouth(D[i])||W[i]==null||W[i]<16)continue;
+  let north=0;for(let k=i-12;k<i;k++)if(isNorth(D[k]))north++;if(north<5)continue;
+  let pmin=1e9,ip=i;for(let k=i-12;k<=Math.min(n-1,i+6);k++)if(P[k]!=null&&P[k]<pmin){pmin=P[k];ip=k}
+  const after=P[Math.min(n-1,i+12)];if(after==null||after-pmin<2.5)continue;
+  let gmax=0;for(let k=i;k<Math.min(n,i+24);k++)gmax=Math.max(gmax,G[k]||W[k]||0);
+  let pfall=0;for(let k=Math.max(0,i-30);k<i;k++)if(P[k]!=null)pfall=Math.max(pfall,P[k]-pmin);
+  out.push({t:t[i],gust:gmax,rise:after-pmin,fall:pfall,model:mk});i+=48}
+ return out}
+function detectFronts(){S.fronts=[];if(!S.data||S.demo===undefined)return;const main=findFronts(S.model);
+ const others=MODELS.filter(m=>m.k!==S.model).map(m=>findFronts(m.k));
+ S.fronts=main.map(f=>({...f,agree:1+others.filter(L=>L.some(g=>Math.abs(g.t-f.t)<=12*HOUR)).length,of:MODELS.length}))}
+function frontAt(t){for(const f of S.fronts||[]){const h=(f.t-t)/HOUR;if(h>0&&h<=36)return{pre:true,h,f};if(h<=0&&h>=-18)return{pass:true,h,f};if(h<-18&&h>=-48)return{post:true,h,f}}return null}
+function applyFrontScores(rows){for(const r of rows){const fa=frontAt(r.t);if(!fa)continue;let d=0,why="";
+  const post=S.fish==="tainha"||S.fish==="anchova";
+  if(fa.pre){d=fa.h>=4?(post?.2:.9):.3;why=`véspera de frente fria (chega em ${Math.round(fa.h)} h)`}
+  else if(fa.pass){d=post?.3:-.8;why="frente fria passando"}
+  else if(fa.post&&post){d=.6;why="pós-frente"}
+  if(!d)continue;r.score=r.danger?Math.min(r.score,2):clamp(r.score+d,0,10);
+  (r.fishWhy||r.bonus).push(why);r.front=fa}}
 function rebuild(){ // recalcula tudo do modelo atual
- fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
+ detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
  trainML();applyML()}
 function computeSpot(sp){const t=S.data.t,n=t.length;
  {const o=S.data.spots[sp.id],tide=tideFor(sp),cal=calibFor(sp.id,S.model);
@@ -853,6 +885,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    rows.push({i,t:t[i],rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],rain:o.rain[i],pres:o.pres[i]})}
   const ex=tideExtremes(rows);
   if(S.fish!=="geral")applyFish(sp,rows,ex);
+  applyFrontScores(rows);
   S.derived[sp.id]={rows,tideSrc:tide.src,ep:tide.ep||null,ex}}}
 /* ================== PEIXE ALVO ==================
  Cada perfil muda os pesos da nota. Base científica (robalo): param de comer ~14 °C (NOAA, Flórida);
@@ -865,6 +898,9 @@ const FISH={
  robalo:{n:"Robalo",hab:{canal:1,baia:.85,lagoa:.8,costao:.6,praia:.45},temp:[[13,0],[15,.15],[18,.5],[21,.85],[23,1],[29,1],[32,.75]],luz:"noite",mare:"virada",
   w:{mare:.3,luz:.2,agua:.18,vento:.12,lua:.08,chuva:.06,pres:.06},chuvaBoa:true,
   info:["Água abaixo de ~14 °C: o robalo para de comer (estudo da NOAA). Acima de 22 °C fica mais ativo.","Adultos ficam mais ativos à noite e no lusco-fusco (Dantas & Barletta, 2016).","Fica perto de estrutura: pontes, pilares, molhes, pedras e mangue. Canais e baías pontuam mais que praia aberta.","Água em movimento, principalmente nas primeiras horas depois da virada. No estofo cai muito.","Lua nova e cheia: maré mais forte; no verão o robalo se agrupa nessas luas para desovar (PLoS ONE, 2014).","Água turva depois de chuva costuma ajudar em barras e canais (prática de pesca)."]},
+ linguado:{n:"Linguado",hab:{baia:1,canal:.95,praia:.85,lagoa:.6,costao:.3},temp:[[15,.2],[18,.7],[20,1],[25,1],[28,.6]],luz:"dia",mare:"enchente",meses:[9,10,11,12,1,2,3],
+  w:{mare:.28,agua:.18,mar:.16,vento:.14,luz:.12,pres:.07,lua:.05},
+  info:["Fica enterrado no fundo de areia ou lama esperando a presa passar: beira de canal, bancos de areia e saída de rios.","Maré enchendo, com água clara e mar calmo (vê a isca de baixo para cima).","Primavera e verão; água entre 18 e 25 °C."]},
  tainha:{n:"Tainha",hab:{praia:1,canal:1,baia:.6,lagoa:.7,costao:.4},temp:[[14,.6],[16,1],[21,1],[24,.4]],luz:"dia",mare:"movimento",meses:[5,6,7],
   w:{especial:.3,agua:.2,mare:.15,vento:.1,luz:.1,mar:.1,pres:.05},
   info:["Safra de maio a julho, com água fria.","Entra com vento sul depois da frente fria.","Praias abertas, barras e canais."]},
@@ -1037,7 +1073,7 @@ function dayRows(){const rows=S.derived[spot().id].rows;return rows.filter(r=>da
 function renderDays(){const rows=S.derived[spot().id].rows;const keys=[...new Set(rows.map(r=>dayKey(r.t)))];const today=dayKey(Date.now());
  const show=keys.filter(k=>k>=today).slice(0,7);if(!show.includes(S.day))S.day=show[0];
  $("#days").innerHTML=show.map(k=>{const rr=rows.filter(r=>dayKey(r.t)===k&&localHour(r.t)>=4&&localHour(r.t)<=21);const best=Math.max(...rr.map(r=>r.score));
-  return`<button type="button" class="day" data-day="${k}" aria-pressed="${k===S.day}"><b>${k===today?"Hoje":fmtD.format(rr[0].t).replace(".","")}</b><span class="num small">máx ${best.toFixed(1)}</span><span class="dot" style="${pillStyle(best)}"></span></button>`}).join("")}
+  const fr=(S.fronts||[]).some(f=>dayKey(f.t)===k);return`<button type="button" class="day" data-day="${k}" aria-pressed="${k===S.day}"><b>${k===today?"Hoje":fmtD.format(rr[0].t).replace(".","")}</b>${fr?'<span class="fr">FRENTE FRIA</span>':""}<span class="num small">máx ${best.toFixed(1)}</span><span class="dot" style="${pillStyle(best)}"></span></button>`}).join("")}
 
 /* ---- gráficos SVG compartilhando eixo X ---- */
 let CH={rows:[],x:null};
@@ -1459,7 +1495,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.7";
+const APP_VERSION="2026-10-25.8";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1527,7 +1563,44 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
   <div class="small">${corre}</div>
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
- renderFishCard();renderTimeline();renderHistory()}
+ renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
+/* pressão atmosférica: valor, tendência e o que significa para a pesca */
+function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,P=o.pres;
+ const now=Date.now(),today=dayKey(now)===S.day;let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;
+ const p=P[i],d3=P[i-3]!=null?p-P[i-3]:null,d24=P[i-24]!=null?p-P[i-24]:null;
+ if(p==null){el.innerHTML=`<div class="sum-h"><h3>Pressão</h3></div><p class="muted small">Sem dado de pressão.</p>`;return}
+ const tr=d3==null?"":d3<-1.5?"▼ caindo rápido":d3<-.5?"▼ caindo":d3>1.5?"▲ subindo rápido":d3>.5?"▲ subindo":"= estável";
+ const cls=d3!=null&&d3<-.5?"dn":d3!=null&&d3>.5?"up":"";
+ const fa=frontAt(t[i]);
+ const sig=fa&&fa.pre?"Pressão caindo antes da frente fria: o peixe costuma comer mais nessas horas."
+  :fa&&fa.pass?"Frente passando: pressão no mínimo e virando para subir. Peixe costuma parar."
+  :d3!=null&&d3<-1.5?"Queda rápida: sinal de mudança de tempo chegando."
+  :d3!=null&&d3<-.5?"Queda lenta: em geral é bom para pescar."
+  :d3!=null&&d3>1.5?"Subida forte, típica do pós-frente: peixe costuma ficar mais parado no primeiro dia."
+  :d3!=null&&d3>.5?"Subindo devagar: tempo firmando."
+  :"Estável: sem mudança de tempo à vista.";
+ // gráfico: 24 h antes até 48 h depois
+ const a=Math.max(0,i-24),b=Math.min(t.length-1,i+48),pts=[];for(let k=a;k<=b;k++)if(P[k]!=null)pts.push([k,P[k]]);
+ const W=Math.max(240,el.clientWidth-30||300),H=74,lo=Math.min(...pts.map(x=>x[1]))-1,hi=Math.max(...pts.map(x=>x[1]))+1,X=k=>4+(W-8)*(k-a)/((b-a)||1),Y=v=>6+(H-22)*(1-(v-lo)/(hi-lo));
+ let g=`<path d="M${pts.map(([k,v])=>X(k).toFixed(1)+" "+Y(v).toFixed(1)).join("L")}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+ g+=`<line x1="${X(i)}" x2="${X(i)}" y1="2" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="3 2"/><circle cx="${X(i)}" cy="${Y(p)}" r="3.5" fill="var(--accent)"/>`;
+ (S.fronts||[]).forEach(f=>{const k=t.indexOf(f.t);if(k>=a&&k<=b)g+=`<line x1="${X(k)}" x2="${X(k)}" y1="2" y2="${H-14}" stroke="var(--warn)" stroke-width="2"/><text x="${X(k)+3}" y="12" style="fill:var(--warn);font:600 10px var(--body)">frente</text>`});
+ for(let k=a;k<=b;k++)if(localHour(t[k])===0)g+=`<text x="${X(k)}" y="${H-2}" text-anchor="middle">${fmtD.format(t[k]).slice(0,3)}</text>`;
+ g+=`<text x="4" y="${Y(hi-1)-3}">${Math.round(hi-1)}</text><text x="4" y="${Y(lo+1)+11}">${Math.round(lo+1)}</text>`;
+ el.innerHTML=`<div class="sum-h"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 5V3"/></svg><h3>Pressão</h3></div>
+  <div class="wbig"><div class="sum-big num" style="font-size:30px">${Math.round(p)} <span style="font-size:15px">hPa</span></div><div class="${cls}" style="font-weight:600">${tr}</div></div>
+  <div class="small">${d3!=null?`3 h: <b>${d3>0?"+":""}${d3.toFixed(1)}</b> hPa`:""}${d24!=null?` · 24 h: <b>${d24>0?"+":""}${d24.toFixed(1)}</b> hPa`:""} <span class="muted">(${today?"agora":fmtH.format(t[i])})</span></div>
+  <div class="small">${sig}</div>
+  <div class="chart"><svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pressão nas últimas 24 h e próximas 48 h">${g}</svg></div>`}
+function renderFront(){const el=$("#frontAlert");if(!el)return;const now=Date.now();
+ const f=(S.fronts||[]).find(x=>x.t>now-18*HOUR&&x.t<now+6*24*HOUR);if(!f){el.hidden=true;return}el.hidden=false;
+ const h=(f.t-now)/HOUR,pre0=f.t-36*HOUR,passing=h<=0;
+ const forca=f.gust>=60?"forte":f.gust>=40?"moderada":"fraca";
+ el.innerHTML=`<div class="fh"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--warn)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h12a4 4 0 1 0-4-4"/><path d="M4 18h8"/><path d="M14 18l2 3M18 18l2 3M10 18l2 3"/></svg><b>${passing?"Frente fria passando":"Frente fria chegando"}</b></div>
+  <div>${passing?`Passou por volta de <b>${fmtDM.format(f.t)}</b>.`:`Prevista para <b>${fmtDM.format(f.t)}</b> (em ${h>=24?`${Math.floor(h/24)} dia${h>=48?"s":""} e ${Math.round(h%24)} h`:dur(h*HOUR)}).`} Intensidade <b>${forca}</b>: vento vira para sul com rajadas até <b>${wv(f.gust)} ${WU()}</b> e a pressão sobe ${f.rise.toFixed(0)} hPa depois. <span class="muted">${f.agree} de ${f.of} modelos concordam.</span></div>
+  ${passing?`<div class="small">Durante e logo depois da passagem: mar e vento fortes, peixe costuma parar. Tainha e anchova gostam do pós-frente.</div>`:
+   `<div><b>Véspera boa para pescar:</b> de ${fmtDM.format(Math.max(pre0,now))} até ~${fmtH.format(f.t-4*HOUR)} do dia da frente. Pressão caindo e vento norte/nordeste; o peixe costuma se alimentar mais antes da virada. Essas horas ganham pontos na nota.</div>`}
+  <div class="small muted">Depois que a frente passar, prefira pontos abrigados do vento sul (ex.: Ribeirão, Jurerê, Ingleses).</div>`}
 
 /* linha do tempo: maré + janelas do robalo, vento no ponto, lua/sol e nota, hora a hora */
 let TL=null;
