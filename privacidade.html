@@ -41,7 +41,7 @@ th{color:var(--ink-2);font-weight:600}
     <li>Pontos de pesca que você marcou ou importou (nome e localização).</li>
     <li>Diário de pesca: data, ponto, espécie, quantidade, tamanho, isca, resultado, observações e as condições de tempo e maré daquela hora.</li>
     <li>Preferências: ponto e peixe escolhidos, unidade do vento, modelo, tema claro/escuro.</li>
-    <li>Cópias temporárias da previsão e do contorno do mar, para o app abrir mais rápido e funcionar sem internet.</li>
+    <li>Cópias temporárias da previsão e do relevo da região, para o app abrir mais rápido e funcionar sem internet.</li>
   </ul>
   <p>Você pode baixar uma cópia de tudo ou apagar tudo a qualquer momento em <b>Mais → Privacidade e seus dados</b>. Se você limpar os dados do navegador, essas informações também são apagadas.</p>
 
@@ -67,9 +67,9 @@ th{color:var(--ink-2);font-weight:600}
   <p>Para funcionar, o app busca informações em serviços externos. Como em qualquer acesso à internet, eles recebem o endereço IP do seu aparelho. Fora o Firebase (só para quem usa Grupos), nenhum deles recebe seu nome, telefone ou diário.</p>
   <div class="tw"><table>
     <tr><th>Serviço</th><th>Para quê</th><th>O que recebe</th></tr>
-    <tr><td>Open-Meteo (Suíça)</td><td>Previsão de vento, chuva, ondas, temperatura da água e altitude do terreno</td><td>A localização (latitude e longitude) dos pontos consultados, inclusive dos seus pontos, sem nome</td></tr>
+    <tr><td>NOAA (EUA), ECMWF (Europa) e Open-Meteo (Suíça)</td><td>Modelos de vento, chuva, pressão, ondas, temperatura da água e correntes</td><td>Nada seu: quem consulta esses serviços é o robô do Maré Boa no GitHub, para a região toda. A previsão de cada ponto é calculada no seu aparelho</td></tr>
     <tr><td>EPAGRI/CIRAM (Santa Catarina)</td><td>Marégrafos e tábua de marés</td><td>Apenas o pedido dos dados públicos das estações</td></tr>
-    <tr><td>GitHub (EUA)</td><td>Hospedagem do app e cópia de reserva dos dados da EPAGRI</td><td>Endereço IP e página acessada</td></tr>
+    <tr><td>GitHub (EUA)</td><td>Hospedagem do app e dos dados de previsão preparados pelo robô</td><td>Endereço IP e página acessada</td></tr>
     <tr><td>OpenStreetMap e Esri</td><td>Imagens do mapa</td><td>A área do mapa que você está vendo</td></tr>
     <tr><td>Google Firebase (só Grupos)</td><td>Login por telefone e mensagens dos grupos</td><td>Telefone, nome, região do CEP e mensagens; o reCAPTCHA do Google é usado contra robôs</td></tr>
     <tr><td>Google Fonts e cdnjs</td><td>Fontes e biblioteca do mapa</td><td>Endereço IP</td></tr>

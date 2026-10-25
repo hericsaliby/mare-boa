@@ -35,9 +35,13 @@ jobs:
           done
           python3 tools/historico.py old out
           python3 tools/mascara.py old out || true
+          # arquivos do robô de modelos (outro workflow) seguem como estão
+          for f in modelos.json mar.json modelos_log.txt; do cp "old/$f" out/ 2>/dev/null || true; done
+          BASE=$(git -C old rev-parse HEAD 2>/dev/null || echo "")
           date -u +%FT%TZ > out/atualizado.txt
           cd out
           git init -q -b dados
           git add -A
           git -c user.name=mare-boa-bot -c user.email=mare-boa-bot@users.noreply.github.com commit -qm "Dados EPAGRI $(cat atualizado.txt)"
-          git push -fq "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" dados
+          # só substitui se ninguém gravou no meio (senão tenta de novo em 15 min)
+          git push -q --force-with-lease="dados:$BASE" "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" dados || echo "dados mudou durante a coleta; fica para a próxima"

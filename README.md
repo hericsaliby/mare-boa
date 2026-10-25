@@ -2,11 +2,22 @@
 
 © 2026 Maré Boa — todos os direitos reservados (veja LICENSE).
 
-Previsão de pesca para a Grande Florianópolis: junta vento (GFS, ECMWF ou ICON), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
+Previsão de pesca para a Grande Florianópolis: junta vento (GFS ou ECMWF), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
 
 ## Como usar
 
-É um único arquivo, `index.html`, sem servidor nem chave de API. Os dados vêm direto da Open-Meteo, que é gratuita e aceita chamadas do navegador.
+É um único arquivo, `index.html`, sem servidor nem chave de API. Os dados de previsão são preparados por robôs do GitHub Actions e gravados no branch `dados`; o app só lê esses arquivos:
+
+| Robô | Fonte | Frequência | Arquivo |
+|---|---|---|---|
+| `modelos.yml` | GFS 0,25° (NOAA/NOMADS): vento, rajada, pressão, temperatura, umidade, nuvens, chuva | a cada 3 h (nova rodada a cada 6 h) | `modelos.json` |
+| `modelos.yml` | ECMWF IFS 0,25° (dados abertos): as mesmas variáveis | a cada 3 h (nova rodada a cada 12 h) | `modelos.json` |
+| `modelos.yml` | GFS-Wave / WaveWatch III (NOAA): ondas | a cada 3 h | `modelos.json` |
+| `modelos.yml` | Open-Meteo: temperatura da água e correntes | seg, qua e sex | `mar.json` |
+| `epagri.yml` | EPAGRI/CIRAM: marégrafos e tábua | a cada 15 min | `floripa.json`, `tabua_*.csv` |
+| `epagri.yml` | Relevo (Copernicus DEM, ~850 m), montado uma vez | até completar | `relevo.json` |
+
+A previsão de cada ponto é interpolada da grade no próprio aparelho: a localização dos pontos pessoais não sai do celular. Se os arquivos do robô ainda não existirem, o app consulta a Open-Meteo direto como reserva.
 
 - **No computador:** abra o `index.html` no navegador.
 - **No celular:** hospede de graça no GitHub Pages ou no Netlify Drop (arraste a pasta) e salve na tela inicial.
@@ -26,14 +37,14 @@ O app é dividido em telas, com menu lateral no computador e abas embaixo no cel
 | **Abrigo automático do pin** | Para 16 direções, o app consulta a altitude do terreno (Copernicus DEM pela Open-Meteo) de 0,4 a 25 km de distância. Terra perto e morro alto naquela direção significam abrigo; água aberta por mais de 25 km significa ondulação de mar aberto. O tipo (costão, praia, baía) é sugerido e pode ser trocado. |
 | **Meus pontos (privados)** | Pins salvos ficam só no aparelho de quem marcou; quem recebe o link não vê. Backup com "Exportar/Importar meus pontos" e importação do Google Maps: KML do Meus Mapas, "Saved Places.json" ou CSV de listas do Google Takeout, ou coordenadas coladas. |
 | **Peixe alvo** | Seletor no topo (Robalo, Linguado, Tainha, Corvina, Anchova, Garoupa). Muda a nota, o ranking, o mapa, as janelas e a linha do tempo. Robalo: água abaixo de ~14 °C derruba a nota (para de comer, estudo da NOAA); noite e lusco-fusco pesam mais (Dantas & Barletta 2016); canais, pontes e mangue pontuam mais que praia; maré em movimento, principalmente nas primeiras horas após a virada; estofo cai; lua nova/cheia (maré forte; agregação de desova, PLoS ONE 2014); água turva depois de chuva ajuda em canais e baías. |
-| **Frente fria** | Detectada na previsão (vento virando de norte para sul com força, pressão no mínimo e subindo depois), conferida nos 3 modelos. Alerta no Resumo com dia, hora e força; a véspera (até 36 h antes, pressão caindo) ganha pontos na nota, a passagem perde; tainha e anchova ganham no pós-frente. O dia aparece marcado na barra de dias. |
+| **Frente fria** | Detectada na previsão (vento virando de norte para sul com força, pressão no mínimo e subindo depois), conferida nos 2 modelos. Alerta no Resumo com dia, hora e força; a véspera (até 36 h antes, pressão caindo) ganha pontos na nota, a passagem perde; tainha e anchova ganham no pós-frente. O dia aparece marcado na barra de dias. |
 | **Tempo** | Card no Resumo com temperatura agora, mínima e máxima do dia, chuva total (mm), umidade e nuvens, hora a hora (temperatura e barras de chuva) e os próximos 7 dias com ícone, máx/mín e chuva. |
 | **Pressão** | Card no Resumo com o valor, a tendência em 3 h e 24 h, o que significa para a pesca e um gráfico dos últimos 3 dias e de toda a previsão, com a frente marcada e o valor de cada hora ao tocar. |
 | **Lua e solunar** | Fase com o desenho da lua como se vê do hemisfério sul, iluminação, idade, nascer, pôr e passagem da lua, períodos principais (~2 h em torno da lua no meridiano) e secundários (~1 h em torno do nascer e do pôr), nota de atividade de 1 a 4 para cada dia, curva de atividade hora a hora e as próximas fases com data. A fase da lua também entra na nota de pesca. |
 | **Unidade do vento** | km/h por padrão, com opção de nós ou m/s no topo. |
 | **Onde ir** | Ranking dos 18 pontos para o horário escolhido, com o motivo de cada nota (abrigado/exposto, maré, mar, lua). |
 | **Abrigo** | Cada ponto tem uma rosa de exposição em 8 setores para vento e outra para ondulação. O vento "no ponto" é o vento aberto reduzido pelo abrigo. |
-| **Modelos** | GFS, ECMWF IFS 0.25 e ICON. A faixa no gráfico mostra o quanto os modelos discordam: faixa larga significa previsão incerta. |
+| **Modelos** | GFS e ECMWF IFS 0.25. A faixa no gráfico mostra o quanto os modelos discordam: faixa larga significa previsão incerta. |
 | **Painel de maré** | Para o ponto escolhido: se está enchendo ou vazando, a que horas é a próxima preamar ou baixamar, quanto ainda sobe ou desce, a velocidade em cm/h, as próximas 12 horas hora a hora e a tábua dos próximos dias ("enche 0,62 m até 09:40, 6h28"), com fase da lua e indicação de maré grande ou pequena. |
 | **Marégrafo EPAGRI** | O app lê sozinho os marégrafos de Florianópolis e Imbituba do CIRAM (a cada 15 min) e a tábua oficial anual (CSV 2026–2030). Maré mostrada: medido até a última leitura → previsão MohidSC da EPAGRI ajustada ao medido → tábua oficial da EPAGRI com a maré meteorológica diminuindo aos poucos. Se o site da EPAGRI não responder, usa a cópia feita pelo robô do GitHub (branch `dados`, a cada 15 min). |
 | **Maré** | Nível do mar do modelo marinho da Open-Meteo, com atraso e amplitude ajustados por ponto (a Lagoa, por exemplo, tem maré fraca e atrasada ~3 h). Dá para colar a tábua da Marinha para mais precisão. |
