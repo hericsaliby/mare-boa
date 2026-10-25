@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/epagri.yml"]
+    paths: [".github/workflows/epagri.yml", "tools/historico.py"]
 permissions:
   contents: write
 concurrency: epagri
@@ -13,16 +13,19 @@ jobs:
   coleta:
     runs-on: ubuntu-latest
     steps:
-      - name: Copia os marégrafos da EPAGRI para o branch "dados"
+      - uses: actions/checkout@v4
+      - name: Copia os marégrafos da EPAGRI para o branch "dados" e mantém o histórico
         run: |
-          mkdir out && cd out
+          git clone -q --depth 1 -b dados "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" old || mkdir -p old
+          mkdir out
           UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
           for e in "floripa getDataMare3_2951" "imbituba getDataMare6_2963"; do set -- $e
-            curl -sS -A "$UA" -H "Origin: https://hericsaliby.github.io" -H "Referer: https://hericsaliby.github.io/" \
-              -D "$1.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/graficos/$2.php" -o "$1.json" || true
+            curl -sS -A "$UA" -D "out/$1.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/graficos/$2.php" -o "out/$1.json" || true
           done
-          date -u +%FT%TZ > atualizado.txt
-          ls -la
+          if [ ! -f old/tabua.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/index.php/tabua-de-mares/" -o out/tabua.html || true; else cp old/tabua.html out/; fi
+          python3 tools/historico.py old out
+          date -u +%FT%TZ > out/atualizado.txt
+          cd out
           git init -q -b dados
           git add -A
           git -c user.name=mare-boa-bot -c user.email=mare-boa-bot@users.noreply.github.com commit -qm "Dados EPAGRI $(cat atualizado.txt)"

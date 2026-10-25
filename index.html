@@ -551,8 +551,13 @@ function epTime(s){const m=String(s).match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?
 function parseEpagri(j){const num=v=>{if(v==null)return null;const x=parseFloat(String(v).trim());return isNaN(x)?null:x};
  const rows=(j.rows||[]).map(r=>{const c=(r.c||[]).map(x=>x&&typeof x==="object"?x.v:x);return{t:epTime(c[0]),obs:num(c[1]),ast:num(c[2]),res:num(c[3]),prev:num(c[4]),pres:num(c[5]),nmm:num(c[6])}}).filter(r=>r.t);
  rows.sort((a,b)=>a.t-b.t);return rows}
-async function loadEpagri(){S.ep={};
- await Promise.all(Object.entries(EP_ST).map(async([k,st])=>{try{const rows=parseEpagri(await fetchJSON(st.url));if(rows.length)S.ep[k]=buildGauge(rows)}catch(e){console.warn("EPAGRI",k,e)}}));
+const EP_MIRROR="https://raw.githubusercontent.com/hericsaliby/mare-boa/dados/";
+async function loadEpagri(){S.ep={};S.epInfo={};
+ await Promise.all(Object.entries(EP_ST).map(async([k,st])=>{
+  // 1) direto na EPAGRI; 2) cópia feita pelo robô do GitHub a cada 15 min
+  for(const [src,url] of [["EPAGRI",st.url],["espelho GitHub",EP_MIRROR+k+".json?t="+Math.floor(Date.now()/3e5)]]){
+   try{const rows=parseEpagri(await fetchJSON(url));if(rows.some(r=>r.obs!=null)){S.ep[k]=buildGauge(rows);S.epInfo[k]=src;return}throw new Error("sem medições")}
+   catch(e){console.warn("EPAGRI",k,src,e);S.epInfo[k]="falhou: "+(e.message||e)}}}));
  if(Object.keys(S.ep).length)store("pf_ep",{at:Date.now(),ep:Object.fromEntries(Object.entries(S.ep).map(([k,g])=>[k,g.rows]))});
  else{const c=store("pf_ep");if(c&&Date.now()-c.at<12*HOUR)for(const k in c.ep)S.ep[k]=buildGauge(c.ep[k])}}
 /* Série contínua do marégrafo em metros sobre o nível médio:
@@ -597,7 +602,7 @@ function fitGauge(){S.gfit=null;S.gObs=null;if(!S.data)return;
  const ref=SPOTS.find(s=>s.id==="pontes"),B=baseTide(ref);if(!B)return;
  let best=null;
  for(let L=-180;L<=180;L+=10){const xs=[],ys=[];for(const p of G.pts){const v=B.fn(p.t-L*60e3);if(v!=null){xs.push(v);ys.push(p.r!=null?p.h-p.r:p.h)}}
-  if(xs.length<8)continue;const f=fitLin(xs,ys);if(!f)continue;const b=clamp(f.b,.5,1.8);let e=0;xs.forEach((x,i)=>e+=(f.a+b*x-ys[i])**2);const rmse=Math.sqrt(e/xs.length);
+  if(xs.length<8)continue;const f=fitLin(xs,ys);if(!f)continue;const b=clamp(f.b,.3,6);let e=0;xs.forEach((x,i)=>e+=(f.a+b*x-ys[i])**2);const rmse=Math.sqrt(e/xs.length);
   if(!best||rmse<best.rmse)best={L,a:f.a,b,rmse,n:xs.length}}
  if(!best)return;
  const hasR=G.pts.some(p=>p.r!=null);best.hasR=hasR;
@@ -726,7 +731,7 @@ function setStatus(s){$("#status").textContent=s}
 function showBanner(s,w){const b=$("#banner");b.textContent=s;b.hidden=false;b.classList.toggle("warn",!!w)}
 function spot(){return SPOTS.find(s=>s.id===S.spot)||SPOTS[0]}
 function renderEpStatus(){const el=$("#epStatus");if(!el)return;const ks=Object.keys(S.ep||{});
- el.innerHTML=ks.length?"Leitura automática ativa: "+ks.map(k=>{const g=S.ep[k];return`${EP_ST[k].n}${g.last?` (última medição ${fmtDH.format(g.last.t)})`:""}`}).join(" · "):`<span style="color:var(--warn)">Não consegui ler os marégrafos agora. A maré usa o modelo global; dá para informar o resíduo manualmente.</span>`}
+ el.innerHTML=ks.length?"Leitura automática ativa: "+ks.map(k=>{const g=S.ep[k];return`${EP_ST[k].n}${g.last?` (última medição ${fmtDH.format(g.last.t)}, via ${S.epInfo&&S.epInfo[k]||"cache"})`:""}`}).join(" · "):`<span style="color:var(--warn)">Não consegui ler os marégrafos agora. A maré usa o modelo global; dá para informar o resíduo manualmente.</span>`}
 /* ================== LUA E SOLUNAR ================== */
 function moonSVG(p,size=44){const c=size/2,R=size/2-1.5,wax=p<.5,q=wax?p:1-p,rx=Math.abs(Math.cos(2*Math.PI*q))*R,sw=q<.25?0:1;
  const d=`M${c} ${c-R} A${R} ${R} 0 0 1 ${c} ${c+R} A${rx.toFixed(2)} ${R} 0 0 ${sw} ${c} ${c-R}Z`;
