@@ -239,6 +239,14 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .frontcard .fh{display:flex;gap:10px;align-items:center}
 .frontcard .fh b{font-family:var(--display);font-size:22px;font-weight:600}
 .day .fr{display:block;font-size:10px;font-weight:600;color:var(--warn);letter-spacing:.03em}
+.wxnow{display:flex;gap:12px;align-items:center}
+.wxnow .tt{font-family:var(--display);font-size:40px;font-weight:600;line-height:1}
+.wxh{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(34px,1fr);gap:3px;overflow-x:auto;font-size:11px;text-align:center}
+.wxh>div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.wxh .bar{width:70%;height:34px;display:flex;align-items:flex-end;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.wxh .bar i{display:block;width:100%;background:var(--accent);border-radius:3px 3px 0 0}
+.wxd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-size:11.5px;text-align:center}
+.wxd>div{background:var(--surface-2);border-radius:8px;padding:5px 2px;display:flex;flex-direction:column;align-items:center}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -274,6 +282,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <article class="card sum" id="sumTide" aria-label="Maré"></article>
       <article class="card sum" id="sumWind" aria-label="Vento no ponto"></article>
       <article class="card sum" id="sumMoon" aria-label="Lua"></article>
+      <article class="card sum" id="sumWx" aria-label="Tempo"></article>
       <article class="card sum" id="sumPres" aria-label="Pressão"></article>
     </div>
     <article class="card">
@@ -597,7 +606,7 @@ const S={allBase:store("pf_allbase")===true,fish:(()=>{try{const f=JSON.parse(lo
 /* ================== BUSCA DE DADOS ================== */
 async function fetchJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status+" "+(await r.text()).slice(0,140));return r.json()}
 function apiURLs(lats,lons,mlats,mlons){const common="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=7&forecast_days=7";
- return[`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,precipitation,temperature_2m&models=${MODELS.map(m=>m.k).join(",")}&wind_speed_unit=kmh${common}`,
+ return[`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,precipitation,temperature_2m,cloud_cover,relative_humidity_2m&models=${MODELS.map(m=>m.k).join(",")}&wind_speed_unit=kmh${common}`,
   `https://marine-api.open-meteo.com/v1/marine?latitude=${mlats}&longitude=${mlons}&hourly=wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature&cell_selection=sea${common}`]}
 async function load(){
  setStatus("Buscando previsão…");
@@ -608,10 +617,10 @@ async function load(){
   const [fr,mr]=await Promise.all([fetchJSON(fu),fetchJSON(mu).catch(err=>{console.warn("marine",err);return null}),loadEpagri()]);
   S.data=parseData(Array.isArray(fr)?fr:[fr],mr?(Array.isArray(mr)?mr:[mr]):null);S.demo=false;
   if(!mr)showBanner("Ondas e maré do modelo marinho não responderam. Cole uma tábua de maré na seção Dados para ver a maré.",true);
-  store("pf_cache2",{at:Date.now(),n:SPOTS.length,fr,mr});
+  store("pf_cache3",{at:Date.now(),n:SPOTS.length,fr,mr});
  }catch(err){
   console.warn(err);
-  const c=store("pf_cache2");
+  const c=store("pf_cache3");
   if(c&&c.n===SPOTS.length&&Date.now()-c.at<36*HOUR){S.data=parseData(Array.isArray(c.fr)?c.fr:[c.fr],c.mr?(Array.isArray(c.mr)?c.mr:[c.mr]):null);
    showBanner("Sem conexão. Mostrando a última previsão salva ("+fmtDH.format(c.at)+").",true)}
   else{S.data=demoData();S.demo=true;S.ep=null;showBanner("Sem conexão com a Open-Meteo. Mostrando DADOS DE EXEMPLO, que não são previsão real. Abra o app com internet para ver a previsão.",true)}
@@ -635,7 +644,7 @@ function parseSpot(t,F,M){ // alinha tudo pelo horário (funciona para um ponto 
  const al=(a,ix)=>t.map(x=>{const k=ix.get(x);return a&&k!=null&&a[k]!=null?a[k]:null});
  for(const m of MODELS){o.wind[m.k]=al(F["wind_speed_10m_"+m.k]||F.wind_speed_10m,iF);o.dir[m.k]=al(F["wind_direction_10m_"+m.k]||F.wind_direction_10m,iF);o.gust[m.k]=al(F["wind_gusts_10m_"+m.k]||F.wind_gusts_10m,iF)}
  const pick=v=>{const arrs=MODELS.map(m=>al(F[v+"_"+m.k]||F[v],iF));return t.map((_,h)=>{for(const a of arrs)if(a[h]!=null)return a[h];return null})};
- o.pres=pick("pressure_msl");o.rain=pick("precipitation");o.temp=pick("temperature_2m");
+ o.pres=pick("pressure_msl");o.rain=pick("precipitation");o.temp=pick("temperature_2m");o.cloud=pick("cloud_cover");o.hum=pick("relative_humidity_2m");
  const g=v=>al(M?M[v]:null,iM);
  o.hs=g("wave_height");o.wdir=g("wave_direction");o.wper=g("wave_period");o.sea=g("sea_level_height_msl");o.sst=g("sea_surface_temperature");
  return o}
@@ -646,12 +655,12 @@ function demoData(){
  SPOTS.forEach(sp=>{spots[sp.id]=demoSpot(t)});
  return{t,spots}}
 function demoSpot(t){const n=t.length;
- {const o={wind:{},dir:{},gust:{},pres:[],rain:[],temp:[],hs:[],wdir:[],wper:[],sea:[],sst:[]},si=0;
+ {const o={wind:{},dir:{},gust:{},pres:[],rain:[],temp:[],cloud:[],hum:[],hs:[],wdir:[],wper:[],sea:[],sst:[]},si=0;
   const base=[],dir=[];
   for(let h=0;h<n;h++){const day=h/24;const front=Math.exp(-((day-9)**2)/0.6)+Math.exp(-((day-3)**2)/0.5);
    base.push(Math.max(1,7+4*Math.sin(2*Math.PI*(h-15)/24)+14*front));
    dir.push(front>.3?195-30*front:45+20*Math.sin(day));
-   o.pres.push(1017-8*front+1.2*Math.sin(2*Math.PI*h/12));o.rain.push(front>.5?2.5*front:0);o.temp.push(21+3*Math.sin(2*Math.PI*(h-9)/24)-4*front);
+   o.pres.push(1017-8*front+1.2*Math.sin(2*Math.PI*h/12));o.rain.push(front>.5?2.5*front:0);o.temp.push(21+3*Math.sin(2*Math.PI*(h-9)/24)-4*front);o.cloud.push(Math.min(100,30+60*front+20*Math.sin(h/7)));o.hum.push(70+15*front);
    o.hs.push(0.9+1.6*front);o.wdir.push(front>.3?165:100);o.wper.push(8+3*front);o.sst.push(21);
    const th=h+si*0;o.sea.push(0.27*Math.cos(2*Math.PI*th/12.42)+0.12*Math.cos(2*Math.PI*th/12+1)+0.11*Math.cos(2*Math.PI*th/25.82+2)+0.07*Math.cos(2*Math.PI*th/23.93)+0.15*front)}
   MODELS.forEach((m,k)=>{const f=[1,0.88,1.1][k],b=[0,1,-0.5][k];o.wind[m.k]=base.map(x=>Math.max(0,x*f+b));o.dir[m.k]=dir.map(d=>d+k*8);o.gust[m.k]=o.wind[m.k].map(x=>x*1.45)});
@@ -1495,7 +1504,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.9";
+const APP_VERSION="2026-10-25.10";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1563,7 +1572,29 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
   <div class="small">${corre}</div>
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
- renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
+ renderWeather();renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
+/* tempo: temperatura, chuva, nuvens e umidade */
+function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0 1 1 11.5 7a5.5 5.5 0 0 0 8.5 8.5z" fill="var(--moon-lit)" stroke="var(--ink-3)" stroke-width="1"/>`:`<circle cx="12" cy="12" r="5" fill="#f2c230"/><g stroke="#f2c230" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>`;
+ const cl=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 9.5 4.25 4.25 0 0 0 7 18z" fill="var(--surface-2)" stroke="var(--ink-3)" stroke-width="1.3"/>`;
+ let g;if(rain>=.3)g=cl(0,-2,1)+`<g stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M9 19l-1 3M13 19l-1 3M17 19l-1 3"/></g>`;
+ else if(cloud>75)g=cl(0,0,1);else if(cloud>30)g=`<g transform="translate(-3 -3) scale(.8)">${sun}</g>`+cl(3,3,.85);else g=sun;
+ return`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" aria-hidden="true">${g}</svg>`}
+function renderWeather(){const el=$("#sumWx");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,now=Date.now(),today=dayKey(now)===S.day;
+ const idx=t.map((x,k)=>k).filter(k=>dayKey(t[k])===S.day);if(!idx.length)return;
+ let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):idx.find(k=>localHour(t[k])===12)??idx[0];
+ const T=o.temp,R=o.rain,C=o.cloud||[],Hm=o.hum||[];const temps=idx.map(k=>T[k]).filter(v=>v!=null);
+ const tmin=Math.min(...temps),tmax=Math.max(...temps),rain=idx.reduce((s,k)=>s+(R[k]||0),0),rainH=idx.filter(k=>(R[k]||0)>=.2).length;
+ const night=k=>sunAlt(t[k])<-1;
+ const hrs=(today?t.map((x,k)=>k).filter(k=>k>=i).slice(0,13):idx.filter(k=>localHour(t[k])>=5&&localHour(t[k])<=22));
+ const rmax=Math.max(2,...hrs.map(k=>R[k]||0));
+ const days=[...new Set(t.map(dayKey))].filter(k=>k>=dayKey(now)).slice(0,7).map(k=>{const ix=t.map((x,j)=>j).filter(j=>dayKey(t[j])===k);const tt=ix.map(j=>T[j]).filter(v=>v!=null);const rr=ix.reduce((s,j)=>s+(R[j]||0),0);const cc=ix.filter(j=>localHour(t[j])>=8&&localHour(t[j])<=17).map(j=>C[j]||0);
+  return{k,tmax:Math.max(...tt),tmin:Math.min(...tt),rr,cl:cc.length?cc.reduce((a,b)=>a+b,0)/cc.length:0,t:ix[12]!=null?t[ix[12]]:t[ix[0]]}});
+ el.innerHTML=`<div class="sum-h"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 9.5 4.25 4.25 0 0 0 7 18z"/></svg><h3>Tempo</h3><span class="small muted">${today?"agora":fmtH.format(t[i])}</span></div>
+  <div class="wxnow">${wxIcon(C[i]||0,R[i]||0,night(i),52)}<div><div class="tt num">${T[i]!=null?Math.round(T[i]):"–"}°</div><div class="small muted">máx <b>${Math.round(tmax)}°</b> · mín <b>${Math.round(tmin)}°</b></div></div>
+   <div class="small" style="margin-left:auto;text-align:right">Chuva no dia<br><b class="num">${rain.toFixed(1).replace(".",",")} mm</b>${rainH?` <span class="muted">(${rainH} h)</span>`:""}<br>${Hm[i]!=null?`Umidade <b>${Math.round(Hm[i])}%</b>`:""}${C[i]!=null?`<br>Nuvens <b>${Math.round(C[i])}%</b>`:""}</div></div>
+  <div class="wxh">${hrs.map(k=>`<div><span class="muted">${String(localHour(t[k])).padStart(2,"0")}h</span>${wxIcon(C[k]||0,R[k]||0,night(k),20)}<b class="num">${T[k]!=null?Math.round(T[k])+"°":"–"}</b><span class="bar" title="${(R[k]||0).toFixed(1)} mm"><i style="height:${Math.min(100,100*(R[k]||0)/rmax)}%"></i></span><span class="num muted">${(R[k]||0)>=.05?(R[k]).toFixed(1).replace(".",","):"0"}</span></div>`).join("")}</div>
+  <div class="small muted">Barras: chuva em mm por hora.</div>
+  <div class="wxd">${days.map(d=>`<div><span>${d.k===dayKey(now)?"Hoje":fmtD.format(d.t).slice(0,3)}</span>${wxIcon(d.cl,d.rr>=1?1:0,false,24)}<b class="num">${Math.round(d.tmax)}°</b><span class="num muted">${Math.round(d.tmin)}°</span><span class="num" style="color:var(--accent)">${d.rr>=.1?d.rr.toFixed(0)+" mm":""}</span></div>`).join("")}</div>`}
 /* pressão atmosférica: valor, tendência e o que significa para a pesca */
 function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,P=o.pres;
  const now=Date.now(),today=dayKey(now)===S.day;let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;
