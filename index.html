@@ -721,17 +721,21 @@ const S={allBase:store("pf_allbase")===true,fish:(()=>{try{const f=JSON.parse(lo
  log:store("pf_log")||[],calib:store("pf_calib_kmh")||{},tideTable:store("pf_tide")||null,gauge:store("pf_gauge")||null,useCal:store("pf_usecal")!==false,events:[],ml:null,derived:{}};
 
 /* ================== BUSCA DE DADOS ================== */
-async function fetchJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status+" "+(await r.text()).slice(0,140));return r.json()}
+async function fetchJSON(u){const r=await fetch(u);if(r.status===429){const e=new Error("O serviço de previsão (Open-Meteo) recebeu consultas demais neste minuto. Espere 1 minuto e tente de novo.");e.rate=true;throw e}
+ if(!r.ok)throw new Error(r.status+" "+(await r.text()).slice(0,140));return r.json()}
+// pontos muito próximos caem na mesma célula do modelo (~5 km): consulta uma vez só e repete a resposta
+function dedupe(pts){const keys=[],idx=[],u=[];for(const p of pts){const q=[Math.round(p[0]*20)/20,Math.round(p[1]*20)/20],k=q.join();let i=keys.indexOf(k);if(i<0){i=keys.length;keys.push(k);u.push(q)}idx.push(i)}
+ return{lats:u.map(q=>q[0].toFixed(2)).join(","),lons:u.map(q=>q[1].toFixed(2)).join(","),n:u.length,expand:arr=>{const a=Array.isArray(arr)?arr:[arr];return idx.map(i=>a[i])}}}
 function apiURLs(lats,lons,mlats,mlons){const common="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=7&forecast_days=7";
  return[`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,precipitation,temperature_2m,cloud_cover,relative_humidity_2m&models=${MODELS.map(m=>m.k).join(",")}&wind_speed_unit=kmh${common}`,
   `https://marine-api.open-meteo.com/v1/marine?latitude=${mlats}&longitude=${mlons}&hourly=wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature&cell_selection=sea${common}`]}
 async function load(){
  setStatus("Buscando previsão…");
- const lats=SPOTS.map(s=>s.lat).join(","),lons=SPOTS.map(s=>s.lon).join(",");
- const mlats=SPOTS.map(s=>(s.m||[s.lat,s.lon])[0]).join(","),mlons=SPOTS.map(s=>(s.m||[s.lat,s.lon])[1]).join(",");
- const [fu,mu]=apiURLs(lats,lons,mlats,mlons);
+ const DF=dedupe(SPOTS.map(s=>[s.lat,s.lon])),DM=dedupe(SPOTS.map(s=>s.m||[s.lat,s.lon]));
+ const [fu,mu]=apiURLs(DF.lats,DF.lons,DM.lats,DM.lons);
  try{
-  const [fr,mr]=await Promise.all([fetchJSON(fu),fetchJSON(mu).catch(err=>{console.warn("marine",err);return null}),loadEpagri()]);
+  const [fr0,mr0]=await Promise.all([fetchJSON(fu),fetchJSON(mu).catch(err=>{console.warn("marine",err);return null}),loadEpagri()]);
+  const fr=DF.expand(fr0),mr=mr0?DM.expand(mr0):null;
   S.data=parseData(Array.isArray(fr)?fr:[fr],mr?(Array.isArray(mr)?mr:[mr]):null);S.demo=false;
   if(!mr)showBanner(Object.keys(S.ep||{}).length?"O modelo de ondas não respondeu agora: ondas e temperatura da água estão indisponíveis. A maré continua vindo da EPAGRI.":"O modelo de ondas e maré não respondeu agora. Tente de novo em alguns minutos.",true,true);else hideBanner();
   store("pf_cache3",{at:Date.now(),n:SPOTS.length,fr,mr});
@@ -1539,26 +1543,34 @@ function markerIcon(sp,r){return L.divIcon({className:"",iconSize:null,iconAncho
  Grade de pontos sobre a Grande Florianópolis (Open-Meteo: modelo de vento escolhido e modelo marinho).
  Correntes e temperatura da água vêm do modelo oceânico global (~8 km): mostram o mar aberto, não o detalhe dentro das baías. */
 const OVG={la0:-28.05,la1:-27.30,lo0:-48.85,lo1:-48.30,nla:11,nlo:9};
-const OVR={la0:-29.25,la1:-26.25,lo0:-50.0,lo1:-47.0,nla:13,nlo:13}; // grade larga (0,25°) para o vento cobrir o mapa todo
+const OVR={la0:-28.75,la1:-26.75,lo0:-49.75,lo1:-47.75,nla:9,nlo:9}; // grade larga (0,25°) para o vento cobrir o mapa todo
 const OV={on:Object.assign({wind:true,cur:false,sst:false},store("pf_ov")||{}),data:null,loading:false,canvas:null,parts:[],raf:0,model:null};
-async function ovLoad(){if(OV.data&&OV.model===S.model)return true;if(OV.loading)return false;OV.loading=true;$("#ovInfo").textContent="Carregando camadas…";
+// Vento: grade de 0,25° (a própria resolução do GFS/ECMWF), 81 pontos, guardada 1 h no aparelho.
+// Mar (correntes/temperatura): grade fina de 99 pontos, só quando uma dessas camadas é ligada.
+const OV_COMMON="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=1&forecast_days=7";
+async function ovLoad(){if(OV.data&&OV.model===S.model)return(OV.on.cur||OV.on.sst)?ovLoadSea():true;if(OV.loading)return false;OV.loading=true;$("#ovInfo").textContent="Carregando camadas…";
+ try{let rr=null;const c=store("pf_ovw");if(c&&c.model===S.model&&Date.now()-c.at<HOUR)rr=c.rr;
+  if(!rr){const rla=[],rlo=[];for(let i=0;i<OVR.nla;i++)for(let j=0;j<OVR.nlo;j++){rla.push((OVR.la0+(OVR.la1-OVR.la0)*i/(OVR.nla-1)).toFixed(2));rlo.push((OVR.lo0+(OVR.lo1-OVR.lo0)*j/(OVR.nlo-1)).toFixed(2))}
+   const j=await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${rla}&longitude=${rlo}&hourly=wind_speed_10m,wind_direction_10m&models=${S.model}&wind_speed_unit=kmh${OV_COMMON}`);
+   rr=(Array.isArray(j)?j:[j]).map(x=>({time:x.hourly.time,wind_speed_10m:x.hourly.wind_speed_10m,wind_direction_10m:x.hourly.wind_direction_10m}));store("pf_ovw",{at:Date.now(),model:S.model,rr})}
+  if(rr.length!==OVR.nla*OVR.nlo)throw new Error("grade incompleta");
+  OV.data={t:rr[0].time.map(x=>x*1000),R:rr,F:null,M:null,land:null};OV.model=S.model;$("#ovInfo").textContent="";
+  return(OV.on.cur||OV.on.sst)?ovLoadSea():true}
+ catch(e){console.warn("camadas",e);$("#ovInfo").textContent=e.rate?e.message:"Não consegui carregar as camadas agora.";return false}finally{OV.loading=false}}
+async function ovLoadSea(){if(OV.data.M)return true;
  try{const la=[],lo=[];for(let i=0;i<OVG.nla;i++)for(let j=0;j<OVG.nlo;j++){la.push((OVG.la0+(OVG.la1-OVG.la0)*i/(OVG.nla-1)).toFixed(3));lo.push((OVG.lo0+(OVG.lo1-OVG.lo0)*j/(OVG.nlo-1)).toFixed(3))}
-  const common="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=1&forecast_days=7";
-  const rla=[],rlo=[];for(let i=0;i<OVR.nla;i++)for(let j=0;j<OVR.nlo;j++){rla.push((OVR.la0+(OVR.la1-OVR.la0)*i/(OVR.nla-1)).toFixed(2));rlo.push((OVR.lo0+(OVR.lo1-OVR.lo0)*j/(OVR.nlo-1)).toFixed(2))}
-  const [fr,mr,rr]=await Promise.all([fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=wind_speed_10m,wind_direction_10m&models=${S.model}&wind_speed_unit=kmh${common}`),
-   fetchJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${la}&longitude=${lo}&hourly=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea${common}`).catch(()=>null),
-   fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${rla}&longitude=${rlo}&hourly=wind_speed_10m,wind_direction_10m&models=${S.model}&wind_speed_unit=kmh${common}`).catch(()=>null)]);
-  const F=Array.isArray(fr)?fr:[fr],M=mr?(Array.isArray(mr)?mr:[mr]):null;
-  const R=rr?(Array.isArray(rr)?rr:[rr]).map(x=>x.hourly):null;
-  OV.data={t:F[0].hourly.time.map(x=>x*1000),F:F.map(x=>x.hourly),R:R&&R.length===OVR.nla*OVR.nlo&&R[0].time.length===F[0].hourly.time.length?R:null,M:M?M.map(x=>x.hourly):null,land:F.map(x=>(x.elevation||0)>2)};OV.model=S.model;$("#ovInfo").textContent="";return true}
- catch(e){console.warn("camadas",e);$("#ovInfo").textContent="Não consegui carregar as camadas agora.";return false}finally{OV.loading=false}}
+  const j=await fetchJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${la}&longitude=${lo}&hourly=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea${OV_COMMON}`);const M=Array.isArray(j)?j:[j];
+  // célula de mar mais próxima longe do ponto pedido = o ponto é terra
+  OV.data.land=M.map((x,n)=>x.latitude!=null&&Math.hypot(x.latitude-(+la[n]),x.longitude-(+lo[n]))>.06);
+  OV.data.M=M.map(x=>{const h=x.hourly,t0=OV.data.t[0]/1000,o=h.time.indexOf(t0);if(o<=0)return h;const c={};for(const k in h)c[k]=h[k].slice(o);return c});SSTF.k=null;return true}
+ catch(e){console.warn("mar",e);$("#ovInfo").textContent=e.rate?e.message:"Não consegui carregar correntes e temperatura da água agora.";return false}}
 function ovIdx(){const d=OV.data,t=S.data?S.data.t[S.when]:Date.now();let best=0;d.t.forEach((x,k)=>{if(Math.abs(x-t)<Math.abs(d.t[best]-t))best=k});return best}
 // interpolação bilinear na grade; kind: wind→[u,v] km/h (para onde sopra), cur→[u,v] km/h, sst→°C
 function ovAt(kind,lat,lon,k){const fi=(lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1),fj=(lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1);
  if(fi<0||fj<0||fi>OVG.nla-1||fj>OVG.nlo-1)return null;const i=Math.min(OVG.nla-2,Math.floor(fi)),j=Math.min(OVG.nlo-2,Math.floor(fj)),a=fi-i,b=fj-j;
  if(kind==="wind")return windAt(lat,lon,k);
  const val=(ii,jj)=>{const n=ii*OVG.nlo+jj;if(kind==="wind"){const h=OV.data.F[n];const sp=h.wind_speed_10m[k],dr=h.wind_direction_10m[k];if(sp==null||dr==null)return null;return[-sp*Math.sin(dr*rad),-sp*Math.cos(dr*rad)]}
-  if(!OV.data.M||OV.data.land[n])return null;const h=OV.data.M[n];if(kind==="cur"){const sp=h.ocean_current_velocity[k],dr=h.ocean_current_direction[k];if(sp==null||dr==null)return null;return[sp*Math.sin(dr*rad),sp*Math.cos(dr*rad)]}
+  if(!OV.data.M||(OV.data.land&&OV.data.land[n]))return null;const h=OV.data.M[n];if(kind==="cur"){const sp=h.ocean_current_velocity[k],dr=h.ocean_current_direction[k];if(sp==null||dr==null)return null;return[sp*Math.sin(dr*rad),sp*Math.cos(dr*rad)]}
   const v=h.sea_surface_temperature[k];return v==null?null:[v]};
  const p=[val(i,j),val(i+1,j),val(i,j+1),val(i+1,j+1)],w=[(1-a)*(1-b),a*(1-b),(1-a)*b,a*b];let s0=0,s1=0,ws=0;p.forEach((q,n)=>{if(q){s0+=q[0]*w[n];s1+=(q[1]||0)*w[n];ws+=w[n]}});
  if(ws<.3)return null;return[s0/ws,s1/ws]}
@@ -1568,7 +1580,7 @@ function gWind(G,F,lat,lon,k){const fi=(lat-G.la0)/(G.la1-G.la0)*(G.nla-1),fj=(l
  [[i,j,(1-a)*(1-b)],[i+1,j,a*(1-b)],[i,j+1,(1-a)*b],[i+1,j+1,a*b]].forEach(([ii,jj,w])=>{const h=F[ii*G.nlo+jj],sp=h.wind_speed_10m[k],dr=h.wind_direction_10m[k];if(sp==null||dr==null)return;u+=-sp*Math.sin(dr*rad)*w;v+=-sp*Math.cos(dr*rad)*w;ws+=w});
  return ws<.3?null:[u/ws,v/ws]}
 // vento [u,v] em km/h (para onde sopra): grade fina na região, larga em volta, misturando na borda
-function windAt(lat,lon,k){if(!OV.data)return null;const l=gWind(OVG,OV.data.F,lat,lon,k),r=OV.data.R?gWind(OVR,OV.data.R,lat,lon,k):null;if(!l||!r)return l||r;const e=gEdge(OVG,lat,lon);return[l[0]*e+r[0]*(1-e),l[1]*e+r[1]*(1-e)]}
+function windAt(lat,lon,k){if(!OV.data)return null;const l=OV.data.F?gWind(OVG,OV.data.F,lat,lon,k):null,r=OV.data.R?gWind(OVR,OV.data.R,lat,lon,k):null;if(!l||!r)return l||r;const e=gEdge(OVG,lat,lon);return[l[0]*e+r[0]*(1-e),l[1]*e+r[1]*(1-e)]}
 function windEdge(lat,lon){return OV.data&&OV.data.R?gEdge(OVR,lat,lon):gEdge(OVG,lat,lon)}
 const wcol=k=>{if(k<=WCOL[0][0])return WCOL[0][1];for(let i=1;i<WCOL.length;i++)if(k<=WCOL[i][0]){const[a,ca]=WCOL[i-1],[b,cb]=WCOL[i],f=(k-a)/(b-a);return ca.map((c,n)=>Math.round(c+(cb[n]-c)*f))}return WCOL[WCOL.length-1][1]};
 const MASK={la0:-28.05,la1:-27.30,lo0:-48.85,lo1:-48.30,st:.012};MASK.nla=Math.round((MASK.la1-MASK.la0)/MASK.st)+1;MASK.nlo=Math.round((MASK.lo1-MASK.lo0)/MASK.st)+1;
@@ -1583,11 +1595,11 @@ async function loadMask(){if(WATER)return true;const c=store("pf_mask2");if(c&&c
    $("#ovInfo").textContent=`Preparando o contorno do mar (só na primeira vez)… ${Math.round(100*done/la.length)}%`}
   WATER=out.join("");store("pf_mask2",{la0:MASK.la0,lo0:MASK.lo0,st:MASK.st,nla:MASK.nla,nlo:MASK.nlo,b:WATER});$("#ovInfo").textContent="";return true}
  catch(e){console.warn("máscara",e);WATER=null;$("#ovInfo").textContent="";return false}}
-function isWater(lat,lon){if(!WATER){if(!OV.data)return true;const i=Math.round((lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1)),j=Math.round((lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1));if(i<0||j<0||i>=OVG.nla||j>=OVG.nlo)return true;return !OV.data.land[i*OVG.nlo+j]}const i=Math.round((lat-MASK.la0)/MASK.st),j=Math.round((lon-MASK.lo0)/MASK.st);if(i<0||j<0||i>=MASK.nla||j>=MASK.nlo)return true;return WATER[i*MASK.nlo+j]==="1"}
+function isWater(lat,lon){if(!WATER){if(!OV.data||!OV.data.land)return true;const i=Math.round((lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1)),j=Math.round((lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1));if(i<0||j<0||i>=OVG.nla||j>=OVG.nlo)return true;return !OV.data.land[i*OVG.nlo+j]}const i=Math.round((lat-MASK.la0)/MASK.st),j=Math.round((lon-MASK.lo0)/MASK.st);if(i<0||j<0||i>=MASK.nla||j>=MASK.nlo)return true;return WATER[i*MASK.nlo+j]==="1"}
 // temperatura da água preenchida também dentro das baías (vizinhos mais próximos do modelo oceânico)
 const SSTF={};
 function sstField(k){if(SSTF.k===k&&SSTF.g)return SSTF.g;const n=OVG.nla*OVG.nlo,g=new Array(n).fill(null);
- if(OV.data.M)for(let q=0;q<n;q++){const v=OV.data.M[q].sea_surface_temperature[k];if(v!=null&&!OV.data.land[q])g[q]=v}
+ if(OV.data.M)for(let q=0;q<n;q++){const v=OV.data.M[q].sea_surface_temperature[k];if(v!=null&&!(OV.data.land&&OV.data.land[q]))g[q]=v}
  for(let it=0;it<12&&g.some(v=>v==null);it++){const h=g.slice();for(let i=0;i<OVG.nla;i++)for(let j=0;j<OVG.nlo;j++){const q=i*OVG.nlo+j;if(h[q]!=null)continue;let s=0,c=0;
   for(const[di,dj]of[[1,0],[-1,0],[0,1],[0,-1]]){const a=i+di,b=j+dj;if(a<0||b<0||a>=OVG.nla||b>=OVG.nlo)continue;const v=h[a*OVG.nlo+b];if(v!=null){s+=v;c++}}if(c)g[q]=s/c}}
  SSTF.k=k;SSTF.g=g;return g}
@@ -1798,7 +1810,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.26";
+const APP_VERSION="2026-10-25.27";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
