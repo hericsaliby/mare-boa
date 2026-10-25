@@ -264,6 +264,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .adjs{grid-column:1/-1;font-size:12.5px;color:var(--ink-2)}
 .iconbtn{flex:0 0 auto;width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .iconbtn:focus-visible{outline:2px solid var(--sand);outline-offset:2px}
+.saved-ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -1284,7 +1285,8 @@ function topOf(arr){const m=new Map();arr.filter(Boolean).forEach(k=>m.set(k,(m.
 function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp=spot();
  const L=S.log.filter(x=>x.spot===sp.id).sort((a,b)=>b.t-a.t),good=L.filter(x=>x.res>=2);
  $("#histTitle").textContent=`Histórico deste ponto${L.length?` · ${L.length} saída${L.length>1?"s":""}, ${good.length} boa${good.length!==1?"s":""}`:""}`;
- if($("#lgSpot").value!==sp.id)$("#lgSpot").value=sp.id;
+ // não muda o ponto do formulário enquanto a pessoa preenche; só garante um valor válido
+ if(![...$("#lgSpot").options].some(o=>o.value===$("#lgSpot").value))$("#lgSpot").selectedIndex=0;
  if(!L.length){el.innerHTML=`<p class="small muted" style="margin:0">Nenhuma pescaria registrada aqui ainda. Cada registro guarda a maré, o vento e a lua daquela hora; com o tempo o app mostra em que condições e com que isca este ponto mais rende.</p>`;return}
  let h="";
  // parecido com hoje
@@ -1359,14 +1361,23 @@ let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.d
 $("#lgQty").addEventListener("input",e=>{if(e.target.value==="0")$("#lgRes").value="0";else if($("#lgRes").value==="0")$("#lgRes").value="2"});
 $("#lgWhen").addEventListener("input",e=>{e.target.dataset.touched="1"});
 $("#logDet").addEventListener("toggle",e=>{if(e.target.open){if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
-$("#logForm").addEventListener("submit",e=>{e.preventDefault();const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
- const rows=S.derived[sp].rows;const r=rows.find(x=>Math.abs(x.t-t)<HOUR/2+1);
+$("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgMsg");
+ try{
+ const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
+ if(!sp||!SPOTS.some(x=>x.id===sp)){msg.textContent="Escolha o ponto da pescaria.";return}
+ if(isNaN(t)){msg.textContent="Confira a data e a hora.";return}
+ const D=S.derived[sp],r=D?D.rows.find(x=>Math.abs(x.t-t)<HOUR/2+1):null;
  const item={id:Math.random().toString(36).slice(2),t,spot:sp,sp:$("#lgSp").value,res:+$("#lgRes").value,note:$("#lgNote").value,
   qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
-  c:condSnap(sp,t,r&&!S.demo?r:null),f:r&&!S.demo?featOf(r):null,model:S.model};
- S.log.push(item);store("pf_log",S.log);trainML();applyML();renderAll();
+  c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,model:S.model};
+ S.log.push(item);store("pf_log",S.log);
  $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
- $("#lgMsg").textContent=item.f?"Salvo com as condições daquela hora.":S.demo?"Salvo sem condições (dados de exemplo não entram no treino).":"Salvo, mas fora do período carregado (7 dias atrás até 7 à frente): não entra no treino."});
+ // mostra o histórico do ponto onde a pescaria foi registrada
+ if(S.spot!==sp)S.spot=sp;trainML();applyML();renderAll();$("#logDet").open=false;
+ const nm=(SPOTS.find(x=>x.id===sp)||{}).n||"";
+ $("#histBody").insertAdjacentHTML("afterbegin",`<div class="saved-ok">Pescaria salva em <b>${esc(nm)}</b>. ${item.f?"As condições daquela hora foram guardadas junto.":"Fora do período da previsão carregada, então foi salva sem maré e vento."}</div>`);
+ $("#histCard").scrollIntoView({behavior:"smooth",block:"start"})
+ }catch(err){console.error(err);msg.textContent="Não consegui salvar: "+(err.message||err)+". Tente de novo."}});
 $("#expLog").addEventListener("click",()=>{const blob=new Blob([JSON.stringify({app:"mare-boa",v:1,log:S.log},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="diario-pesca.json";a.click()});
 $("#impLog").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());const arr=j.log||j;const ids=new Set(S.log.map(x=>x.id));arr.forEach(x=>{if(x&&x.t&&!ids.has(x.id))S.log.push(x)});store("pf_log",S.log);trainML();applyML();renderAll();$("#lgMsg").textContent="Diário importado."}catch(err){$("#lgMsg").textContent="Arquivo inválido: "+err.message}});
 $("#useCal").checked=S.useCal;$("#useCal").addEventListener("change",e=>{S.useCal=e.target.checked;store("pf_usecal",S.useCal);rebuild();renderAll()});
@@ -1572,7 +1583,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.15";
+const APP_VERSION="2026-10-25.16";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
