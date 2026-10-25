@@ -247,6 +247,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .wxh .bar i{display:block;width:100%;background:var(--accent);border-radius:3px 3px 0 0}
 .wxd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-size:11.5px;text-align:center}
 .wxd>div{background:var(--surface-2);border-radius:8px;padding:5px 2px;display:flex;flex-direction:column;align-items:center}
+.countdown{background:var(--accent-soft);border-radius:8px;padding:6px 10px;font-size:14px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -581,6 +582,10 @@ function sunCoords(d){const M=rad*(357.5291+0.98560028*d);const L=M+rad*(1.9148*
 function moonCoords(d){const L=rad*(218.316+13.176396*d),M=rad*(134.963+13.064993*d),F=rad*(93.272+13.229350*d);const l=L+rad*6.289*Math.sin(M),b=rad*5.128*Math.sin(F);return{ra:RA(l,b),dec:DEC(l,b),dist:385001-20905*Math.cos(M)}}
 function sunAlt(ms){const d=toDays(ms),c=sunCoords(d);return ALT(SID(d,-rad*CENTER.lon)-c.ra,rad*CENTER.lat,c.dec)/rad}
 function moonAlt(ms){const d=toDays(ms),c=moonCoords(d);return ALT(SID(d,-rad*CENTER.lon)-c.ra,rad*CENTER.lat,c.dec)/rad}
+function moonDist(ms){const d=toDays(ms),D=rad*(297.85+12.190749*d),M=rad*(134.963+13.064993*d),Ms=rad*(357.529+0.98560028*d);
+ return 385001-20905*Math.cos(M)-3699*Math.cos(2*D-M)-2956*Math.cos(2*D)-570*Math.cos(2*M)+246*Math.cos(2*M-2*D)-205*Math.cos(Ms-2*D)}
+function moonDistInfo(ms){const km=moonDist(ms);return{km,txt:km<362000?"lua bem perto da Terra (perigeu): maré ainda maior":km>402000?"lua longe da Terra (apogeu): maré um pouco menor":""}}
+function inTxt(ms){const m=Math.max(0,Math.round(ms/60e3));return m<60?`${m} min`:`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")} min`}
 function moonIllum(ms){const d=toDays(ms),s=sunCoords(d),m=moonCoords(d),sd=149598000;
  const phi=Math.acos(Math.sin(s.dec)*Math.sin(m.dec)+Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(s.ra-m.ra));
  const inc=Math.atan2(sd*Math.sin(phi),m.dist-sd*Math.cos(phi));
@@ -1021,7 +1026,7 @@ function renderMoon(){if(!S.data)return;const today=dayKey(Date.now());
  const now=Date.now(),il=moonIllum(now),age=il.phase*29.53,pf=tideRangeFactor(now),ds=daySolunar(today);
  const ev=k=>{const e=ds.evs.find(x=>x.k===k);return e?fmtH.format(e.t):"–"};
  $("#moonHero").innerHTML=`${moonSVG(il.phase,96)}<div><div class="mn">${moonName(il.phase)}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${age.toFixed(1).replace(".",",")} dias desde a lua nova · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:4px">${fishIcons(ds.fish)} <span class="small">Atividade hoje: <b>${FISH_LBL[ds.fish]}</b> · ${pf>.6?"maré grande (sizígia)":pf<.35?"maré pequena (quadratura)":"maré média"}</span></div></div>
- <div class="kv"><div><b>${ev("moonrise")}</b><span>Nascer da lua</span></div><div><b>${ev("moonset")}</b><span>Pôr da lua</span></div><div><b>${ev("transit")}</b><span>Lua no meridiano</span></div><div><b>${ev("sunrise")} / ${ev("sunset")}</b><span>Nascer / pôr do sol</span></div></div>`;
+ <div class="kv"><div><b>${Math.round(moonDist(now)).toLocaleString("pt-BR")} km</b><span>Distância do centro da Terra (a que vale para a maré)${moonDistInfo(now).txt?" · "+moonDistInfo(now).txt:""}</span></div><div><b>${ev("moonrise")}</b><span>Nascer da lua</span></div><div><b>${ev("moonset")}</b><span>Pôr da lua</span></div><div><b>${ev("transit")}</b><span>Lua no meridiano</span></div><div><b>${ev("sunrise")} / ${ev("sunset")}</b><span>Nascer / pôr do sol</span></div></div>`;
  $("#moonDays").innerHTML=keys.map(k=>{const d=daySolunar(k);return`<button type="button" class="day" data-mday="${k}" aria-pressed="${k===S.moonDay}"><b>${k===today?"Hoje":fmtD.format(noonOf(k)).replace(".","")}</b>${moonSVG(d.il.phase,30)}${fishIcons(d.fish)}</button>`}).join("");
  const d=daySolunar(S.moonDay);
  $("#moonDayTitle").textContent=`${S.moonDay===today?"Hoje":fmtD.format(noonOf(S.moonDay))} · ${moonName(d.il.phase)} ${Math.round(d.il.frac*100)}% · atividade ${FISH_LBL[d.fish].toLowerCase()}`;
@@ -1507,7 +1512,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.11";
+const APP_VERSION="2026-10-25.12";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1549,7 +1554,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
  let h=`<div class="sum-h">${ICO("mare")}<h3>Maré</h3><a href="#mare" data-view="mare" class="small">detalhes</a></div>`;
  if(today&&next){const r=D.rows.find(x=>x.t===nowH);const prev=[...D.ex].reverse().find(e=>e.t<=now);
   h+=`<div class="sum-big ${next.hi?"up":"dn"}">${next.hi?"▲ Enchendo":"▼ Vazando"}${r&&r.tide!=null?` <span class="num" style="font-size:18px">${cm(r.tide)}</span>`:""}</div>
-   <div>Próxima virada: <b>${next.hi?"preamar":"baixamar"} às ${fmtH.format(next.t)}</b> <span class="muted">(em ${dur(next.t-now)})</span>${prev?`<br><span class="small muted">${next.hi?"Enche":"Vaza"} ${dm(next.h-prev.h)} desde ${fmtH.format(prev.t)}</span>`:""}</div>`;
+   <div>Próxima virada: <b>${next.hi?"preamar":"baixamar"} às ${fmtH.format(next.t)}</b> <span class="muted">(em ${inTxt(next.t-now)})</span>${prev?`<br><span class="small muted">${next.hi?"Enche":"Vaza"} ${dm(next.h-prev.h)} desde ${fmtH.format(prev.t)}</span>`:""}</div>`;
   const E=D.ep;if(E&&E.g.last){const L=E.g.last;h+=`<div class="small">Marégrafo: <b>${Math.round(L.obs)} cm</b> às ${fmtH.format(L.t)}${L.res!=null?` · <b>${L.res>=0?"+":""}${Math.round(L.res)} cm</b> ${L.res>=0?"acima":"abaixo"} do normal`:""}</div>`}}
  else h+=`<div class="sum-big">${exDay.length} viradas</div>`;
  h+=`<ul class="turns">${exDay.map(e=>{const past=e.t<now,act=next&&e.t===next.t;
@@ -1571,10 +1576,19 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
  const ds=daySolunar(S.day),il=ds.il,pf=ds.pf,ph=moonName(il.phase);
  const corre=pf>.6?`<b>Maré de sizígia:</b> a água corre mais e as viradas são fortes.`:pf<.35?`<b>Maré de quadratura (lua de quarto):</b> a água corre menos e as viradas são fracas.`:`<b>Maré média:</b> correnteza moderada.`;
  const maj=ds.per.filter(p=>p.maj),ev=k=>{const e=ds.evs.find(x=>x.k===k);return e?fmtH.format(e.t):"–"};
+ // contagem regressiva (só hoje): período solunar e sol
+ let cd="";if(today){const all=S.events.filter(e=>e.t>now-2*HOUR&&e.t<now+30*HOUR).flatMap(e=>e.k==="transit"||e.k==="under"?[{a:e.t-HOUR,b:e.t+HOUR,maj:true}]:e.k==="moonrise"||e.k==="moonset"?[{a:e.t-45*60e3,b:e.t+45*60e3,maj:false}]:[]).sort((x,y)=>x.a-y.a);
+  const curP=all.find(p=>now>=p.a&&now<=p.b),nxt=all.find(p=>p.a>now);
+  if(curP)cd+=`<div class="countdown"><b>Agora:</b> período ${curP.maj?"principal":"secundário"} · termina em <b>${inTxt(curP.b-now)}</b></div>`;
+  else if(nxt)cd+=`<div class="countdown">Próximo período ${nxt.maj?"<b>principal</b>":"secundário"}: <b>${fmtH.format(nxt.a)}–${fmtH.format(nxt.b)}</b> · em <b>${inTxt(nxt.a-now)}</b></div>`;
+  const sr=S.events.find(e=>e.k==="sunrise"&&e.t>now),ss=S.events.find(e=>e.k==="sunset"&&e.t>now);const dayNow=sunAlt(now)>-0.833;
+  cd+=`<div class="small muted">${dayNow&&ss?`Pôr do sol às ${fmtH.format(ss.t)} (em ${inTxt(ss.t-now)})`:sr?`Nascer do sol às ${fmtH.format(sr.t)} (em ${inTxt(sr.t-now)})`:""}</div>`}
+ const md=moonDistInfo(noonOf(S.day));
  $("#sumMoon").innerHTML=`<div class="sum-h">${ICO("lua")}<h3>Lua</h3><a href="#lua" data-view="lua" class="small">detalhes</a></div>
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
   <div class="small">${corre}</div>
-  <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
+  ${cd}
+  <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")} · distância <b>${Math.round(md.km/1000)} mil km</b>${md.txt?`<br><b>${md.txt}</b>`:""}</div>`;
  renderWeather();renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
 /* tempo: temperatura, chuva, nuvens e umidade */
 function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0 1 1 11.5 7a5.5 5.5 0 0 0 8.5 8.5z" fill="var(--moon-lit)" stroke="var(--ink-3)" stroke-width="1"/>`:`<circle cx="12" cy="12" r="5" fill="#f2c230"/><g stroke="#f2c230" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>`;
