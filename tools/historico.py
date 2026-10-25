@@ -35,7 +35,8 @@ try:
     hist = json.load(open(os.path.join(old_dir, "historico.json"), encoding="utf-8"))
 except Exception:  # noqa: BLE001
     hist = {}
-for k in ("floripa", "imbituba"):
+EST = json.load(open(os.path.join(os.path.dirname(__file__), "estacoes.json"), encoding="utf-8"))["epagri"]
+for k in [e["k"] for e in EST if e["id"]]:
     h = {int(t): v for t, v in hist.get(k, {}).get("rows", {}).items()} if isinstance(hist.get(k), dict) else {}
     try:
         dt = json.load(open(os.path.join(out_dir, f"{k}.json"), encoding="utf-8-sig"))

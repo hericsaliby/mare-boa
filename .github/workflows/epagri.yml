@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/epagri.yml", "tools/historico.py"]
+    paths: [".github/workflows/epagri.yml", "tools/historico.py", "tools/mares.py", "tools/coleta_epagri.py", "tools/estacoes.json"]
 permissions:
   contents: read
 concurrency: epagri
@@ -23,19 +23,12 @@ jobs:
         run: |
           git clone -q --depth 1 -b dados "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" old || mkdir -p old
           mkdir out
-          UA="Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
-          for e in "floripa getDataMare3_2951" "imbituba getDataMare6_2963"; do set -- $e
-            curl -sS -A "$UA" -D "out/$1.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/graficos/$2.php" -o "out/$1.json" || true
-          done
-          if [ ! -f old/tabua.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/index.php/tabua-de-mares/" -o out/tabua.html || true; else cp old/tabua.html out/; fi
-          if [ ! -f old/tabuamare.html ]; then curl -sSL -A "$UA" -m 60 "https://ciram.epagri.sc.gov.br/ciram_arquivos/oceano/tabuamare/tabuamare.html" -o out/tabuamare.html || true; else cp old/tabuamare.html out/; fi
-          for c in Florianopolis Imbituba; do
-            curl -sSL -A "$UA" -D "out/tabua_$c.headers.txt" -m 60 "https://ciram.epagri.sc.gov.br/ciram_arquivos/oceano/tabuamare/csv/Tabua_Mare_$c.csv" -o "out/tabua_$c.csv.new" || true
-            if [ -s "out/tabua_$c.csv.new" ] && ! grep -qi "<html" "out/tabua_$c.csv.new"; then mv "out/tabua_$c.csv.new" "out/tabua_$c.csv"; else rm -f "out/tabua_$c.csv.new"; cp "old/tabua_$c.csv" out/ 2>/dev/null || true; fi
-          done
+          python3 tools/coleta_epagri.py old out
           python3 tools/historico.py old out
+          pip install -q utide numpy >/dev/null 2>&1 || true
+          python3 tools/mares.py old out || true
           # arquivos do robô de modelos (outro workflow) seguem como estão
-          for f in modelos.json mar.json modelos_log.txt relevo.json agua.png; do cp "old/$f" out/ 2>/dev/null || true; done
+          for f in modelos.json mar.json modelos_log.txt relevo.json agua.png modelos_sc.json modelos_prsp.json mar_sc.json mar_prsp.json relevo_sc.json relevo_prsp.json agua_sc.png agua_prsp.png; do cp "old/$f" out/ 2>/dev/null || true; done
           BASE=$(git -C old rev-parse HEAD 2>/dev/null || echo "")
           date -u +%FT%TZ > out/atualizado.txt
           cd out
