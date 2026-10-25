@@ -2,7 +2,7 @@
 
 © 2026 Maré Boa — todos os direitos reservados (veja LICENSE).
 
-Previsão de pesca para a Grande Florianópolis: junta vento (GFS ou ECMWF), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
+Previsão de pesca para o litoral de Santa Catarina, Paraná e São Paulo: junta vento (GFS ou ECMWF), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
 
 ## Como usar
 
@@ -10,11 +10,13 @@ Previsão de pesca para a Grande Florianópolis: junta vento (GFS ou ECMWF), ond
 
 | Robô | Fonte | Frequência | Arquivo |
 |---|---|---|---|
-| `modelos.yml` | GFS 0,25° (NOAA/NOMADS): vento, rajada, pressão, temperatura, umidade, nuvens, chuva | a cada 3 h (nova rodada a cada 6 h) | `modelos.json` |
+| `modelos.yml` | (por região: `_sc`, `_pr`, `_sp`) GFS 0,25° (NOAA/NOMADS): vento, rajada, pressão, temperatura, umidade, nuvens, chuva | a cada 3 h (nova rodada a cada 6 h) | `modelos.json` |
 | `modelos.yml` | ECMWF IFS 0,25° (dados abertos): as mesmas variáveis | a cada 3 h (nova rodada a cada 12 h) | `modelos.json` |
 | `modelos.yml` | GFS-Wave / WaveWatch III (NOAA): ondas | a cada 3 h | `modelos.json` |
 | `modelos.yml` | Open-Meteo: temperatura da água e correntes | seg, qua e sex | `mar.json` |
-| `epagri.yml` | EPAGRI/CIRAM: marégrafos e tábua | a cada 15 min | `floripa.json`, `tabua_*.csv` |
+| `epagri.yml` | EPAGRI/CIRAM: 12 marégrafos (Itapoá a Passo de Torres) e 13 tábuas oficiais | a cada 15 min (tábuas 1x/dia) | `<estação>.json`, `tabua_*.csv`, `historico.json` |
+| `epagri.yml` | SiMCosta/FURG via IOC: marégrafos de Paranaguá, Pontal do Sul, Antonina e Ilhabela, com maré harmônica (UTide) | a cada 15 min | `mare_<estação>.json` |
+| `epagri.yml` | UHSLC: maré astronômica de Cananéia e Ubatuba | 1x/dia | `mare_<estação>.json` |
 | `modelos.yml` | Relevo e contorno do mar (Copernicus DEM 30 m, AWS), montado uma vez | uma vez | `relevo.json`, `agua.png` |
 
 A previsão de cada ponto é interpolada da grade no próprio aparelho: a localização dos pontos pessoais não sai do celular. Se os arquivos do robô ainda não existirem, o app consulta a Open-Meteo direto como reserva.
