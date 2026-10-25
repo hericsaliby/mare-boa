@@ -616,18 +616,18 @@ async function load(){
  try{
   const [fr,mr]=await Promise.all([fetchJSON(fu),fetchJSON(mu).catch(err=>{console.warn("marine",err);return null}),loadEpagri()]);
   S.data=parseData(Array.isArray(fr)?fr:[fr],mr?(Array.isArray(mr)?mr:[mr]):null);S.demo=false;
-  if(!mr)showBanner("Ondas e maré do modelo marinho não responderam. Cole uma tábua de maré na seção Dados para ver a maré.",true);
+  if(!mr)showBanner(Object.keys(S.ep||{}).length?"O modelo de ondas não respondeu agora: ondas e temperatura da água estão indisponíveis. A maré continua vindo da EPAGRI.":"O modelo de ondas e maré não respondeu agora. Tente de novo em alguns minutos.",true,true);else hideBanner();
   store("pf_cache3",{at:Date.now(),n:SPOTS.length,fr,mr});
  }catch(err){
   console.warn(err);
   const c=store("pf_cache3");
   if(c&&c.n===SPOTS.length&&Date.now()-c.at<36*HOUR){S.data=parseData(Array.isArray(c.fr)?c.fr:[c.fr],c.mr?(Array.isArray(c.mr)?c.mr:[c.mr]):null);
-   showBanner("Sem conexão. Mostrando a última previsão salva ("+fmtDH.format(c.at)+").",true)}
-  else{S.data=demoData();S.demo=true;S.ep=null;showBanner("Sem conexão com a Open-Meteo. Mostrando DADOS DE EXEMPLO, que não são previsão real. Abra o app com internet para ver a previsão.",true)}
+   showBanner("Sem conexão. Mostrando a última previsão salva ("+fmtDH.format(c.at)+").",true,true)}
+  else{S.data=demoData();S.demo=true;S.ep=null;showBanner("Não consegui buscar a previsão (sem internet ou serviço fora do ar). Mostrando DADOS DE EXEMPLO, que não são previsão real.",true,true)}
  }
  const t=S.data.t;S.events=astroEvents(t[0]-12*HOUR,t[t.length-1]+12*HOUR);
  rebuild();initMap();
- const now=Date.now();S.when=Math.max(0,S.data.t.findIndex(x=>x>now-HOUR));
+ const now=Date.now();{const k=S.data.t.findIndex(x=>x>now-HOUR);S.when=k<0?S.data.t.length-1:k}
  S.day=dayKey(S.data.t[S.when]);
  setStatus((S.demo?"Exemplo · ":"Atualizado ")+fmtH.format(Date.now()));
  renderAll();
@@ -986,12 +986,14 @@ function arrow(d,size=14){if(d==null)return"";return`<svg width="${size}" height
 
 /* ================== RENDER ================== */
 function setStatus(s){$("#status").textContent=s}
-function showBanner(s,w){const b=$("#banner");b.textContent=s;b.hidden=false;b.classList.toggle("warn",!!w)}
+function showBanner(s,w,retry){const b=$("#banner");b.innerHTML=esc(s)+(retry?' <button class="btn ghost small" type="button" id="retryBtn" style="margin-left:6px">Tentar de novo</button>':"");b.hidden=false;b.classList.toggle("warn",!!w);
+ const rb=$("#retryBtn");if(rb)rb.onclick=async()=>{rb.disabled=true;rb.textContent="Buscando…";await load()}}
+function hideBanner(){const b=$("#banner");if(b)b.hidden=true}
 /* pontos visíveis: por padrão só as Pontes (referência do marégrafo de Florianópolis) e os pontos do usuário.
    "Mostrar todos" traz os 18 pontos que vêm com o app. Os dados de todos continuam carregados. */
 function visSpots(){return S.allBase?SPOTS:SPOTS.filter(s=>s.custom||s.id===HOME_SPOT)}
 function spot(){const V=visSpots();return V.find(s=>s.id===S.spot)||V[0]}
-function renderEpStatus(){const el=$("#epStatus");if(!el)return;const ks=Object.keys(S.ep||{});
+function renderEpStatus(){const el=$("#epStatus");if(!el)return;const ks=Object.keys(S.ep||{});if(S.demo){el.innerHTML=`<span style="color:var(--warn)">Modo de exemplo: sem dados reais agora.</span>`;return}
  el.innerHTML=ks.length?"Leitura automática ativa: "+ks.map(k=>{const g=S.ep[k];return`${EP_ST[k].n}${g.last?` (última medição ${fmtDH.format(g.last.t)}, via ${S.epInfo&&S.epInfo[k]||"cache"})`:""}`}).join(" · "):`<span style="color:var(--warn)">Não consegui ler os marégrafos agora. A maré usa o modelo global; dá para informar o resíduo manualmente.</span>`}
 /* ================== LUA E SOLUNAR ================== */
 function moonSVG(p,size=44){const c=size/2,R=size/2-1.5,wax=p<.5,q=wax?p:1-p,rx=Math.abs(Math.cos(2*Math.PI*q))*R,sw=q<.25?0:1;
@@ -1378,7 +1380,7 @@ function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdic
  <div class="small num" style="margin-top:4px">Vento ${r.d!=null?dir16(r.d):"–"} ${r.raw!=null?wv(r.raw):"–"} → ${r.eff!=null?wv(r.eff):"–"} ${WU()} no ponto · onda ${r.wave!=null?r.wave.toFixed(1)+" m":"–"} · maré ${r.tide!=null?r.tide.toFixed(2)+" m"+(r.rate!=null?(r.rate>0?" ↑":" ↓"):""):"–"}</div>
  ${sp.temp?`<div class="small muted" style="margin-top:4px">${esc(sp.notes)}</div><div class="row"><input type="text" id="pinName" placeholder="Nome do ponto" style="flex:1;min-width:0"><button class="btn" type="button" data-pinsave="1">Salvar</button></div>`:""}
  <div class="row"><button class="btn ghost" type="button" data-spot="${sp.id}">Ver detalhes e gráficos</button></div></div>`}
-function openPopup(sp){const m=MK[sp.id];if(!m)return;m.unbindPopup();m.bindPopup(popupHTML(sp),{maxWidth:300,autoPanPadding:[20,20]}).openPopup()}
+function openPopup(sp){const m=MK[sp.id];if(!m){L.popup({maxWidth:300}).setLatLng([sp.lat,sp.lon]).setContent(popupHTML(sp)).openOn(MAP);return}m.unbindPopup();m.bindPopup(popupHTML(sp),{maxWidth:300,autoPanPadding:[20,20]}).openPopup()}
 
 /* Exposição calculada: para cada uma das 16 direções, olha 0,4 a 25 km na direção de onde vem o vento.
    Distância até a primeira terra (pista de vento) e ângulo dos morros dizem o quanto o vento e a onda chegam. */
@@ -1414,7 +1416,8 @@ function makePinSpot(lat,lon,ex,mc){
  return{id:"pin",custom:true,temp:true,n:`Pin ${(-lat).toFixed(3)}S ${(-lon).toFixed(3)}O`,r:"Ponto marcado no mapa",lat,lon,t,wx,sx,
   lag:mc.kind==="lagoa"?180:mc.kind==="baia"?45:0,amp:mc.kind==="lagoa"?.15:mc.kind==="baia"?1.1:1,m:mc.m,notes}}
 async function dropPin(lat,lon){
- const near=SPOTS.find(s=>!s.temp&&distKm(s,{lat,lon})<.5);
+ // só abre um ponto existente se o toque foi praticamente em cima dele (e se ele está visível no mapa)
+ const near=visSpots().find(s=>!s.temp&&MK[s.id]&&distKm(s,{lat,lon})<.06);
  if(near){selectSpot(near.id,false);openPopup(near);return}
  PIN=L.popup({maxWidth:300}).setLatLng([lat,lon]).setContent('<div class="pop">Buscando a previsão e analisando o relevo em volta…</div>').openOn(MAP);
  try{const mc=pinMarineCoord(lat,lon);
@@ -1504,7 +1507,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.10";
+const APP_VERSION="2026-10-25.11";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
