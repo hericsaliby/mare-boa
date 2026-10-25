@@ -190,9 +190,13 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .ctx-row{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
 .ctx .days{max-width:1100px;margin:6px auto 0}
 .ctx .day{min-width:58px;padding:4px 8px}
-@media (max-width:560px){.ctx .status{display:none}}
+@media (max-width:560px){.ctx .status{display:none}.brand-m{display:none}.fishpick select{max-width:118px}}
 .brand-m{font-family:var(--display);font-weight:700;font-size:21px;white-space:nowrap}
 .spotpick{flex:1;min-width:0}
+.fishpick select{font-weight:600;font-size:15px;padding:8px 10px;max-width:150px}
+.fishpick select.on{border-color:var(--sand);background:color-mix(in srgb,var(--sand) 14%,var(--surface))}
+.fishcard ul{margin:4px 0 0;padding-left:18px}
+.fishcard li{margin:2px 0}
 .spotpick select{width:100%;max-width:440px;font-weight:600;font-size:15px;padding:8px 10px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .content{max-width:1100px;margin:0 auto;padding-block:14px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -233,6 +237,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <div class="ctx-row">
     <span class="brand-m">Maré Boa</span>
     <label class="spotpick" for="spotSel"><span class="sr">Ponto</span><select id="spotSel" aria-label="Ponto de pesca"></select></label>
+    <label class="fishpick" for="fishSel"><span class="sr">Peixe alvo</span><select id="fishSel" aria-label="Peixe alvo"></select></label>
     <span class="status" id="status">Carregando…</span>
   </div>
   <div class="days" id="days" role="group" aria-label="Dia"></div>
@@ -245,6 +250,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="score-big num" id="spotScore"></div>
       <div style="min-width:0;flex:1"><div class="row" style="gap:8px"><h2 id="spotName"></h2><span id="spotType" class="tag neu"></span></div><div id="spotVerdict" style="font-weight:600;margin-top:4px"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div></div>
     </div>
+    <article class="card fishcard" id="sumFish" hidden></article>
     <div class="trio">
       <article class="card sum" id="sumTide" aria-label="Maré"></article>
       <article class="card sum" id="sumWind" aria-label="Vento no ponto"></article>
@@ -495,6 +501,7 @@ const SPECIES=[
 ];
 
 /* ================== UTIL ================== */
+const FISH_KEYS=["geral","robalo","tainha","corvina","anchova","garoupa"];
 const UNITS={kmh:{l:"km/h",f:1},kn:{l:"nós",f:1/1.852},ms:{l:"m/s",f:1/3.6}};
 const UF=()=>UNITS[S.unit].f,WU=()=>UNITS[S.unit].l;
 const wv=v=>v==null?"–":Math.round(v*UF());
@@ -546,7 +553,7 @@ function astroEvents(t0,t1){
  return ev}
 
 /* ================== ESTADO ================== */
-const S={unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:store("pf_model")||"gfs_seamless",spot:store("pf_spot")||"ribeirao",when:0,day:null,
+const S={fish:(()=>{try{const f=JSON.parse(localStorage.getItem("pf_fish"));return f&&FISH_KEYS.includes(f)?f:"geral"}catch(e){return"geral"}})(),unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:store("pf_model")||"gfs_seamless",spot:store("pf_spot")||"ribeirao",when:0,day:null,
  log:store("pf_log")||[],calib:store("pf_calib_kmh")||{},tideTable:store("pf_tide")||null,gauge:store("pf_gauge")||null,useCal:store("pf_usecal")!==false,events:[],ml:null,derived:{}};
 
 /* ================== BUSCA DE DADOS ================== */
@@ -796,6 +803,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    let lo=1e9,hi=-1e9,rmax=0;for(let k=Math.max(0,i-12);k<=Math.min(n-1,i+12);k++){const v=tide.h[k];if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}if(rate[k]!=null)rmax=Math.max(rmax,Math.abs(rate[k]))}
    const lvl=tide.h[i]!=null&&hi>lo?(tide.h[i]-lo)/(hi-lo):null,mov=rate[i]!=null&&rmax>0?Math.abs(rate[i])/rmax:null,rising=rate[i]!=null?rate[i]>0:null;
    const dp=o.pres[i]!=null&&o.pres[i-3]!=null?o.pres[i]-o.pres[i-3]:null;
+   let rain24=0;for(let k=Math.max(0,i-23);k<=i;k++)rain24+=o.rain[k]||0;
    const sol=solScore(t[i]),rf=tideRangeFactor(t[i]);
    const W=WEIGHTS[sp.t];
    let mare=.6;if(mov!=null){
@@ -811,8 +819,59 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    if(sp.t==="costao"&&wave!=null&&wave>2.2)danger="mar grosso no costão";
    if(gc!=null&&gc>60)danger=(danger?danger+" e ":"")+"rajadas fortes";
    if(danger)sc=Math.min(sc,2);
-   rows.push({i,t:t[i],raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],rain:o.rain[i],pres:o.pres[i]})}
-  S.derived[sp.id]={rows,tideSrc:tide.src,ep:tide.ep||null,ex:tideExtremes(rows)}}}
+   rows.push({i,t:t[i],rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],rain:o.rain[i],pres:o.pres[i]})}
+  const ex=tideExtremes(rows);
+  if(S.fish!=="geral")applyFish(sp,rows,ex);
+  S.derived[sp.id]={rows,tideSrc:tide.src,ep:tide.ep||null,ex}}}
+/* ================== PEIXE ALVO ==================
+ Cada perfil muda os pesos da nota. Base científica (robalo): param de comer ~14 °C (NOAA, Flórida);
+ adultos mais ativos à noite (Dantas & Barletta 2016); mais densidade perto de estrutura (mesmo estudo);
+ agregação de desova perto de lua nova/cheia no verão (PLoS ONE 2014). Prática de pesca: água em movimento,
+ começo da enchente/vazante, água turva depois de chuva. */
+const lerp=(pts,x)=>{if(x==null)return null;if(x<=pts[0][0])return pts[0][1];for(let i=1;i<pts.length;i++)if(x<=pts[i][0]){const[a,fa]=pts[i-1],[b,fb]=pts[i];return fa+(fb-fa)*(x-a)/(b-a)}return pts[pts.length-1][1]};
+const FISH={
+ geral:{n:"Qualquer peixe"},
+ robalo:{n:"Robalo",hab:{canal:1,baia:.85,lagoa:.8,costao:.6,praia:.45},temp:[[13,0],[15,.15],[18,.5],[21,.85],[23,1],[29,1],[32,.75]],luz:"noite",mare:"virada",
+  w:{mare:.3,luz:.2,agua:.18,vento:.12,lua:.08,chuva:.06,pres:.06},chuvaBoa:true,
+  info:["Água abaixo de ~14 °C: o robalo para de comer (estudo da NOAA). Acima de 22 °C fica mais ativo.","Adultos ficam mais ativos à noite e no lusco-fusco (Dantas & Barletta, 2016).","Fica perto de estrutura: pontes, pilares, molhes, pedras e mangue. Canais e baías pontuam mais que praia aberta.","Água em movimento, principalmente nas primeiras horas depois da virada. No estofo cai muito.","Lua nova e cheia: maré mais forte; no verão o robalo se agrupa nessas luas para desovar (PLoS ONE, 2014).","Água turva depois de chuva costuma ajudar em barras e canais (prática de pesca)."]},
+ tainha:{n:"Tainha",hab:{praia:1,canal:1,baia:.6,lagoa:.7,costao:.4},temp:[[14,.6],[16,1],[21,1],[24,.4]],luz:"dia",mare:"movimento",meses:[5,6,7],
+  w:{especial:.3,agua:.2,mare:.15,vento:.1,luz:.1,mar:.1,pres:.05},
+  info:["Safra de maio a julho, com água fria.","Entra com vento sul depois da frente fria.","Praias abertas, barras e canais."]},
+ corvina:{n:"Corvina",hab:{praia:1,baia:.95,canal:.95,lagoa:.6,costao:.4},temp:[[16,.3],[19,.8],[22,1],[27,1],[30,.6]],luz:"noite",mare:"enchente",
+  w:{mare:.28,luz:.2,agua:.15,vento:.15,mar:.1,lua:.07,pres:.05},
+  info:["Maré de enchente e começo da noite.","Praias, baías e pontes; gosta de água mexida sem exagero."]},
+ anchova:{n:"Anchova",hab:{costao:1,praia:.6,canal:.6,baia:.3,lagoa:.1},temp:[[14,.6],[16,1],[20,1],[23,.4]],luz:"crepusculo",mare:"movimento",meses:[5,6,7,8,9],
+  w:{especial:.25,mar:.2,agua:.15,luz:.15,vento:.1,mare:.1,pres:.05},
+  info:["Melhor nos dias depois da frente fria (pressão subindo, vento sul enfraquecendo).","Costões com mar mexido moderado, de manhã cedo e no fim da tarde.","Inverno, água entre 16 e 20 °C."]},
+ garoupa:{n:"Garoupa",hab:{costao:1,canal:.4,baia:.3,praia:.1,lagoa:0},temp:[[18,.2],[21,.8],[23,1],[28,1]],luz:"dia",mare:"movimento",
+  w:{mar:.3,agua:.2,vento:.15,mare:.15,luz:.1,pres:.1},
+  info:["Costões e ilhas com mar calmo e água limpa.","Água quente (acima de 21 °C), de novembro a abril."]}};
+function applyFish(sp,rows,ex){const F=FISH[S.fish];if(!F||!F.w)return;
+ for(const r of rows){const why=[],neg=[];let prev=null;for(const e of ex){if(e.t<=r.t)prev=e;else break}
+  const since=prev?(r.t-prev.t)/HOUR:null,enchendo=r.rising;
+  // maré
+  let mare=r.mov==null?.5:.15+.85*r.mov;
+  if(F.mare==="virada"&&since!=null){if(since>=.3&&since<=3){mare=Math.min(1,mare+.25);why.push(`${enchendo?"começo da enchente":"começo da vazante"} (${dur(since*HOUR)} após a virada)`)}}
+  if(F.mare==="enchente"&&enchendo)mare=Math.min(1,mare+.2);
+  if(r.mov!=null&&r.mov<.15){mare*=.4;neg.push("estofo de maré")}else if(F.mare==="enchente"&&enchendo)why.push("maré enchendo");
+  // luz
+  const al=sunAlt(r.t);let luz;
+  if(F.luz==="noite"){luz=al<-6?1:al<6?.95:.35;if(al<6)why.push(al<-6?"noite":"lusco-fusco")}
+  else if(F.luz==="crepusculo"){luz=Math.abs(al)<8?1:al>0?.55:.35;if(Math.abs(al)<8)why.push("amanhecer/entardecer")}
+  else{luz=al>3?1:al>-4?.7:.25}
+  // água
+  let agua=r.sst!=null?lerp(F.temp,r.sst):.6;
+  if(r.sst!=null){if(agua<.3)neg.push(`água fria ${r.sst.toFixed(0)} °C`);else if(agua>.85)why.push(`água ${r.sst.toFixed(0)} °C`)}
+  const lua=.5+.5*r.rf;if(r.rf>.8&&F.w.lua)why.push("lua nova/cheia (maré forte)");
+  let chuva=r.c.chuva;if(F.chuvaBoa&&(sp.t==="canal"||sp.t==="baia"||sp.t==="lagoa")&&r.rain24>=8){chuva=1;why.push("água turva depois da chuva")}
+  let esp=.5;
+  if(S.fish==="tainha"){const mon=+fmtKey.format(r.t).slice(5,7),sul=r.d!=null&&r.d>=150&&r.d<=250&&r.raw>12;esp=(F.meses.includes(mon)?.6:.1)+(sul?.4:0);if(sul&&F.meses.includes(mon))why.push("vento sul na safra");if(!F.meses.includes(mon))neg.push("fora da safra")}
+  if(S.fish==="anchova"){const mon=+fmtKey.format(r.t).slice(5,7),pos=r.dp!=null&&r.dp>.8;esp=(F.meses.includes(mon)?.5:.15)+(pos?.5:0);if(pos)why.push("pressão subindo (pós-frente)");if(!F.meses.includes(mon))neg.push("fora da época")}
+  const C={mare,luz,agua,vento:r.c.vento,mar:r.c.mar,lua,chuva,pres:r.c.pres,especial:esp};
+  let sc=0,ws=0;for(const k in F.w){sc+=F.w[k]*C[k];ws+=F.w[k]}sc=sc/ws;
+  const hab=F.hab[sp.t]??.6;sc*=(.55+.45*hab);
+  if(F.meses&&!F.meses.includes(+fmtKey.format(r.t).slice(5,7)))sc*=.55; // fora da época
+  r.gen=r.score;r.score=r.danger?Math.min(10*sc,2):clamp(10*sc,0,10);r.fishWhy=why;r.fishNeg=neg;r.since=since}}
 
 /* ================== APRENDIZADO PESSOAL (regressão logística) ================== */
 const FEATS=[["vento","Vento no ponto (fraco)"],["mar","Mar adequado"],["mare","Movimento de maré"],["enchendo","Maré enchendo"],["nivel","Maré alta"],["sol","Sol/lua (períodos)"],["pres","Pressão favorável"],["sizigia","Maré de sizígia"],["noite","Noite"],["agua","Água quente"]];
@@ -836,6 +895,8 @@ function applyML(){for(const sp of SPOTS)for(const r of S.derived[sp.id].rows){i
 function verdict(sc){return sc>=7.5?["Ótimo","good"]:sc>=6?["Bom","good"]:sc>=4.5?["Regular","warn"]:["Fraco","bad"]}
 function pillStyle(sc){const k=Math.round(clamp(sc,0,10)/2);const bg=`var(--s${clamp(k,0,5)})`;return`background:${bg};color:${k>=3?"var(--accent-ink)":"var(--ink)"}`}
 function reasons(r,sp){const out=[];
+ if(r.fishWhy){if(r.danger)out.push("⚠ "+r.danger);r.fishWhy.forEach(x=>out.push(x));r.fishNeg.forEach(x=>out.push(x));
+  if(r.d!=null&&r.exp<.3)out.push("abrigado do vento "+dir8(r.d));else if(r.d!=null&&r.exp>.75&&r.raw>15)out.push("exposto ao vento "+dir8(r.d));return out.slice(0,5)}
  if(r.danger)out.push("⚠ "+r.danger);
  if(r.d!=null){const nm="vento "+dir8(r.d);
   if(r.exp<.3)out.push(`abrigado do ${nm}`);else if(r.exp>.75&&r.raw>15)out.push(`exposto ao ${nm}`);else out.push(`${nm} ${wv(r.raw)} ${WU()}`)}
@@ -898,7 +959,7 @@ function renderMoon(){if(!S.data)return;const today=dayKey(Date.now());
 function renderAll(){renderEpStatus();renderMyList();renderMoon();renderModels();renderRank();renderSpot();renderSpecies();renderLog()}
 function renderUnits(){document.querySelectorAll("#unitSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.u===S.unit));document.querySelectorAll(".wu").forEach(e=>e.textContent=WU())}
 function renderModels(){renderUnits();const el=$("#modelSeg");el.innerHTML=MODELS.map(m=>`<button type="button" data-m="${m.k}" aria-pressed="${m.k===S.model}">${m.n}</button>`).join("");
- $("#rankModel").textContent="Modelo "+MODELS.find(m=>m.k===S.model).n+(S.ml&&S.ml.ready?" + seu histórico":"")}
+ $("#rankModel").textContent=(S.fish!=="geral"?"Para "+FISH[S.fish].n.toLowerCase()+" · ":"")+"Modelo "+MODELS.find(m=>m.k===S.model).n+(S.ml&&S.ml.ready?" + seu histórico":"")}
 function renderRank(){
  updateMarkers();
  const t=S.data.t,i=S.when;const sl=$("#when");sl.max=t.length-1;sl.value=i;$("#whenLbl").textContent=fmtDH.format(t[i]);
@@ -910,7 +971,7 @@ function renderRank(){
 function renderSpot(){
  const sp=spot(),D=S.derived[sp.id],r=D.rows[S.when];
  $("#spotName").textContent=sp.n;$("#spotType").textContent=TYPE_LBL[sp.t]+" · "+sp.r;
- $("#spotScore").innerHTML=`${r.score.toFixed(1)}<small>/10</small>`;
+ $("#spotScore").innerHTML=`${r.score.toFixed(1)}<small>/10</small>`+(S.fish!=="geral"?`<div class="small" style="font-family:var(--body);font-size:12px;color:var(--ink-3)">nota p/ ${FISH[S.fish].n.toLowerCase()}</div>`:"");
  const[v,cls]=verdict(r.score);$("#spotVerdict").innerHTML=`<span class="tag ${r.danger?"bad":cls}">${r.danger?"Perigoso":v}</span> <span class="small muted">${fmtDH.format(r.t)}</span>`;
  $("#spotWhy").textContent=reasons(r,sp).join(" · ")+(r.p!=null?` · seu histórico: ${Math.round(r.p*100)}% de chance de saída boa`:"");
  const il=moonIllum(r.t);
@@ -1066,7 +1127,8 @@ function updateReadout(ci){const r=CH.rows[ci];if(!r)return;const sp=spot();upda
  $("#readout").innerHTML=`<b class="num">${fmtDH.format(r.t)}</b> · nota <b class="num">${r.score.toFixed(1)}</b> · vento ${r.d!=null?dir16(r.d):"–"} <span class="num">${r.raw!=null?wv(r.raw):"–"}</span> ${WU()} (no ponto <span class="num">${r.eff!=null?wv(r.eff):"–"}</span>, rajada <span class="num">${r.g!=null?wv(r.g):"–"}</span>) · maré <span class="num">${r.tide!=null?r.tide.toFixed(2):"–"}</span> m ${r.rate!=null?(r.rate>0?"enchendo":"vazando"):""} · onda <span class="num">${r.wave!=null?r.wave.toFixed(1):"–"}</span> m<br><span class="muted">${esc(reasons(r,sp).join(" · "))}</span>`;
  document.querySelectorAll(".chart .xh").forEach(l=>{l.setAttribute("x1",CH.x(ci));l.setAttribute("x2",CH.x(ci))})}
 function renderWindows(){const sp=spot(),rows=S.derived[sp.id].rows,now=Date.now()-HOUR;const fut=rows.filter(r=>r.t>=now);const wins=[];let cur=null;
- for(const r of fut){if(r.score>=6.3&&!r.danger){if(!cur)cur={a:r,b:r,s:0,n:0};cur.b=r;cur.s+=r.score;cur.n++}else if(cur){wins.push(cur);cur=null}}if(cur)wins.push(cur);
+ const sc_=fut.map(r=>r.score).sort((a,b)=>a-b),thr=Math.max(6.3,sc_[Math.floor(sc_.length*.75)]||0);
+ for(const r of fut){if(r.score>=thr&&!r.danger){if(!cur)cur={a:r,b:r,s:0,n:0};cur.b=r;cur.s+=r.score;cur.n++}else if(cur){wins.push(cur);cur=null}}if(cur)wins.push(cur);
  const top=wins.filter(w=>w.n>=2).map(w=>({...w,m:w.s/w.n,rank:w.s/w.n*Math.sqrt(w.n)})).sort((a,b)=>b.rank-a.rank).slice(0,6).sort((a,b)=>a.a.t-b.a.t);
  $("#windows").innerHTML=top.length?top.map(w=>`<li><span class="pill" style="${pillStyle(w.m)}">${w.m.toFixed(1)}</span><span><b>${fmtDH.format(w.a.t)}</b> até ${dayKey(w.b.t+HOUR)===dayKey(w.a.t)?fmtH.format(w.b.t+HOUR):fmtDH.format(w.b.t+HOUR)}<br><span class="small muted">${esc(reasons(w.a,sp).slice(0,3).join(" · "))}</span></span></li>`).join(""):`<li class="muted">Nenhuma janela boa nos próximos dias para este ponto. Veja o ranking: outro ponto pode estar abrigado.</li>`}
 function renderSpecies(){const mon=+fmtKey.format(Date.now()).slice(5,7);const sst=S.derived[SPOTS[0].id].rows[S.when].sst;
@@ -1310,6 +1372,20 @@ function renderSpotSel(){const sel=$("#spotSel");const key=SPOTS.map(s=>s.id+s.n
  sel.value=spot().id;
  $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}`}
 $("#spotSel").addEventListener("change",e=>selectSpot(e.target.value,false));
+$("#fishSel").innerHTML=FISH_KEYS.map(k=>`<option value="${k}">${k==="geral"?"Peixe: qualquer":FISH[k].n}</option>`).join("");$("#fishSel").value=S.fish;$("#fishSel").classList.toggle("on",S.fish!=="geral");
+$("#fishSel").addEventListener("change",e=>{S.fish=e.target.value;store("pf_fish",S.fish);e.target.classList.toggle("on",S.fish!=="geral");if(!S.data)return;rebuild();renderAll();showView(S.view||"resumo",false)});
+const FISH_SRC=`<a href="https://repository.library.noaa.gov/view/noaa/71460" target="_blank" rel="noopener">NOAA (temperatura)</a> · <a href="https://busqueda.bvsalud.org/portal/resource/pt/mdl-27221331" target="_blank" rel="noopener">Dantas &amp; Barletta 2016</a> · <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4226575/" target="_blank" rel="noopener">PLoS ONE 2014 (desova e lua)</a>`;
+function renderFishCard(){const el=$("#sumFish");if(!el)return;const F=FISH[S.fish];if(!F||!F.w){el.hidden=true;return}el.hidden=false;
+ const sp=spot(),rows=dayRows();const hab=F.hab[sp.t]??.6;
+ // melhores horários do dia para o peixe
+ const mx=Math.max(...rows.map(r=>r.score)),thr=Math.max(6.5,mx-1.2);
+ const wins=[];let cur=null;for(const r of rows){if(r.score>=thr&&!r.danger){if(!cur)cur={a:r,b:r,s:0,n:0};cur.b=r;cur.s+=r.score;cur.n++}else if(cur){wins.push(cur);cur=null}}if(cur)wins.push(cur);
+ wins.sort((a,b)=>b.s/b.n-a.s/a.n);const top=wins.slice(0,3).sort((a,b)=>a.a.t-b.a.t);
+ const best=rows.reduce((m,r)=>r.score>m.score?r:m,rows[0]);
+ el.innerHTML=`<div class="sum-h"><h3>${F.n} neste ponto</h3><span class="tag ${hab>=.8?"good":hab>=.55?"warn":"bad"}">${hab>=.8?"lugar bom para "+F.n.toLowerCase():hab>=.55?"lugar razoável":"lugar fraco para "+F.n.toLowerCase()}</span></div>
+  <div>${top.length?"Melhores horários do dia: "+top.map(w=>`<b>${fmtH.format(w.a.t)}–${fmtH.format(w.b.t+HOUR)}</b> <span class="num muted">(${(w.s/w.n).toFixed(1)})</span>`).join(" · "):`Nenhum horário bom hoje. Melhor hora: <b>${fmtH.format(best.t)}</b> (nota ${best.score.toFixed(1)})`}</div>
+  ${best.fishWhy?`<div class="small">${best.fishWhy.length?"A favor às "+fmtH.format(best.t)+": "+esc(best.fishWhy.join(" · ")):""}${best.fishNeg.length?`<br><span style="color:var(--warn)">Contra: ${esc(best.fishNeg.join(" · "))}</span>`:""}</div>`:""}
+  <details><summary class="small">O que pesa para o ${F.n.toLowerCase()}</summary><ul class="small">${F.info.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${S.fish==="robalo"?`<div class="small muted">Fontes: ${FISH_SRC}. O resto vem da prática de pesca.</div>`:""}</details>`}
 
 /* ================== RESUMO: maré, vento e lua do ponto e do dia escolhidos ================== */
 const ICO=k=>(document.querySelector(`.side a[data-view="${k}"] svg`)||{}).outerHTML||"";
@@ -1346,7 +1422,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
   <div class="small">${corre}</div>
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
- renderTimeline()}
+ renderFishCard();renderTimeline()}
 
 /* linha do tempo: maré + janelas do robalo, vento no ponto, lua/sol e nota, hora a hora */
 let TL=null;
