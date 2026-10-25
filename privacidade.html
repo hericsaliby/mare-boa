@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Privacidade · Maré Boa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root{--bg:#f1f4f3;--surface:#fff;--ink:#0e2830;--ink-2:#3f5a62;--line:#dbe4e3;--accent:#0b6e8a}
+@media (prefers-color-scheme:dark){:root{--bg:#081a20;--surface:#0f252c;--ink:#e2eef0;--ink-2:#a9c0c5;--line:#21414a;--accent:#4fb8d1;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Source Sans 3","Segoe UI",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-left,0px)) 60px}
+h1{font-size:30px;line-height:1.15;margin:0 0 4px}
+h2{font-size:20px;margin:28px 0 6px}
+p,li{color:var(--ink-2)}
+a{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--ink-2);font-weight:600}
+.tw{overflow-x:auto}
+.muted{color:var(--ink-2);font-size:15px}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← Voltar para o Maré Boa</a></p>
+  <h1>Política de Privacidade</h1>
+  <p class="muted">Última atualização: 25 de outubro de 2026</p>
+
+  <div class="card">
+    <p style="margin:0"><b>Em resumo:</b> o Maré Boa não tem cadastro e não guarda nenhum dado seu em servidor. Seus pontos, seu diário de pesca e suas preferências ficam só no seu aparelho. Para mostrar a previsão, o app consulta serviços públicos de tempo e maré, e alguns deles recebem a localização dos pontos consultados.</p>
+  </div>
+
+  <h2>Quem é o responsável</h2>
+  <p>O Maré Boa é mantido por <b>[nome do responsável]</b>. Para qualquer pedido sobre privacidade, escreva para <b>[e-mail de contato]</b>.</p>
+
+  <h2>O que fica no seu aparelho</h2>
+  <p>Estes dados são gravados apenas no navegador do seu celular ou computador (armazenamento local). Nós não temos acesso a eles:</p>
+  <ul>
+    <li>Pontos de pesca que você marcou ou importou (nome e localização).</li>
+    <li>Diário de pesca: data, ponto, espécie, quantidade, tamanho, isca, resultado, observações e as condições de tempo e maré daquela hora.</li>
+    <li>Preferências: ponto e peixe escolhidos, unidade do vento, modelo, tema claro/escuro.</li>
+    <li>Cópias temporárias da previsão e do contorno do mar, para o app abrir mais rápido e funcionar sem internet.</li>
+  </ul>
+  <p>Você pode baixar uma cópia de tudo ou apagar tudo a qualquer momento em <b>Mais → Privacidade e seus dados</b>. Se você limpar os dados do navegador, essas informações também são apagadas.</p>
+
+  <h2>O que é enviado a outros serviços</h2>
+  <p>Para funcionar, o app busca informações em serviços externos. Como em qualquer acesso à internet, eles recebem o endereço IP do seu aparelho. Nenhum deles recebe seu nome, telefone ou diário.</p>
+  <div class="tw"><table>
+    <tr><th>Serviço</th><th>Para quê</th><th>O que recebe</th></tr>
+    <tr><td>Open-Meteo (Suíça)</td><td>Previsão de vento, chuva, ondas, temperatura da água e altitude do terreno</td><td>A localização (latitude e longitude) dos pontos consultados, inclusive dos seus pontos, sem nome</td></tr>
+    <tr><td>EPAGRI/CIRAM (Santa Catarina)</td><td>Marégrafos e tábua de marés</td><td>Apenas o pedido dos dados públicos das estações</td></tr>
+    <tr><td>GitHub (EUA)</td><td>Hospedagem do app e cópia de reserva dos dados da EPAGRI</td><td>Endereço IP e página acessada</td></tr>
+    <tr><td>OpenStreetMap e Esri</td><td>Imagens do mapa</td><td>A área do mapa que você está vendo</td></tr>
+    <tr><td>Google Fonts e cdnjs</td><td>Fontes e biblioteca do mapa</td><td>Endereço IP</td></tr>
+  </table></div>
+  <p>Ao compartilhar uma previsão pelo botão "Compartilhar", o texto vai para o aplicativo que você escolher (por exemplo, WhatsApp). O texto leva o nome do ponto, nunca as coordenadas.</p>
+
+  <h2>O que o Maré Boa não faz</h2>
+  <ul>
+    <li>Não usa cookies de rastreamento nem ferramentas de análise de comportamento.</li>
+    <li>Não vende nem compartilha dados com anunciantes.</li>
+    <li>Não pede acesso à sua localização (GPS), câmera ou contatos.</li>
+  </ul>
+
+  <h2>Seus direitos (LGPD)</h2>
+  <p>A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) garante a você confirmar se há tratamento de dados, acessar, corrigir, levar para outro serviço e apagar seus dados, além de revogar consentimentos. Como seus dados ficam no seu aparelho, você mesmo exerce esses direitos pelos botões "Baixar todos os meus dados" e "Apagar todos os meus dados". Para dúvidas, use o contato acima.</p>
+
+  <h2>Crianças e adolescentes</h2>
+  <p>O app não foi feito para coletar dados de crianças. Como não há cadastro, nenhum dado de menores é guardado em servidor.</p>
+
+  <h2>Mudanças nesta política</h2>
+  <p>Se o Maré Boa passar a ter cadastro, comunidade ou anúncios, esta política será atualizada antes, explicando quais dados serão coletados, para quê e por quanto tempo, e o app vai pedir o seu consentimento.</p>
+</main>
+</body>
+</html>
