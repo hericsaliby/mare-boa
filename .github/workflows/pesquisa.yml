@@ -1,0 +1,43 @@
+name: Pesquisa de fontes de maré (temporário)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/pesquisa.yml"]
+permissions:
+  contents: read
+jobs:
+  pesquisa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Baixa páginas e listas de estações
+        run: |
+          mkdir p && cd p
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+          g(){ curl -sSL -A "$UA" -m 60 "$2" -o "$1" -w "%{http_code} $2\n" >> log.txt 2>&1 || echo "ERRO $2" >> log.txt; }
+          g ioc_stations.json "https://www.ioc-sealevelmonitoring.org/service.php?query=stationlist&showall=all"
+          g uhslc_brazil.csv 'https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_fast.csv?station_name,station_country,latitude,longitude,uhslc_id,time&station_country=%22Brazil%22&time%3E=2026-09-01'
+          g uhslc_rq_brazil.csv 'https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_rqds.csv?station_name,station_country,latitude,longitude,uhslc_id&station_country=%22Brazil%22&distinct()'
+          g femar_indice.html "https://www.fundacaofemar.org.br/biblioteca/emb/indice.html"
+          g femar_estacoes.html "https://www.fundacaofemar.org.br/biblioteca/emb/tabelas.html"
+          g marinha_mare.html "https://www.marinha.mil.br/chm/dados-do-segnav/dados-de-mare-mapa"
+          g marinha_tabuas.html "https://www.marinha.mil.br/chm/tabuas-de-mare"
+          g epagri_maregrafos.html "https://ciram.epagri.sc.gov.br/index.php/maregrafos/"
+          g ibge_rmpg.html "https://www.ibge.gov.br/geociencias/informacoes-sobre-posicionamento-geodesico/rede-geodesica/10842-rmpg-rede-maregrafica-permanente-para-geodesia.html"
+          # páginas de estações do FEMAR citadas no índice (SP, PR, SC)
+          for u in $(grep -oiE 'href="[^"]+"' femar_indice.html femar_estacoes.html 2>/dev/null | cut -d'"' -f2 | grep -iE 'paranagu|santos|canan|ubatuba|sebasti|guaratuba|iguape|bertioga|pontal|antonina|galheta|cotinga|superagui|francisco|itaja|imbituba|florian|laguna' | sort -u | head -60); do
+            case "$u" in http*) url="$u";; /*) url="https://www.fundacaofemar.org.br$u";; *) url="https://www.fundacaofemar.org.br/biblioteca/emb/$u";; esac
+            g "femar_$(basename "$u" | tr -c 'A-Za-z0-9._-' '_')" "$url"
+          done
+          for s in 2951 2963; do :; done
+          # outras estações da EPAGRI (getDataMareN_XXXX)
+          grep -oE 'getDataMare[0-9]+_[0-9]+' epagri_maregrafos.html | sort -u > epagri_estacoes.txt || true
+          ls -la >> log.txt
+      - name: Grava no branch "pesquisa"
+        run: |
+          cd p && git init -q -b pesquisa && git add -A
+          git -c user.name=mare-boa-bot -c user.email=mare-boa-bot@users.noreply.github.com commit -qm "pesquisa $(date -u +%FT%TZ)"
+          git push -fq "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" pesquisa
