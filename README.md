@@ -15,7 +15,7 @@ Previsão de pesca para a Grande Florianópolis: junta vento (GFS ou ECMWF), ond
 | `modelos.yml` | GFS-Wave / WaveWatch III (NOAA): ondas | a cada 3 h | `modelos.json` |
 | `modelos.yml` | Open-Meteo: temperatura da água e correntes | seg, qua e sex | `mar.json` |
 | `epagri.yml` | EPAGRI/CIRAM: marégrafos e tábua | a cada 15 min | `floripa.json`, `tabua_*.csv` |
-| `epagri.yml` | Relevo (Copernicus DEM, ~850 m), montado uma vez | até completar | `relevo.json` |
+| `modelos.yml` | Relevo e contorno do mar (Copernicus DEM 30 m, AWS), montado uma vez | uma vez | `relevo.json`, `agua.png` |
 
 A previsão de cada ponto é interpolada da grade no próprio aparelho: a localização dos pontos pessoais não sai do celular. Se os arquivos do robô ainda não existirem, o app consulta a Open-Meteo direto como reserva.
 

@@ -384,11 +384,11 @@ def from_old(old, before):
 
 
 # ---------------- Água e correntes (Open-Meteo, 3x por semana) ----------------
-OVG = {"la0": -28.05, "la1": -27.30, "lo0": -48.85, "lo1": -48.30, "nla": 11, "nlo": 9}
+OVG = {"la0": -28.5, "la1": -26.9, "lo0": -49.0, "lo1": -47.9, "nla": 17, "nlo": 12}  # ~0,1°, cobre o mapa
 
 
 def mar_run(old):
-    if old:
+    if old and old.get("grid") == OVG:
         idade = time.time() - old.get("at", 0)
         if idade < 4 * 86400 and not (NOW.weekday() in (0, 2, 4) and idade > 30 * 3600):
             log("Água/correntes: atualizado há", round(idade / 3600), "h; próxima na seg/qua/sex")

@@ -34,9 +34,8 @@ jobs:
             if [ -s "out/tabua_$c.csv.new" ] && ! grep -qi "<html" "out/tabua_$c.csv.new"; then mv "out/tabua_$c.csv.new" "out/tabua_$c.csv"; else rm -f "out/tabua_$c.csv.new"; cp "old/tabua_$c.csv" out/ 2>/dev/null || true; fi
           done
           python3 tools/historico.py old out
-          python3 tools/mascara.py old out || true
           # arquivos do robô de modelos (outro workflow) seguem como estão
-          for f in modelos.json mar.json modelos_log.txt; do cp "old/$f" out/ 2>/dev/null || true; done
+          for f in modelos.json mar.json modelos_log.txt relevo.json agua.png; do cp "old/$f" out/ 2>/dev/null || true; done
           BASE=$(git -C old rev-parse HEAD 2>/dev/null || echo "")
           date -u +%FT%TZ > out/atualizado.txt
           cd out

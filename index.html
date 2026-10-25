@@ -1624,6 +1624,7 @@ async function ovLoad(){if(!MD||!S.data)return ovLoadOM();
  return(OV.on.cur||OV.on.sst)?ovLoadSea():true}
 async function ovLoadSea(){if(!MD)return ovLoadSeaOM();if(OV.data.M)return true;const m=MD.mar;
  if(!m||!m.sst){$("#ovInfo").textContent="Temperatura da água e correntes ainda não disponíveis.";return false}
+ Object.assign(OVG,{la0:m.grid.la0,la1:m.grid.la1,lo0:m.grid.lo0,lo1:m.grid.lo1,nla:m.grid.nla,nlo:m.grid.nlo});loadRelevo();
  const ix=new Map(m.t.map((x,i)=>[x,i])),al=a=>OV.data.t.map(x=>{const i=ix.get(x/1000);return i==null?null:a[i]});
  OV.data.M=m.sst.map((_,n)=>({sea_surface_temperature:al(m.sst[n]),ocean_current_velocity:al(m.cv[n]),ocean_current_direction:al(m.cd[n])}));OV.data.land=m.land;SSTF.k=null;return true}
 function ovIdx(){const d=OV.data,t=S.data?S.data.t[S.when]:Date.now();let best=0;d.t.forEach((x,k)=>{if(Math.abs(x-t)<Math.abs(d.t[best]-t))best=k});return best}
@@ -1647,10 +1648,12 @@ function windEdge(lat,lon){return OV.data&&OV.data.R?gEdge(OVR,lat,lon):gEdge(OV
 const wcol=k=>{if(k<=WCOL[0][0])return WCOL[0][1];for(let i=1;i<WCOL.length;i++)if(k<=WCOL[i][0]){const[a,ca]=WCOL[i-1],[b,cb]=WCOL[i],f=(k-a)/(b-a);return ca.map((c,n)=>Math.round(c+(cb[n]-c)*f))}return WCOL[WCOL.length-1][1]};
 const MASK={la0:-28.05,la1:-27.30,lo0:-48.85,lo1:-48.30,st:.012};MASK.nla=Math.round((MASK.la1-MASK.la0)/MASK.st)+1;MASK.nlo=Math.round((MASK.lo1-MASK.lo0)/MASK.st)+1;
 let WATER=null,MASK_TRIED=false;
-let REL=null;
-async function loadRelevo(){if(REL)return true;let r=store("pf_rel1");
- if(!(r&&r.h&&r.h.length===r.nla*r.nlo)){try{r=await fetchJSON(EP_MIRROR+"relevo.json");if(r&&r.h&&r.h.length===r.nla*r.nlo)store("pf_rel1",r);else r=null}catch(e){r=null}}
- if(!r)return false;REL=r;Object.assign(MASK,{la0:r.la0,lo0:r.lo0,st:r.st,nla:r.nla,nlo:r.nlo});WATER=r.h.map(x=>x!=null&&x<=1?"1":"0").join("");return true}
+let REL=null,AGUA=null;
+async function loadRelevo(){if(REL)return true;let r=store("pf_rel2");
+ if(!(r&&r.h&&r.h.length===r.nla*r.nlo)){try{r=await fetchJSON(EP_MIRROR+"relevo.json");if(r&&r.h&&r.h.length===r.nla*r.nlo)store("pf_rel2",r);else r=null}catch(e){r=null}}
+ if(!r)return false;
+ // contorno do mar em imagem (~80 m, já na projeção do mapa): recorta a temperatura da água com a costa nítida
+ if(r.agua&&!AGUA){const im=new Image();im.crossOrigin="anonymous";im.onload=()=>{AGUA={img:im,b:r.agua};if(OV.on.sst)ovStatic()};im.src=EP_MIRROR+"agua.png?v="+(r.v||1)}REL=r;Object.assign(MASK,{la0:r.la0,lo0:r.lo0,st:r.st,nla:r.nla,nlo:r.nlo});WATER=r.h.map(x=>x!=null&&x<=1?"1":"0").join("");return true}
 const elevAt=(lat,lon)=>{const i=Math.round((lat-REL.la0)/REL.st),j=Math.round((lon-REL.lo0)/REL.st);if(i<0||j<0||i>=REL.nla||j>=REL.nlo)return 0;return REL.h[i*REL.nlo+j]||0};
 async function loadMask(){if(WATER)return true;if(await loadRelevo())return true;const c=store("pf_mask2");if(c&&c.b&&c.b.length===c.nla*c.nlo){Object.assign(MASK,{la0:c.la0,lo0:c.lo0,st:c.st,nla:c.nla,nlo:c.nlo});WATER=c.b;return true}
  try{const m=await fetchJSON(EP_MIRROR+"mascara.json");if(m&&m.b&&m.b.length===m.nla*m.nlo){Object.assign(MASK,{la0:m.la0,lo0:m.lo0,st:m.st,nla:m.nla,nlo:m.nlo});WATER=m.b;store("pf_mask2",m);return true}}catch(e){}
@@ -1690,9 +1693,10 @@ function ovStatic(){ // fundo colorido (temperatura da água ou força do vento)
  const c0=OV.sstCanvas;if(!c0)return;const r=$("#map").getBoundingClientRect(),x=c0.getContext("2d");x.clearRect(0,0,r.width,r.height);wReadout();if(!OV.data||r.width<4||r.height<4)return;
  if(!OV.on.sst){if(OV.on.wind)windField(x,r);return}
  const k=ovIdx(),cw=4,w=Math.ceil(r.width/cw),h=Math.ceil(r.height/cw),sm=document.createElement("canvas");sm.width=w;sm.height=h;const sx=sm.getContext("2d"),img=sx.createImageData(w,h);
- for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const ll=MAP.containerPointToLatLng([xx*cw+cw/2,y*cw+cw/2]);if(!isWater(ll.lat,ll.lng))continue;const e=ovEdge(ll.lat,ll.lng);if(!e)continue;const v=sstAt(ll.lat,ll.lng,k);if(v==null)continue;
-  const c=sstColor(v),o=(y*w+xx)*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=Math.round(150*e)}
- sx.putImageData(img,0,0);x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(sm,0,0,w*cw,h*cw)}
+ for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const ll=MAP.containerPointToLatLng([xx*cw+cw/2,y*cw+cw/2]);if(!AGUA&&!isWater(ll.lat,ll.lng))continue;const e=ovEdge(ll.lat,ll.lng);if(!e)continue;const v=sstAt(ll.lat,ll.lng,k);if(v==null)continue;
+  const c=sstColor(v),o=(y*w+xx)*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=Math.round((AGUA?205:150)*e)}
+ sx.putImageData(img,0,0);x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";x.drawImage(sm,0,0,w*cw,h*cw);
+ if(AGUA){const a=MAP.latLngToContainerPoint([AGUA.b.n,AGUA.b.w]),b=MAP.latLngToContainerPoint([AGUA.b.s,AGUA.b.e]);x.save();x.globalCompositeOperation="destination-in";x.drawImage(AGUA.img,a.x,a.y,b.x-a.x,b.y-a.y);x.restore()}}
 const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function ovFrame(){const c=OV.canvas;if(!c)return;const x=c.getContext("2d"),r=$("#map").getBoundingClientRect(),W=r.width,H=r.height,k=ovIdx();
  const kinds=[OV.on.wind&&"wind",OV.on.cur&&"cur"].filter(Boolean);
@@ -1871,7 +1875,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.30";
+const APP_VERSION="2026-10-25.31";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
