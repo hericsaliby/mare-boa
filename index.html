@@ -224,6 +224,16 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .glink{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .glink input{flex:1 1 220px;min-width:0}
 .glink input#gName,.glink input#gName2{flex:0 1 170px}
+#logDet>summary{list-style:none;display:inline-block}
+#logDet>summary::-webkit-details-marker{display:none}
+#logDet[open]>summary{background:transparent;color:var(--accent)}
+.hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.hstats div{background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:13.5px;min-width:0}
+.hstats b.k{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
+.hlist{list-style:none;margin:0;padding:0}
+.hlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.hlist .res{min-width:40px}
+.similar{background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:8px;padding:8px 10px;font-size:14px}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -263,6 +273,25 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="row"><h3 class="grow">Linha do tempo do dia</h3><span class="small muted">toque para ver a hora</span></div>
       <div class="chart" id="timeline"></div>
       <div class="readout" id="tlRead">Toque na linha do tempo para ver cada hora.</div>
+    </article>
+    <article class="card hist" id="histCard">
+      <div class="row"><h3 class="grow" id="histTitle">Histórico deste ponto</h3></div>
+      <details id="logDet"><summary class="btn">+ Registrar pescaria</summary>
+        <p class="small muted" style="margin:8px 0">A maré, o vento, a lua e a água daquela hora são guardados sozinhos. Fica salvo só neste aparelho.</p>
+        <form class="form" id="logForm">
+          <label class="inline" for="lgWhen">Quando<input type="datetime-local" id="lgWhen" required></label>
+          <label class="inline" for="lgSpot">Ponto<select id="lgSpot"></select></label>
+          <label class="inline" for="lgSp">Espécie<select id="lgSp"></select></label>
+          <label class="inline" for="lgQty">Quantos peixes<input type="number" id="lgQty" min="0" step="1" value="1" inputmode="numeric"></label>
+          <label class="inline" for="lgSize">Maior (cm)<input type="number" id="lgSize" min="0" step="1" inputmode="numeric" placeholder="opcional"></label>
+          <label class="inline" for="lgBait">Isca<input type="text" id="lgBait" list="baitList" placeholder="ex.: camarão vivo"></label>
+          <label class="inline" for="lgRes">Resultado<select id="lgRes"><option value="0">Nada</option><option value="1">Fraco</option><option value="2" selected>Bom</option><option value="3">Muito bom</option></select></label>
+          <label class="inline" for="lgNote" style="grid-column:1/-1">Observações<input type="text" id="lgNote" placeholder="profundidade, onde bateu, cor da isca, água turva..."></label>
+          <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar pescaria</button><span id="lgMsg" class="small muted"></span></div>
+          <datalist id="baitList"><option value="Camarão vivo"><option value="Camarão morto"><option value="Artificial de meia-água"><option value="Artificial de superfície"><option value="Jig head + shad"><option value="Sardinha"><option value="Corrupto"><option value="Tatuíra"><option value="Lula"><option value="Filé de peixe"><option value="Siri"><option value="Manjuba"><option value="Minhoca"></datalist>
+        </form>
+      </details>
+      <div id="histBody"></div>
     </article>
     <article class="card"><h3>Melhores janelas (7 dias)</h3><ul class="windows" id="windows"></ul></article>
   </section>
@@ -354,14 +383,6 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
     <article class="card">
       <h2 id="h-diario">Diário de pesca e aprendizado</h2>
       <p class="notes">Registre cada saída (até 7 dias atrás). O app guarda as condições daquela hora e treina um modelo (regressão logística) com seus resultados. Com 8 ou mais registros, com saídas boas e ruins, a nota passa a misturar as regras com o que funciona para você.</p>
-      <form class="form" id="logForm">
-        <label class="inline" for="lgWhen">Quando<input type="datetime-local" id="lgWhen" required></label>
-        <label class="inline" for="lgSpot">Ponto<select id="lgSpot"></select></label>
-        <label class="inline" for="lgSp">Espécie<select id="lgSp"></select></label>
-        <label class="inline" for="lgRes">Resultado<select id="lgRes"><option value="0">Nada</option><option value="1">Fraco</option><option value="2" selected>Bom</option><option value="3">Muito bom</option></select></label>
-        <label class="inline" for="lgNote" style="grid-column:1/-1">Notas<input type="text" id="lgNote" placeholder="isca, profundidade, observações"></label>
-        <div class="row"><button class="btn" type="submit">Salvar registro</button><span id="lgMsg" class="small muted"></span></div>
-      </form>
       <div id="mlBox"></div>
       <div class="tw"><table class="t" id="logTable"></table></div>
       <div class="row"><button class="btn ghost" id="expLog" type="button">Exportar diário (JSON)</button>
@@ -1147,13 +1168,57 @@ function renderWindows(){const sp=spot(),rows=S.derived[sp.id].rows,now=Date.now
 function renderSpecies(){const mon=+fmtKey.format(Date.now()).slice(5,7);const sst=S.derived[SPOTS[0].id].rows[S.when].sst;
  const list=SPECIES.filter(s=>s.m.includes(mon)).map(s=>({...s,ok:sst==null||(sst>=s.tmp[0]-1&&sst<=s.tmp[1]+1)}));
  $("#species").innerHTML=list.map(s=>`<div><b>${s.n}</b><span class="small">${esc(s.pl)}</span><br><span class="small muted">${esc(s.tip)}</span>${sst!=null?`<br><span class="tag ${s.ok?"good":"neu"}" style="margin-top:6px">${s.ok?"água na faixa":"água fora da faixa"} (${s.tmp[0]}–${s.tmp[1]} °C)</span>`:""}</div>`).join("")}
-function renderLog(){
+/* retrato das condições na hora da pescaria (fica junto do registro) */
+function condSnap(spId,t,r){const il=moonIllum(t),c={hora:localHour(t),lua:moonName(il.phase),frac:+il.frac.toFixed(2),rf:+tideRangeFactor(t).toFixed(2)};
+ if(r){const D=S.derived[spId];let prev=null;for(const e of D.ex){if(e.t<=t)prev=e;else break}
+  Object.assign(c,{mare:r.rising==null?null:r.rising?"enchendo":"vazando",since:prev?+((t-prev.t)/HOUR).toFixed(1):null,nivel:r.tide!=null?+r.tide.toFixed(2):null,
+   eff:r.eff!=null?Math.round(r.eff):null,raw:r.raw!=null?Math.round(r.raw):null,g:r.g!=null?Math.round(r.g):null,dir:r.d!=null?Math.round(r.d):null,sst:r.sst!=null?+r.sst.toFixed(1):null,
+   estofo:r.mov!=null&&r.mov<.15})}
+ return c}
+const horaBand=h=>h<5?"madrugada (0–5h)":h<11?"manhã (5–11h)":h<17?"tarde (11–17h)":"fim de tarde e noite (17–24h)";
+const luaBand=rf=>rf>.6?"lua nova/cheia (maré grande)":rf<.35?"lua de quarto (maré pequena)":"lua intermediária";
+const sinceBand=x=>x==null?null:x<1?"até 1h depois da virada":x<3?"1 a 3h depois da virada":"mais de 3h depois da virada";
+function topOf(arr){const m=new Map();arr.filter(Boolean).forEach(k=>m.set(k,(m.get(k)||0)+1));return[...m].sort((a,b)=>b[1]-a[1])}
+function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp=spot();
+ const L=S.log.filter(x=>x.spot===sp.id).sort((a,b)=>b.t-a.t),good=L.filter(x=>x.res>=2);
+ $("#histTitle").textContent=`Histórico deste ponto${L.length?` · ${L.length} saída${L.length>1?"s":""}, ${good.length} boa${good.length!==1?"s":""}`:""}`;
+ if($("#lgSpot").value!==sp.id)$("#lgSpot").value=sp.id;
+ if(!L.length){el.innerHTML=`<p class="small muted" style="margin:0">Nenhuma pescaria registrada aqui ainda. Cada registro guarda a maré, o vento e a lua daquela hora; com o tempo o app mostra em que condições e com que isca este ponto mais rende.</p>`;return}
+ let h="";
+ // parecido com hoje
+ const now=Date.now(),D=S.derived[sp.id],r=D.rows.find(x=>x.t===Math.floor(now/HOUR)*HOUR);
+ if(r&&good.length){const cn=condSnap(sp.id,now,r);const sim=good.filter(x=>x.c&&x.c.mare).map(x=>{let k=0;const c=x.c;if(c.mare===cn.mare)k++;if(c.since!=null&&cn.since!=null&&Math.abs(c.since-cn.since)<=1)k++;if(horaBand(c.hora)===horaBand(cn.hora))k++;if(luaBand(c.rf)===luaBand(cn.rf))k++;if(c.eff!=null&&cn.eff!=null&&Math.abs(c.eff-cn.eff)<=8)k++;return{x,k}}).filter(o=>o.k>=4).sort((a,b)=>b.k-a.k);
+  if(sim.length)h+=`<div class="similar">Agora está parecido com <b>${sim.length} saída${sim.length>1?"s":""} boa${sim.length>1?"s":""}</b> sua${sim.length>1?"s":""} aqui: ${sim.slice(0,3).map(o=>`${fmtD.format(o.x.t)} (${o.x.qty!=null?o.x.qty+" ":""}${esc(o.x.sp.toLowerCase())}${o.x.bait?", "+esc(o.x.bait.toLowerCase()):""})`).join(" · ")}.</div>`}
+ // estatísticas das saídas boas
+ if(good.length){const gc=good.filter(x=>x.c);const box=(k,v)=>v?`<div><b class="k">${k}</b>${v}</div>`:"";
+  const baits=new Map();L.forEach(x=>{if(!x.bait)return;const b=x.bait.trim().toLowerCase();const o=baits.get(b)||{n:0,g:0,q:0,name:x.bait.trim()};o.n++;if(x.res>=2)o.g++;o.q+=x.qty||0;baits.set(b,o)});
+  const bl=[...baits.values()].sort((a,b)=>b.g-a.g||b.q-a.q).slice(0,3);
+  const mare=topOf(gc.map(x=>x.c.mare)),since=topOf(gc.map(x=>sinceBand(x.c.since))),hora=topOf(gc.map(x=>horaBand(x.c.hora))),lua=topOf(gc.map(x=>luaBand(x.c.rf)));
+  const effs=gc.map(x=>x.c.eff).filter(v=>v!=null).sort((a,b)=>a-b),effMed=effs.length?effs[Math.floor(effs.length/2)]:null;
+  const temps=gc.map(x=>x.c.sst).filter(v=>v!=null);
+  const spc=new Map();L.forEach(x=>{if(!x.qty&&x.res<1)return;const o=spc.get(x.sp)||{q:0,mx:0};o.q+=x.qty||0;o.mx=Math.max(o.mx,x.size||0);spc.set(x.sp,o)});
+  const pct=(a,n)=>Math.round(100*a/n)+"%";
+  h+=`<div class="hstats">${box("Iscas que funcionaram",bl.length?bl.map(o=>`<b>${esc(o.name)}</b> <span class="muted">${o.g} boa${o.g!==1?"s":""} em ${o.n}</span>`).join("<br>"):"")}
+   ${box("Maré nas saídas boas",mare.length?`${mare.map(([k,n])=>`${k} <span class="muted">${pct(n,gc.length)}</span>`).join(" · ")}${since.length?`<br>${since[0][0]}`:""}`:"")}
+   ${box("Horário",hora.length?hora.slice(0,2).map(([k,n])=>`${k} <span class="muted">${pct(n,gc.length)}</span>`).join("<br>"):"")}
+   ${box("Lua",lua.length?lua.slice(0,2).map(([k,n])=>`${k} <span class="muted">${pct(n,gc.length)}</span>`).join("<br>"):"")}
+   ${box("Vento no ponto",effMed!=null?`até ~${wv(effMed)} ${WU()} na maioria das boas`:"")}
+   ${box("Água",temps.length?(Math.min(...temps).toFixed(0)===Math.max(...temps).toFixed(0)?`${Math.min(...temps).toFixed(0)} °C`:`${Math.min(...temps).toFixed(0)} a ${Math.max(...temps).toFixed(0)} °C`):"")}
+   ${box("O que já saiu aqui",[...spc].map(([k,o])=>`${esc(k)}${o.q?` <span class="muted">${o.q} peixe${o.q>1?"s":""}</span>`:""}${o.mx?` <span class="muted">· maior ${o.mx} cm</span>`:""}`).join("<br>"))}</div>
+   ${L.length<5?`<p class="small muted" style="margin:0">Ainda são poucos registros; as tendências ficam confiáveis com mais saídas, inclusive as fracas.</p>`:""}`}
+ // últimas saídas
+ const RES=["Nada","Fraco","Bom","Muito bom"],RCL=["bad","warn","good","good"];
+ h+=`<b class="small">Últimas saídas</b><ul class="hlist">${L.slice(0,8).map(x=>{const c=x.c||{};
+  const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
+  return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span></span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
+ el.innerHTML=h}
+function renderLog(){renderHistory();
  const opts=SPOTS.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("");
  if($("#lgSpot").dataset.n!==String(SPOTS.length)){const ep=$("#epSpot").value;$("#lgSpot").innerHTML=opts;$("#lgSpot").dataset.n=SPOTS.length;$("#epSpot").innerHTML=`<option value="all">Todos os pontos</option>`+opts;if(ep)$("#epSpot").value=ep}
  if(!$("#lgSp").options.length){$("#lgSp").innerHTML=SPECIES.map(s=>`<option>${s.n}</option>`).join("")+"<option>Outra</option>";$("#lgWhen").value=localInput(Date.now())}
  $("#lgSpot").value=S.spot;
  const L=S.log.slice().sort((a,b)=>b.t-a.t);
- $("#logTable").innerHTML=L.length?`<thead><tr><th>Quando</th><th>Ponto</th><th>Espécie</th><th>Resultado</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td class="num">${fmtDH.format(x.t)}</td><td>${esc((SPOTS.find(s=>s.id===x.spot)||{}).n||x.spot)}</td><td>${esc(x.sp)}</td><td>${["Nada","Fraco","Bom","Muito bom"][x.res]}${x.f?"":" <span class='muted small'>(sem condições)</span>"}</td><td><button class="btn ghost small" data-del="${x.id}" type="button">Apagar</button></td></tr>`).join("")}</tbody>`:"";
+ $("#logTable").innerHTML=L.length?`<thead><tr><th>Quando</th><th>Ponto</th><th>Espécie</th><th>Qtd</th><th>Isca</th><th>Resultado</th><th></th></tr></thead><tbody>${L.map(x=>`<tr><td class="num">${fmtDH.format(x.t)}</td><td>${esc((SPOTS.find(s=>s.id===x.spot)||{}).n||x.spot)}</td><td>${esc(x.sp)}</td><td class="num">${x.qty!=null?x.qty:""}${x.size?` (${x.size} cm)`:""}</td><td>${esc(x.bait||"")}</td><td>${["Nada","Fraco","Bom","Muito bom"][x.res]}${x.f?"":" <span class='muted small'>(sem condições)</span>"}</td><td><button class="btn ghost small" data-del="${x.id}" type="button">Apagar</button></td></tr>`).join("")}</tbody>`:"";
  const m=S.ml;let h="";
  if(!m||!m.ready)h=`<div class="banner">Registros com condições: <b>${m?m.n:0}</b>. O modelo pessoal começa com 8, incluindo saídas boas e fracas.</div>`;
  else{const mx=Math.max(...m.w.map(Math.abs))||1;
@@ -1181,10 +1246,16 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b
 $("#when").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot()});
 ["#chScore","#chTide","#chWind","#chWave"].forEach(id=>{const el=$(id);const mv=e=>{if(!CH.rows.length)return;const rc=el.getBoundingClientRect();const px=(e.clientX-rc.left)*(CH.W/rc.width);const ci=clamp(Math.round((px-CH.padL)/((CH.W-CH.padL-CH.padR)/(CH.rows.length-1))),0,CH.rows.length-1);updateReadout(ci)};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)});
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data){renderCharts();renderTimeline();if(S.view==="lua")renderMoon()}},150)});
+$("#lgQty").addEventListener("input",e=>{if(e.target.value==="0")$("#lgRes").value="0";else if($("#lgRes").value==="0")$("#lgRes").value="2"});
+$("#lgWhen").addEventListener("input",e=>{e.target.dataset.touched="1"});
+$("#logDet").addEventListener("toggle",e=>{if(e.target.open){if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
 $("#logForm").addEventListener("submit",e=>{e.preventDefault();const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
  const rows=S.derived[sp].rows;const r=rows.find(x=>Math.abs(x.t-t)<HOUR/2+1);
- const item={id:Math.random().toString(36).slice(2),t,spot:sp,sp:$("#lgSp").value,res:+$("#lgRes").value,note:$("#lgNote").value,f:r&&!S.demo?featOf(r):null,model:S.model};
+ const item={id:Math.random().toString(36).slice(2),t,spot:sp,sp:$("#lgSp").value,res:+$("#lgRes").value,note:$("#lgNote").value,
+  qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
+  c:condSnap(sp,t,r&&!S.demo?r:null),f:r&&!S.demo?featOf(r):null,model:S.model};
  S.log.push(item);store("pf_log",S.log);trainML();applyML();renderAll();
+ $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
  $("#lgMsg").textContent=item.f?"Salvo com as condições daquela hora.":S.demo?"Salvo sem condições (dados de exemplo não entram no treino).":"Salvo, mas fora do período carregado (7 dias atrás até 7 à frente): não entra no treino."});
 $("#expLog").addEventListener("click",()=>{const blob=new Blob([JSON.stringify({app:"mare-boa",v:1,log:S.log},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="diario-pesca.json";a.click()});
 $("#impLog").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());const arr=j.log||j;const ids=new Set(S.log.map(x=>x.id));arr.forEach(x=>{if(x&&x.t&&!ids.has(x.id))S.log.push(x)});store("pf_log",S.log);trainML();applyML();renderAll();$("#lgMsg").textContent="Diário importado."}catch(err){$("#lgMsg").textContent="Arquivo inválido: "+err.message}});
@@ -1388,7 +1459,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.6";
+const APP_VERSION="2026-10-25.7";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1456,7 +1527,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="wbig">${moonSVG(il.phase,58)}<div><div class="sum-big" style="font-size:24px">${ph}</div><div class="small muted">${Math.round(il.frac*100)}% iluminada · ${il.phase<.5?"crescendo":"minguando"}</div><div style="margin-top:2px">${fishIcons(ds.fish)} <span class="small">atividade ${FISH_LBL[ds.fish].toLowerCase()}</span></div></div></div>
   <div class="small">${corre}</div>
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")}</div>`;
- renderFishCard();renderTimeline()}
+ renderFishCard();renderTimeline();renderHistory()}
 
 /* linha do tempo: maré + janelas do robalo, vento no ponto, lua/sol e nota, hora a hora */
 let TL=null;
