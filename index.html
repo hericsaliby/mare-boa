@@ -6,32 +6,32 @@
 <meta name="theme-color" content="#0d3b4a">
 <title>Maré Boa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 /* Layout: uma coluna estilo carta náutica; cabeçalho fixo, seções empilhadas, duas colunas no desktop */
 :root{
-  --bg:#eef3f4; --surface:#ffffff; --surface-2:#e3ecee; --line:#c9d7da;
+  --bg:#f1f4f3; --surface:#ffffff; --surface-2:#eaf0ef; --line:#dbe4e3; --shadow:0 1px 2px rgba(12,40,48,.05),0 4px 14px rgba(12,40,48,.05);
   --ink:#0e2830; --ink-2:#3f5a62; --ink-3:#6c8389;
   --accent:#0b6e8a; --accent-ink:#ffffff; --accent-soft:#d3e9ef;
   --sand:#b8862f; --moon-lit:#f3e7bf; --moon-dark:#3a4c52;
   --good:#1e7a4a; --warn:#a86a00; --bad:#b3362c;
   --s0:#e6eff1; --s1:#b6dbe3; --s2:#74bccb; --s3:#2f93ab; --s4:#0b6e8a; --s5:#07475a;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --body:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Source Sans 3","Segoe UI",system-ui,sans-serif; /* números na mesma fonte do texto, alinhados */
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#081a20; --surface:#0f252c; --surface-2:#163239; --line:#24464f;
+  --bg:#081a20; --surface:#0f252c; --surface-2:#163239; --line:#21414a; --shadow:none;
   --ink:#e2eef0; --ink-2:#a9c0c5; --ink-3:#7d969c;
   --accent:#4fb8d1; --accent-ink:#04222b; --accent-soft:#143c47;
   --sand:#d9a84e; --moon-lit:#efe0b0; --moon-dark:#1d3239; --good:#52c08a; --warn:#e0a53a; --bad:#ef7a6e;
   --s0:#14303a; --s1:#174a59; --s2:#1d6a7e; --s3:#2a8ea6; --s4:#4fb8d1; --s5:#9be0ef;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#081a20; --surface:#0f252c; --surface-2:#163239; --line:#24464f;
+  --bg:#081a20; --surface:#0f252c; --surface-2:#163239; --line:#21414a; --shadow:none;
   --ink:#e2eef0; --ink-2:#a9c0c5; --ink-3:#7d969c;
   --accent:#4fb8d1; --accent-ink:#04222b; --accent-soft:#143c47;
   --sand:#d9a84e; --moon-lit:#efe0b0; --moon-dark:#1d3239; --good:#52c08a; --warn:#e0a53a; --bad:#ef7a6e;
@@ -39,7 +39,7 @@
   color-scheme:dark}
 *{box-sizing:border-box}
 html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
 button,select,input,textarea{font:inherit;color:inherit}
 a{color:var(--accent)}
@@ -55,15 +55,15 @@ header.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;pa
 .status{font-size:12px;color:var(--ink-3)}
 .banner{background:var(--accent-soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-top:12px}
 .banner.warn{border-color:var(--warn)}
-h2{font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.02em;margin:0;text-wrap:balance}
-h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin:0;font-weight:600}
+h2{font-family:var(--body);font-weight:700;font-size:21px;letter-spacing:-.01em;margin:0;text-wrap:balance}
+h3{font-size:16.5px;color:var(--ink);margin:0;font-weight:700;letter-spacing:-.005em}
 .grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:16px}
 @media (min-width:960px){.grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;min-width:0}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .muted{color:var(--ink-3)}
 .small{font-size:13px}
-.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--body);font-variant-numeric:tabular-nums}
 label.inline{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 select,input[type=text],input[type=number],input[type=datetime-local],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
@@ -78,7 +78,7 @@ select,input[type=text],input[type=number],input[type=datetime-local],textarea{b
 .spot .nm{font-weight:600}
 .spot .why{font-size:12.5px;color:var(--ink-2);line-height:1.35}
 .pill{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;border-radius:6px;font-family:var(--mono);font-weight:500;font-size:15px}
-.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;border:1px solid currentColor}
+.tag{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,currentColor 13%,transparent)}
 .tag.good{color:var(--good)} .tag.warn{color:var(--warn)} .tag.bad{color:var(--bad)} .tag.neu{color:var(--ink-3)}
 .wind-mini{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
 /* detalhe */
@@ -105,7 +105,7 @@ select,input[type=text],input[type=number],input[type=datetime-local],textarea{b
 table.t{border-collapse:collapse;width:100%;font-size:13.5px}
 table.t td,table.t th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
 table.t .num{white-space:nowrap}
-table.t th{font-weight:600;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+table.t th{font-weight:600;color:var(--ink-3);font-size:13px}
 .tw{overflow-x:auto}
 .windows{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .windows li{display:flex;gap:10px;align-items:center;font-size:14px}
@@ -165,7 +165,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .mylist li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mylist button{border:0;background:none;color:var(--accent);cursor:pointer;font-size:13px;padding:2px 4px}
 .meas{display:flex;flex-direction:column;gap:3px;background:color-mix(in srgb,var(--sand) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--sand) 45%,var(--line));border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:14px}
-.meas .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);font-weight:600}
+.meas .lbl{font-size:13px;color:var(--ink-2);font-weight:600}
 .meas .v b{font-family:var(--display);font-size:24px;font-weight:600}
 /* ---------- casca do app: menu lateral (desktop) / abas embaixo (celular) ---------- */
 .shell{min-height:100%}
@@ -207,7 +207,8 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
 @media (min-width:1100px){.trio{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sum{gap:8px}
-.sum-h{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.sum-h{display:flex;align-items:center;gap:9px;color:var(--accent)}
+.sum-h h3{color:var(--ink)}
 .sum-h h3{flex:1}
 .sum-big{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1}
 .turns{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column}
@@ -230,7 +231,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 #logDet[open]>summary{background:transparent;color:var(--accent)}
 .hstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
 .hstats div{background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:13.5px;min-width:0}
-.hstats b.k{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
+.hstats b.k{display:block;font-size:13px;color:var(--ink-3);font-weight:600}
 .hlist{list-style:none;margin:0;padding:0}
 .hlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
 .hlist .res{min-width:40px}
@@ -238,7 +239,7 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .frontcard{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--surface))}
 .frontcard .fh{display:flex;gap:10px;align-items:center}
 .frontcard .fh b{font-family:var(--display);font-size:22px;font-weight:600}
-.day .fr{display:block;font-size:10px;font-weight:600;color:var(--warn);letter-spacing:.03em}
+.day .fr{display:block;font-size:11px;font-weight:700;color:var(--warn)}
 .wxnow{display:flex;gap:12px;align-items:center}
 .wxnow .tt{font-family:var(--display);font-size:40px;font-weight:600;line-height:1}
 .wxh{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(34px,1fr);gap:3px;overflow-x:auto;font-size:11px;text-align:center}
@@ -265,6 +266,15 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .iconbtn{flex:0 0 auto;width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .iconbtn:focus-visible{outline:2px solid var(--sand);outline-offset:2px}
 .saved-ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.brandrow{display:flex;align-items:center;gap:9px}
+.side .brand{font-family:var(--body);font-weight:700;font-size:24px;letter-spacing:-.02em}
+.brand-m{display:flex;align-items:center}
+@media (min-width:900px){.brand-m{display:none}}
+.greet{padding:4px 2px 2px}
+.greet h1{font-family:var(--body);font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.15}
+.greet .gd{color:var(--ink-3);font-size:14.5px;margin-top:2px}
+.greet p{margin:8px 0 0;font-size:16.5px;line-height:1.5;color:var(--ink-2);max-width:70ch}
+.greet p b{color:var(--ink)}
 footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -272,14 +282,14 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 <body>
 <div class="shell">
 <nav class="side" aria-label="Seções">
-  <div class="brand">Maré Boa<small>Pesca na Grande Florianópolis</small></div>
+  <div class="brand"><span class="brandrow"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M6 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 6v7a3 3 0 0 1-6 0" fill="none" stroke="var(--sand)" stroke-width="2.2" stroke-linecap="round"/></svg>Maré Boa</span><small>Pesca na Grande Florianópolis</small></div>
   <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
   <div class="side-foot small muted" id="sideFoot"></div>
 </nav>
 <div class="main">
 <header class="ctx">
   <div class="ctx-row">
-    <span class="brand-m">Maré Boa</span>
+    <span class="brand-m"><svg class="logo" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M6 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 6v7a3 3 0 0 1-6 0" fill="none" stroke="var(--sand)" stroke-width="2.2" stroke-linecap="round"/></svg></span>
     <label class="spotpick" for="spotSel"><span class="sr">Ponto</span><select id="spotSel" aria-label="Ponto de pesca"></select></label>
     <button type="button" class="iconbtn" id="themeBtn" aria-label="Alternar modo claro/escuro" title="Modo claro/escuro"></button>
     <label class="fishpick" for="fishSel"><span class="sr">Peixe alvo</span><select id="fishSel" aria-label="Peixe alvo"></select></label>
@@ -291,6 +301,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <div id="banner" class="banner" hidden></div>
 
   <section class="view" id="v-resumo" aria-label="Resumo">
+    <div class="greet" id="greet"></div>
     <div class="hero card">
       <div class="gauge" id="spotScore"></div>
       <div style="min-width:0;flex:1"><div class="row" style="gap:8px"><h2 id="spotName"></h2><span id="spotType" class="tag neu"></span></div><div id="spotVerdict" style="font-weight:600;margin-top:4px"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div>
@@ -1140,7 +1151,7 @@ function dayRows(){const rows=S.derived[spot().id].rows;return rows.filter(r=>da
 function renderDays(){const rows=S.derived[spot().id].rows;const keys=[...new Set(rows.map(r=>dayKey(r.t)))];const today=dayKey(Date.now());
  const show=keys.filter(k=>k>=today).slice(0,7);if(!show.includes(S.day))S.day=show[0];
  $("#days").innerHTML=show.map(k=>{const rr=rows.filter(r=>dayKey(r.t)===k&&localHour(r.t)>=4&&localHour(r.t)<=21);const best=Math.max(...rr.map(r=>r.score));
-  const fr=(S.fronts||[]).some(f=>dayKey(f.t)===k);return`<button type="button" class="day" data-day="${k}" aria-pressed="${k===S.day}"><b>${k===today?"Hoje":fmtD.format(rr[0].t).replace(".","")}</b>${fr?'<span class="fr">FRENTE FRIA</span>':""}<span class="num small">melhor ${N(best)}</span><span class="dot" style="${pillStyle(best)}"></span></button>`}).join("")}
+  const fr=(S.fronts||[]).some(f=>dayKey(f.t)===k);return`<button type="button" class="day" data-day="${k}" aria-pressed="${k===S.day}"><b>${k===today?"Hoje":fmtD.format(rr[0].t).replace(".","")}</b>${fr?'<span class="fr">frente fria</span>':""}<span class="num small">melhor ${N(best)}</span><span class="dot" style="${pillStyle(best)}"></span></button>`}).join("")}
 
 /* ---- gráficos SVG compartilhando eixo X ---- */
 let CH={rows:[],x:null};
@@ -1583,7 +1594,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.16";
+const APP_VERSION="2026-10-25.17";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1683,13 +1694,29 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="small">${corre}</div>
   ${cd}
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")} · distância <b>${Math.round(md.km/1000)} mil km</b>${md.txt?`<br><b>${md.txt}</b>`:""}</div>`;
- renderFactors();renderWeather();renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
+ renderGreeting();renderFactors();renderWeather();renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
 /* tempo: temperatura, chuva, nuvens e umidade */
 function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0 1 1 11.5 7a5.5 5.5 0 0 0 8.5 8.5z" fill="var(--moon-lit)" stroke="var(--ink-3)" stroke-width="1"/>`:`<circle cx="12" cy="12" r="5" fill="#f2c230"/><g stroke="#f2c230" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>`;
  const cl=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 9.5 4.25 4.25 0 0 0 7 18z" fill="var(--surface-2)" stroke="var(--ink-3)" stroke-width="1.3"/>`;
  let g;if(rain>=.3)g=cl(0,-2,1)+`<g stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M9 19l-1 3M13 19l-1 3M17 19l-1 3"/></g>`;
  else if(cloud>75)g=cl(0,0,1);else if(cloud>30)g=`<g transform="translate(-3 -3) scale(.8)">${sun}</g>`+cl(3,3,.85);else g=sun;
  return`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" aria-hidden="true">${g}</svg>`}
+/* abertura do Resumo: saudação e o dia contado em poucas frases */
+const fmtLong=new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,weekday:"long",day:"numeric",month:"long"});
+function renderGreeting(){const el=$("#greet");if(!el||!S.data)return;const sp=spot(),D=S.derived[sp.id],rows=dayRows();if(!rows.length)return;
+ const now=Date.now(),today=dayKey(now)===S.day,h=localHour(now),hi=h<5?"Boa noite":h<12?"Bom dia":h<18?"Boa tarde":"Boa noite";
+ const ref=today?(D.rows.find(x=>x.t===Math.floor(now/HOUR)*HOUR)||rows[0]):(rows.find(x=>localHour(x.t)===7)||rows[0]);
+ const best=rows.filter(r=>!today||r.t>=now-HOUR).reduce((m,r)=>r.score>m.score?r:m,rows.find(r=>!today||r.t>=now-HOUR)||rows[0]);
+ const rf=tideRangeFactor(noonOf(S.day)),ph=moonName(moonIllum(noonOf(S.day)).phase).toLowerCase();
+ const ex=D.ex.filter(e=>dayKey(e.t)===S.day),next=D.ex.find(e=>e.t>(today?now:noonOf(S.day)-12*HOUR));
+ const forca=e=>e==null?"":e<10?"fraco":e<20?"moderado":e<30?"forte":"muito forte";
+ const frases=[];
+ frases.push(`${rf>.6?"Maré grande":rf<.35?"Maré pequena":"Maré média"} de ${ph}`+(today&&next?`, ${next.hi?"enchendo":"vazando"} até as <b>${fmtH.format(next.t)}</b>.`:` com ${ex.length} viradas no dia.`));
+ if(ref.d!=null)frases.push(`Vento ${dir8(ref.d)} ${forca(ref.eff)} ${sp.custom?"no seu ponto":"no ponto"} (${wv(ref.eff)} ${WU()})${ref.exp<.3?", que fica abrigado dele":ref.exp>.75&&ref.raw>15?", que pega esse vento de frente":""}.`);
+ frases.push(`A melhor hora ${today?"hoje":"nesse dia"} é às <b>${fmtH.format(best.t)}</b>${S.fish!=="geral"?` para ${FISH[S.fish].n.toLowerCase()}`:""}, com nota <b>${N(best.score)}</b>.`);
+ const rain=rows.reduce((a,r)=>a+(r.rain||0),0);if(rain>=5)frases.push(`Previsão de chuva (${Math.round(rain)} mm no dia).`);
+ const f=(S.fronts||[]).find(x=>x.t>now&&x.t<now+3*864e5);if(f)frases.push(`Frente fria chegando ${fmtLong.format(f.t).split(",")[0]} por volta das ${fmtH.format(f.t)}.`);
+ el.innerHTML=`<h1>${today?hi+"!":"Previsão"}</h1><div class="gd">${fmtLong.format(today?now:noonOf(S.day))} · ${esc(sp.n)}</div><p>${frases.join(" ")}</p>`}
 function renderWeather(){const el=$("#sumWx");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,now=Date.now(),today=dayKey(now)===S.day;
  const idx=t.map((x,k)=>k).filter(k=>dayKey(t[k])===S.day);if(!idx.length)return;
  let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):idx.find(k=>localHour(t[k])===12)??idx[0];
