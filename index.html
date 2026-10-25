@@ -1096,7 +1096,7 @@ function renderSpot(){
   [`${Math.round(il.frac*100)}%`,`${moonName(il.phase)} · ${r.rf>.6?"sizígia":r.rf<.35?"quadratura":"intermediária"}`],
   [modelSpread(r),"Concordância dos modelos"]
  ].map(([a,b])=>`<div><b>${a}</b><span>${b}</span></div>`).join("");
- $("#spotNotes").innerHTML=esc(sp.notes)+(sp.custom?`<br><span class="row" style="margin-top:6px">${sp.temp?`<input type="text" id="pinName2" placeholder="Nome do ponto" style="flex:1;min-width:140px"><button class="btn" type="button" data-pinsave="2">Salvar ponto</button>`:`<button class="btn ghost" type="button" data-deldspot="${sp.id}">Remover este ponto</button>`}<label class="inline" for="pinType" style="flex-direction:row;align-items:center;gap:6px">Tipo <select id="pinType">${Object.entries(TYPE_LBL).map(([k,v])=>`<option value="${k}"${k===sp.t?" selected":""}>${v}</option>`).join("")}</select></label></span>`:"");
+ $("#spotNotes").innerHTML=esc(sp.notes)+(sp.custom?`<br><span class="row" style="margin-top:6px">${sp.temp?`<input type="text" id="pinName2" placeholder="Nome do ponto" style="flex:1;min-width:140px" maxlength="60"><button class="btn" type="button" data-pinsave="2">Salvar ponto</button><span class="small" id="pinMsg2" style="color:var(--bad);flex-basis:100%"></span>`:`<button class="btn ghost" type="button" data-deldspot="${sp.id}">Remover este ponto</button>`}<label class="inline" for="pinType" style="flex-direction:row;align-items:center;gap:6px">Tipo <select id="pinType">${Object.entries(TYPE_LBL).map(([k,v])=>`<option value="${k}"${k===sp.t?" selected":""}>${v}</option>`).join("")}</select></label></span>`:"");
  $("#windyLink").href=`https://www.windy.com/${sp.lat}/${sp.lon}?gfs,${sp.lat},${sp.lon},12`;
  $("#rose").innerHTML=roseSVG(sp,r.d);
  renderTide(sp,D,r);renderDays();renderCharts();renderWindows();renderSpotSel();renderSummary()}
@@ -1315,8 +1315,12 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span></span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
 function renderLog(){renderHistory();
+ // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
+ const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
+ const lkey=logList.map(s=>s.id+s.n).join("|");
+ if($("#lgSpot").dataset.k!==lkey){$("#lgSpot").innerHTML=logList.map(s=>`<option value="${s.id}">${esc(s.n)}${s.custom?"":" (ponto padrão)"}</option>`).join("");$("#lgSpot").dataset.k=lkey}
  const opts=SPOTS.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("");
- if($("#lgSpot").dataset.n!==String(SPOTS.length)){const ep=$("#epSpot").value;$("#lgSpot").innerHTML=opts;$("#lgSpot").dataset.n=SPOTS.length;$("#epSpot").innerHTML=`<option value="all">Todos os pontos</option>`+opts;if(ep)$("#epSpot").value=ep}
+ if($("#epSpot").dataset.n!==String(SPOTS.length)){const ep=$("#epSpot").value;$("#epSpot").dataset.n=SPOTS.length;$("#epSpot").innerHTML=`<option value="all">Todos os pontos</option>`+opts;if(ep)$("#epSpot").value=ep}
  if(!$("#lgSp").options.length){$("#lgSp").innerHTML=SPECIES.map(s=>`<option>${s.n}</option>`).join("")+"<option>Outra</option>";$("#lgWhen").value=localInput(Date.now())}
  $("#lgSpot").value=S.spot;
  const L=S.log.slice().sort((a,b)=>b.t-a.t);
@@ -1336,6 +1340,10 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b
  else if(b.dataset.u){S.unit=b.dataset.u;store("pf_unit",S.unit);renderAll()}
  else if(b.dataset.m){S.model=b.dataset.m;store("pf_model",S.model);rebuild();renderAll()}
  else if(b.dataset.spot){if(MAP)MAP.closePopup();selectSpot(b.dataset.spot,false);showView("resumo")}
+ else if(b.dataset.rename){const sp=SPOTS.find(x=>x.id===b.dataset.rename),li=b.closest("li");if(!sp||!li)return;
+  li.innerHTML=`<input type="text" class="renin" value="${esc(/^Pin /.test(sp.n)?"":sp.n)}" placeholder="Nome do ponto" maxlength="60" style="flex:1;min-width:0"><button type="button" data-renok="${sp.id}">salvar</button><button type="button" data-rencancel="1">cancelar</button>`;const inp=li.querySelector(".renin");inp.focus();inp.addEventListener("keydown",e=>{if(e.key==="Enter")li.querySelector("[data-renok]").click()})}
+ else if(b.dataset.renok){const sp=SPOTS.find(x=>x.id===b.dataset.renok),v=b.closest("li").querySelector(".renin").value.trim();if(!v){b.closest("li").querySelector(".renin").style.borderColor="var(--bad)";return}sp.n=v.slice(0,60);saveCustom();renderAll()}
+ else if(b.dataset.rencancel)renderMyList();
  else if(b.dataset.pinsave)savePin(($("#pinName")||{}).value||($("#pinName2")||{}).value||"");
  else if(b.dataset.deldspot){SPOTS=SPOTS.filter(x=>x.id!==b.dataset.deldspot);saveCustom();S.spot=HOME_SPOT;renderAll()}
  else if(b.dataset.day){S.day=b.dataset.day;renderDays();renderCharts();renderSummary()}
@@ -1433,7 +1441,7 @@ function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdic
  return`<div class="pop"><h4>${esc(sp.n)}</h4><div><span class="tag ${r.danger?"bad":cls}">${r.danger?"Perigoso":v}</span> <b class="num">${N(r.score)}</b>/100 · ${fmtDH.format(r.t)}</div>
  <div class="small">${esc(reasons(r,sp).join(" · "))}</div>
  <div class="small num" style="margin-top:4px">Vento ${r.d!=null?dir16(r.d):"–"} ${r.raw!=null?wv(r.raw):"–"} → ${r.eff!=null?wv(r.eff):"–"} ${WU()} no ponto · onda ${r.wave!=null?r.wave.toFixed(1)+" m":"–"} · maré ${r.tide!=null?r.tide.toFixed(2)+" m"+(r.rate!=null?(r.rate>0?" ↑":" ↓"):""):"–"}</div>
- ${sp.temp?`<div class="small muted" style="margin-top:4px">${esc(sp.notes)}</div><div class="row"><input type="text" id="pinName" placeholder="Nome do ponto" style="flex:1;min-width:0"><button class="btn" type="button" data-pinsave="1">Salvar</button></div>`:""}
+ ${sp.temp?`<div class="small muted" style="margin-top:4px">${esc(sp.notes)}</div><div class="row"><input type="text" id="pinName" placeholder="Nome do ponto (ex.: Pedra do robalo)" style="flex:1;min-width:0" maxlength="60"><button class="btn" type="button" data-pinsave="1">Salvar</button></div><div class="small" id="pinMsg" style="color:var(--bad)"></div>`:""}
  <div class="row"><button class="btn ghost" type="button" data-spot="${sp.id}">Ver detalhes e gráficos</button></div></div>`}
 function openPopup(sp){const m=MK[sp.id];if(!m){L.popup({maxWidth:300}).setLatLng([sp.lat,sp.lon]).setContent(popupHTML(sp)).openOn(MAP);return}m.unbindPopup();m.bindPopup(popupHTML(sp),{maxWidth:300,autoPanPadding:[20,20]}).openPopup()}
 
@@ -1489,7 +1497,8 @@ function renderBaseTog(){
 document.addEventListener("click",e=>{const b=e.target.closest(".basetog");if(!b)return;
  S.allBase=!S.allBase;store("pf_allbase",S.allBase);if(!visSpots().some(x=>x.id===S.spot))S.spot=HOME_SPOT;renderAll()});
 function renderMyList(){renderBaseTog();const L=SPOTS.filter(s=>s.custom&&!s.temp);const ul=$("#myList");if(!ul)return;
- ul.innerHTML=L.length?L.map(s=>`<li><span title="${esc(s.n)}">${esc(s.n)}</span><span class="small muted" style="flex:0 0 auto">${TYPE_LBL[s.t]}</span><button type="button" data-spot="${s.id}">ver</button><button type="button" data-deldspot="${s.id}">remover</button></li>`).join(""):`<li class="muted">Nenhum ponto seu ainda. Toque no mapa para marcar ou importe do Google Maps.</li>`}
+ const semNome=s=>/^Pin -?\d/.test(s.n)||/^Pin \d/.test(s.n);
+ ul.innerHTML=L.length?L.map(s=>`<li data-li="${s.id}"><span title="${esc(s.n)}">${esc(s.n)}${semNome(s)?' <span class="tag warn">sem nome</span>':""}</span><span class="small muted" style="flex:0 0 auto">${TYPE_LBL[s.t]}</span><button type="button" data-spot="${s.id}">ver</button><button type="button" data-rename="${s.id}">renomear</button><button type="button" data-deldspot="${s.id}">remover</button></li>`).join(""):`<li class="muted">Nenhum ponto seu ainda. Toque no mapa para marcar ou importe do Google Maps.</li>`}
 const inRegion=(lat,lon)=>lat>-28.4&&lat<-26.9&&lon>-49.1&&lon<-48.1;
 function coordFromText(t){t=String(t||"");let m=t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),\+?(-?\d+\.\d+)/)||t.match(/(-?\d{1,2}\.\d{2,})\s*,\s*\+?(-?\d{1,3}\.\d{2,})/);
  return m?{lat:+m[1],lon:+m[2]}:null}
@@ -1551,7 +1560,8 @@ $("#myPasteBtn").addEventListener("click",()=>importPlaces($("#myPaste").value,"
 $("#myExport").addEventListener("click",()=>{const L=SPOTS.filter(s=>s.custom&&!s.temp);if(!L.length){$("#myMsg").textContent="Você ainda não tem pontos para exportar.";return}
  const blob=new Blob([JSON.stringify({app:"mare-boa",v:1,tipo:"meus-pontos",exportado:new Date().toISOString(),spots:L},null,1)],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="meus-pontos-pesca.json";document.body.appendChild(a);a.click();a.remove();$("#myMsg").textContent=`${L.length} pontos exportados em meus-pontos-pesca.json. Guarde em lugar seguro; para restaurar, use "Importar pontos".`});
-function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;const id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;
+ if(!String(name||"").trim()){const inp=$("#pinName")||$("#pinName2");const m=$("#pinMsg")||$("#pinMsg2");if(m)m.textContent="Dê um nome ao ponto para achar fácil depois (ex.: Pedra do robalo).";if(inp){inp.focus();inp.style.borderColor="var(--bad)"}return}const id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  S.data.spots[id]=S.data.spots[sp.id];S.derived[id]=S.derived[sp.id];delete S.data.spots[sp.id];delete S.derived[sp.id];
  sp.id=id;sp.temp=false;sp.r="Meu ponto";if(name.trim())sp.n=name.trim().slice(0,60);saveCustom();
  if(MAP)MAP.closePopup();S.spot=id;store("pf_spot",id);renderAll();setTimeout(()=>openPopup(sp),50)}
@@ -1562,7 +1572,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.14";
+const APP_VERSION="2026-10-25.15";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
