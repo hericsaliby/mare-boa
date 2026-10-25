@@ -1740,7 +1740,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.21";
+const APP_VERSION="2026-10-25.22";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1980,7 +1980,8 @@ function tlRead(i){if(!TL)return;const r=TL.rows[i];if(!r)return;renderFactors(i
  Cadastro por telefone (código SMS), perfil com nome e região do CEP (5 primeiros dígitos), grupos com postagens,
  denúncias, parceiros locais e exclusão de conta. Regras de segurança em firestore.rules.
  Os pontos de pesca continuam só no aparelho: nas postagens vai, se a pessoa quiser, só o nome do ponto. */
-const FB_CONFIG=null; // ← colar aqui o objeto firebaseConfig do console do Firebase
+// Config pública do app web (não é senha; a proteção está no firestore.rules). Sem Analytics, de propósito (LGPD).
+const FB_CONFIG={apiKey:"AIzaSyCPj7ywVSXpguBTU0mpFUzWX8RkW-eNOgQ",authDomain:"mareboa-2642f.firebaseapp.com",projectId:"mareboa-2642f",storageBucket:"mareboa-2642f.firebasestorage.app",messagingSenderId:"705491594133",appId:"1:705491594133:web:df0ef4a6ea78c7b069e49c"};
 const FB_VER="10.12.5",CONSENT_VER="2026-10-25";
 const CM={fb:null,user:null,profile:null,admin:false,gid:null,groups:[],unsub:null,confirm:null};
 async function fbInit(){if(CM.fb)return CM.fb;
