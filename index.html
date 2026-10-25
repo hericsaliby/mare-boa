@@ -1495,7 +1495,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
-const APP_VERSION="2026-10-25.8";
+const APP_VERSION="2026-10-25.9";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1579,19 +1579,27 @@ function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp
   :d3!=null&&d3>1.5?"Subida forte, típica do pós-frente: peixe costuma ficar mais parado no primeiro dia."
   :d3!=null&&d3>.5?"Subindo devagar: tempo firmando."
   :"Estável: sem mudança de tempo à vista.";
- // gráfico: 24 h antes até 48 h depois
- const a=Math.max(0,i-24),b=Math.min(t.length-1,i+48),pts=[];for(let k=a;k<=b;k++)if(P[k]!=null)pts.push([k,P[k]]);
- const W=Math.max(240,el.clientWidth-30||300),H=74,lo=Math.min(...pts.map(x=>x[1]))-1,hi=Math.max(...pts.map(x=>x[1]))+1,X=k=>4+(W-8)*(k-a)/((b-a)||1),Y=v=>6+(H-22)*(1-(v-lo)/(hi-lo));
+ // gráfico: 3 dias antes até o fim da previsão
+ const a=Math.max(0,i-72),b=t.length-1,pts=[];for(let k=a;k<=b;k++)if(P[k]!=null)pts.push([k,P[k]]);
+ const W=Math.max(240,el.clientWidth-30||300),H=110,lo=Math.min(...pts.map(x=>x[1]))-1,hi=Math.max(...pts.map(x=>x[1]))+1,X=k=>4+(W-8)*(k-a)/((b-a)||1),Y=v=>6+(H-22)*(1-(v-lo)/(hi-lo));
  let g=`<path d="M${pts.map(([k,v])=>X(k).toFixed(1)+" "+Y(v).toFixed(1)).join("L")}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
- g+=`<line x1="${X(i)}" x2="${X(i)}" y1="2" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="3 2"/><circle cx="${X(i)}" cy="${Y(p)}" r="3.5" fill="var(--accent)"/>`;
+ // passado (medido pelo modelo de análise) sombreado; linha de agora
+ g=`<rect x="${X(a)}" y="2" width="${Math.max(0,X(i)-X(a))}" height="${H-16}" fill="var(--surface-2)"/><text x="${X(i)-4}" y="${H-18}" text-anchor="end" style="font-size:10px">passado</text><text x="${X(i)+4}" y="${H-18}" style="font-size:10px">previsão</text>`+g;
+ for(let k=a;k<=b;k++)if(localHour(t[k])===0)g=`<line x1="${X(k)}" x2="${X(k)}" y1="2" y2="${H-16}" stroke="var(--line)"/>`+g;
+ g+=`<line x1="${X(i)}" x2="${X(i)}" y1="2" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="3 2"/><circle cx="${X(i)}" cy="${Y(p)}" r="3.5" fill="var(--accent)"/><line class="px" visibility="hidden" x1="0" x2="0" y1="2" y2="${H-14}" stroke="var(--sand)" stroke-width="2"/><circle class="pc" visibility="hidden" r="4" fill="var(--sand)"/>`;
  (S.fronts||[]).forEach(f=>{const k=t.indexOf(f.t);if(k>=a&&k<=b)g+=`<line x1="${X(k)}" x2="${X(k)}" y1="2" y2="${H-14}" stroke="var(--warn)" stroke-width="2"/><text x="${X(k)+3}" y="12" style="fill:var(--warn);font:600 10px var(--body)">frente</text>`});
- for(let k=a;k<=b;k++)if(localHour(t[k])===0)g+=`<text x="${X(k)}" y="${H-2}" text-anchor="middle">${fmtD.format(t[k]).slice(0,3)}</text>`;
+ for(let k=a;k<=b;k++)if(localHour(t[k])===12)g+=`<text x="${X(k)}" y="${H-2}" text-anchor="middle" style="font-size:10px">${fmtD.format(t[k]).slice(0,3)}</text>`;
  g+=`<text x="4" y="${Y(hi-1)-3}">${Math.round(hi-1)}</text><text x="4" y="${Y(lo+1)+11}">${Math.round(lo+1)}</text>`;
  el.innerHTML=`<div class="sum-h"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M12 5V3"/></svg><h3>Pressão</h3></div>
   <div class="wbig"><div class="sum-big num" style="font-size:30px">${Math.round(p)} <span style="font-size:15px">hPa</span></div><div class="${cls}" style="font-weight:600">${tr}</div></div>
   <div class="small">${d3!=null?`3 h: <b>${d3>0?"+":""}${d3.toFixed(1)}</b> hPa`:""}${d24!=null?` · 24 h: <b>${d24>0?"+":""}${d24.toFixed(1)}</b> hPa`:""} <span class="muted">(${today?"agora":fmtH.format(t[i])})</span></div>
   <div class="small">${sig}</div>
-  <div class="chart"><svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pressão nas últimas 24 h e próximas 48 h">${g}</svg></div>`}
+  <div class="chart" id="presChart"><svg height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pressão nos últimos 3 dias e nos próximos dias">${g}</svg></div>
+  <div class="small muted" id="presRead">Toque no gráfico para ver a pressão de cada hora.</div>`;
+ const ch=$("#presChart"),mv=e=>{const rc=ch.getBoundingClientRect(),px=(e.clientX-rc.left)*(W/rc.width);const k=clamp(Math.round(a+(px-4)/((W-8)/((b-a)||1))),a,b);if(P[k]==null)return;
+  const x=X(k),y=Y(P[k]);ch.querySelectorAll(".px").forEach(l=>{l.setAttribute("x1",x);l.setAttribute("x2",x);l.setAttribute("visibility","visible")});const c=ch.querySelector(".pc");c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("visibility","visible");
+  const dd=P[k-3]!=null?P[k]-P[k-3]:null;$("#presRead").innerHTML=`<b class="num">${fmtDM.format(t[k])}</b> · <b>${P[k].toFixed(1)} hPa</b>${dd!=null?` · ${dd<-.5?"▼ caindo":dd>.5?"▲ subindo":"= estável"} (${dd>0?"+":""}${dd.toFixed(1)} em 3 h)`:""}${k<i?" · passado":""}`};
+ ch.addEventListener("pointermove",mv);ch.addEventListener("pointerdown",mv)}
 function renderFront(){const el=$("#frontAlert");if(!el)return;const now=Date.now();
  const f=(S.fronts||[]).find(x=>x.t>now-18*HOUR&&x.t<now+6*24*HOUR);if(!f){el.hidden=true;return}el.hidden=false;
  const h=(f.t-now)/HOUR,pre0=f.t-36*HOUR,passing=h<=0;
