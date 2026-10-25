@@ -1798,7 +1798,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.25";
+const APP_VERSION="2026-10-25.26";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2051,7 +2051,8 @@ async function fbInit(){if(CM.fb)return CM.fb;
  const d=path=>F.doc(db,...path.split("/"));let verifier=null;
  CM.fb={
   onAuth:cb=>Au.onAuthStateChanged(auth,cb),
-  async sendCode(phone,btnId){if(!verifier)verifier=new Au.RecaptchaVerifier(auth,btnId,{size:"invisible"});return Au.signInWithPhoneNumber(auth,phone,verifier)},
+  async sendCode(phone,btnId){if(!verifier)verifier=new Au.RecaptchaVerifier(auth,btnId,{size:"invisible"});
+   try{return await Au.signInWithPhoneNumber(auth,phone,verifier)}catch(e){try{verifier.clear()}catch(_){}verifier=null;throw e}},
   signOut:()=>Au.signOut(auth),
   async deleteUser(){await Au.deleteUser(auth.currentUser)},
   async get(path){const x=await F.getDoc(d(path));return x.exists()?x.data():null},
@@ -2097,7 +2098,7 @@ function phoneE164(v){let d=String(v).replace(/\D/g,"");if(d.startsWith("55")&&d
 async function cmSendCode(e){e.preventDefault();const m=$("#cmAuthMsg"),ph=phoneE164($("#cmPhone").value);if(!ph){m.textContent="Confira o número: DDD + celular, por exemplo (48) 99999-9999.";return}
  $("#cmSend").disabled=true;m.textContent="Enviando código…";
  try{CM.confirm=await CM.fb.sendCode(ph,"cmSend");m.textContent="Código enviado para "+ph.replace(/^\+55(\d{2})(\d+)(\d{4})$/,"($1) $2-$3")+".";$("#cmCodeForm").hidden=false;$("#cmCode").focus()}
- catch(err){console.warn(err);m.textContent=/too-many|quota/.test(err.code||"")?"Muitas tentativas. Espere alguns minutos e tente de novo.":/invalid-phone/.test(err.code||"")?"Número inválido.":"Não consegui enviar o código agora. Tente de novo em instantes.";$("#cmSend").disabled=false}}
+ catch(err){console.warn(err);m.textContent=/operation-not-allowed/.test(err.code||"")?"O envio de SMS ainda não foi liberado no servidor. Tente mais tarde.":/too-many|quota/.test(err.code||"")?"Muitas tentativas. Espere alguns minutos e tente de novo.":/invalid-phone/.test(err.code||"")?"Número inválido.":"Não consegui enviar o código agora. Tente de novo em instantes.";$("#cmSend").disabled=false}}
 async function cmConfirm(e){e.preventDefault();const m=$("#cmAuthMsg");try{await CM.confirm.confirm($("#cmCode").value.trim())}catch(err){m.textContent="Código incorreto ou vencido. Confira e tente de novo."}}
 async function cmSaveProfile(e){e.preventDefault();const m=$("#cmProfMsg"),nome=$("#cmNome").value.trim().replace(/\s+/g," "),cep=$("#cmCep").value.replace(/\D/g,"");
  if(nome.length<2){m.textContent="Escreva seu nome.";return}if(cep.length!==8){m.textContent="O CEP tem 8 números.";return}if(!$("#cmOk").checked){m.textContent="Para participar é preciso aceitar a política.";return}
