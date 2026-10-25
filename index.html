@@ -409,7 +409,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         </div>
       </div>
     </article>
-    <footer>
+    <footer><p style="margin:0 0 6px">Versão do app: <b id="appVer"></b>. Se não for a mais nova, puxe a página para baixo para recarregar.</p>
     Dados: Open-Meteo (modelos GFS/NOAA, ECMWF IFS, ICON/DWD; ondas e nível do mar do modelo marinho), cálculo de sol e lua no próprio app, calibração opcional com estações EPAGRI/CIRAM. A nota é uma estimativa. Confira a previsão oficial, a Marinha e as condições no local antes de sair. Costão com mar grosso mata: na dúvida, não vá.
   </footer>
   </section>
@@ -1355,6 +1355,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","mais"];
+const APP_VERSION="2026-10-25.3";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -1370,7 +1371,7 @@ function renderSpotSel(){const sel=$("#spotSel");const key=SPOTS.map(s=>s.id+s.n
  if(sel.dataset.k!==key){const groups={};SPOTS.forEach(s=>{const g=s.custom?"Meus pontos":s.r.split(" · ")[0];(groups[g]=groups[g]||[]).push(s)});
   sel.innerHTML=Object.entries(groups).map(([g,l])=>`<optgroup label="${esc(g)}">${l.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("")}</optgroup>`).join("");sel.dataset.k=key}
  sel.value=spot().id;
- $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}`}
+ $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}<br>versão ${APP_VERSION}`;const fv=$("#appVer");if(fv)fv.textContent=APP_VERSION}
 $("#spotSel").addEventListener("change",e=>selectSpot(e.target.value,false));
 $("#fishSel").innerHTML=FISH_KEYS.map(k=>`<option value="${k}">${k==="geral"?"Peixe: qualquer":FISH[k].n}</option>`).join("");$("#fishSel").value=S.fish;$("#fishSel").classList.toggle("on",S.fish!=="geral");
 $("#fishSel").addEventListener("change",e=>{S.fish=e.target.value;store("pf_fish",S.fish);e.target.classList.toggle("on",S.fish!=="geral");if(!S.data)return;rebuild();renderAll();showView(S.view||"resumo",false)});
@@ -1427,22 +1428,24 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
 /* linha do tempo: maré + janelas do robalo, vento no ponto, lua/sol e nota, hora a hora */
 let TL=null;
 function renderTimeline(){const rows=dayRows(),el=$("#timeline");if(!rows.length||!el)return;const sp=spot(),D=S.derived[sp.id];
- const W=Math.max(300,el.clientWidth||600),pl=50,pr=8,cw=(W-pl-pr)/rows.length,X=i=>pl+cw*i,t0=rows[0].t,XT=t=>pl+cw*((t-t0)/HOUR);
- const yM=[6,74],yV=[82,104],yL=[110,124],yN=[130,144],H=166;
+ const W=Math.max(300,el.clientWidth||600),narrow=W<560,pl=narrow?40:52,pr=6,cw=(W-pl-pr)/rows.length,X=i=>pl+cw*i,t0=rows[0].t,XT=t=>pl+cw*((t-t0)/HOUR);
+ // folga em cima (horário da preamar) e embaixo (horário da baixamar) para os rótulos não ficarem sobre a curva
+ const yM=[20,84],yV=[104,126],yL=[134,146],yN=[154,166],H=188;
  const th=rows.map(r=>r.tide).filter(v=>v!=null);const lo=th.length?Math.min(...th):0,hi=th.length?Math.max(...th):1,Ym=v=>yM[1]-(yM[1]-yM[0]-6)*((v-lo)/((hi-lo)||1))-3;
  let g="";
  rows.forEach((r,i)=>{if(sunAlt(r.t+HOUR/2)<-0.8)g+=`<rect x="${X(i)}" y="2" width="${cw}" height="${yN[1]-2}" fill="var(--surface-2)"/>`});
  const exDay=D.ex.filter(e=>dayKey(e.t)===S.day);
  let d="";rows.forEach((r,i)=>{if(r.tide!=null)d+=(d?"L":"M")+(X(i)+cw/2).toFixed(1)+" "+Ym(r.tide).toFixed(1)});
  g+=`<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`;
- exDay.forEach(e=>{const x=XT(e.t)+cw/2,y=Ym(e.h);g+=`<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/><text x="${x}" y="${e.hi?y+14:y-6}" text-anchor="middle" style="fill:var(--ink);font:600 10.5px var(--body)">${fmtH.format(e.t)}</text>`});
- const step=cw<20?2:1;
- rows.forEach((r,i)=>{g+=`<rect x="${X(i)+.5}" y="${yV[0]}" width="${cw-1}" height="${yV[1]-yV[0]}" rx="2" style="fill:${windColor(r.eff)}"/>`;
-  if(i%step===0)g+=`<text x="${X(i)+cw*step/2}" y="${yV[1]-6}" text-anchor="middle" style="fill:#fff;font:600 10px var(--body)">${wv(r.eff)}</text>`});
+ exDay.forEach(e=>{const x=XT(e.t)+cw/2,y=Ym(e.h);g+=`<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/><text x="${clamp(x,pl+14,W-pr-14)}" y="${e.hi?y-8:y+16}" text-anchor="middle" style="fill:var(--ink);font:600 ${narrow?10:11}px var(--body)">${fmtH.format(e.t)}</text>`});
+ // células do vento sem vão; número só a cada 2 ou 3 horas quando a tela é estreita
+ const step=cw<15?3:cw<22?2:1;
+ rows.forEach((r,i)=>{g+=`<rect x="${X(i)}" y="${yV[0]}" width="${cw+.5}" height="${yV[1]-yV[0]}" style="fill:${windColor(r.eff)}"/>`});
+ rows.forEach((r,i)=>{if(i%step===Math.floor(step/2))g+=`<text x="${X(i)+cw/2}" y="${yV[1]-7}" text-anchor="middle" style="fill:#fff;font:700 10.5px var(--body)">${wv(r.eff)}</text>`});
  const ds=daySolunar(S.day);ds.per.forEach(p=>{const a=Math.max(XT(p.a),pl),b=Math.min(XT(p.b)+cw,W-pr);if(b>a)g+=`<rect x="${a}" y="${yL[0]}" width="${b-a}" height="${yL[1]-yL[0]}" rx="3" style="fill:${p.maj?"var(--accent)":"var(--s2)"}"/>`});
  ds.sun.forEach(e=>{const x=XT(e.t)+cw/2;g+=`<rect x="${x-1.5}" y="${yL[0]-2}" width="3" height="${yL[1]-yL[0]+4}" fill="var(--sand)"/>`});
  rows.forEach((r,i)=>{g+=`<rect x="${X(i)+.5}" y="${yN[0]}" width="${cw-1}" height="${yN[1]-yN[0]}" rx="2" style="fill:var(--s${clamp(Math.round(r.score/2),0,5)})"/>`});
- [["Maré",(yM[0]+yM[1])/2],["Vento",(yV[0]+yV[1])/2],["Lua",(yL[0]+yL[1])/2],["Nota",(yN[0]+yN[1])/2]].forEach(([t,y])=>g+=`<text x="0" y="${y+4}" style="fill:var(--ink-2);font:600 11px var(--body)">${t}</text>`);
+ [["Maré",(yM[0]+yM[1])/2],["Vento",(yV[0]+yV[1])/2],["Lua",(yL[0]+yL[1])/2],["Nota",(yN[0]+yN[1])/2]].forEach(([t,y])=>g+=`<text x="0" y="${y+4}" style="fill:var(--ink-2);font:600 ${narrow?10:11}px var(--body)">${t}</text>`);
  rows.forEach((r,i)=>{const hh=localHour(r.t);if(hh%3===0)g+=`<text x="${X(i)+cw/2}" y="${H-4}" text-anchor="middle">${String(hh).padStart(2,"0")}h</text>`});
  if(dayKey(Date.now())===S.day){const x=XT(Date.now());g+=`<line x1="${x}" x2="${x}" y1="2" y2="${yN[1]}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 2"/>`}
  g+=`<line class="tlx" visibility="hidden" x1="0" x2="0" y1="2" y2="${yN[1]}" stroke="var(--sand)" stroke-width="2"/>`;
