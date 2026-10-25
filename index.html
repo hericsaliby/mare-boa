@@ -552,18 +552,35 @@ function parseEpagri(j){const num=v=>{if(v==null)return null;const x=parseFloat(
  const rows=(j.rows||[]).map(r=>{const c=(r.c||[]).map(x=>x&&typeof x==="object"?x.v:x);return{t:epTime(c[0]),obs:num(c[1]),ast:num(c[2]),res:num(c[3]),prev:num(c[4]),pres:num(c[5]),nmm:num(c[6])}}).filter(r=>r.t);
  rows.sort((a,b)=>a.t-b.t);return rows}
 const EP_MIRROR="https://raw.githubusercontent.com/hericsaliby/mare-boa/dados/";
-async function loadEpagri(){S.ep={};S.epInfo={};
+/* Análise harmônica: ajusta as componentes da maré (M2, S2, K1, O1...) à maré astronômica da EPAGRI
+   guardada pelo robô. Só entram componentes que o tamanho do histórico consegue separar (critério de Rayleigh). */
+const TIDE_C=[["M2",28.9841042],["K1",15.0410686],["O1",13.9430356],["S2",30],["N2",28.4397295],["M4",57.9682084],["K2",30.0821373],["P1",14.9589314],["Q1",13.3986609],["MS4",58.9841042],["MN4",57.4238337],["M3",43.4761563],["NU2",28.5125831],["MU2",27.9682084],["2N2",27.8953548],["L2",29.5284789],["M6",86.9523127],["MK3",44.0251729]];
+function harmFit(T,Y){if(T.length<200)return null;const Lh=(T[T.length-1]-T[0])/HOUR;if(Lh<14*24)return null;
+ const sel=[];for(const c of TIDE_C)if(sel.every(x=>Math.abs(x[1]-c[1])*Lh/360>=1))sel.push(c);
+ const t0=T[0],n=1+2*sel.length,A=[...Array(n)].map(()=>Array(n).fill(0)),bv=Array(n).fill(0);
+ const row=x=>{const h=(x-t0)/HOUR,r=[1];for(const c of sel){const a=c[1]*rad*h;r.push(Math.cos(a),Math.sin(a))}return r};
+ T.forEach((x,i)=>{const r=row(x);for(let a=0;a<n;a++){bv[a]+=r[a]*Y[i];for(let b=0;b<n;b++)A[a][b]+=r[a]*r[b]}});
+ for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];[bv[c],bv[p]]=[bv[p],bv[c]];
+  if(Math.abs(A[c][c])<1e-9)return null;for(let r=c+1;r<n;r++){const f=A[r][c]/A[c][c];for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];bv[r]-=f*bv[c]}}
+ const x=Array(n).fill(0);for(let r=n-1;r>=0;r--){let v=bv[r];for(let k=r+1;k<n;k++)v-=A[r][k]*x[k];x[r]=v/A[r][r]}
+ let e=0;T.forEach((t,i)=>{const r=row(t);let v=0;for(let k=0;k<n;k++)v+=r[k]*x[k];e+=(v-Y[i])**2});
+ return{sel:sel.map(c=>c[0]),days:Lh/24,rmse:Math.sqrt(e/T.length),fn:t=>{const r=row(t);let v=0;for(let k=0;k<n;k++)v+=r[k]*x[k];return v}}}
+async function loadEpagri(){S.ep={};S.epInfo={};S.harm={};
+ try{const H=await fetchJSON(EP_MIRROR+"historico.json?t="+Math.floor(Date.now()/36e5));
+  for(const k in EP_ST){const rows=H[k]&&H[k].rows;if(!rows)continue;const T=[],Y=[];
+   Object.keys(rows).map(Number).sort((a,b)=>a-b).forEach(t=>{const a=rows[t][1];if(a!=null){T.push(t);Y.push(a)}});
+   const hf=harmFit(T,Y);if(hf)S.harm[k]=hf}}catch(e){console.warn("histórico",e)}
  await Promise.all(Object.entries(EP_ST).map(async([k,st])=>{
   // 1) direto na EPAGRI; 2) cópia feita pelo robô do GitHub a cada 15 min
   for(const [src,url] of [["EPAGRI",st.url],["espelho GitHub",EP_MIRROR+k+".json?t="+Math.floor(Date.now()/3e5)]]){
-   try{const rows=parseEpagri(await fetchJSON(url));if(rows.some(r=>r.obs!=null)){S.ep[k]=buildGauge(rows);S.epInfo[k]=src;return}throw new Error("sem medições")}
+   try{const rows=parseEpagri(await fetchJSON(url));if(rows.some(r=>r.obs!=null)){S.ep[k]=buildGauge(rows,S.harm[k]);S.epInfo[k]=src;return}throw new Error("sem medições")}
    catch(e){console.warn("EPAGRI",k,src,e);S.epInfo[k]="falhou: "+(e.message||e)}}}));
  if(Object.keys(S.ep).length)store("pf_ep",{at:Date.now(),ep:Object.fromEntries(Object.entries(S.ep).map(([k,g])=>[k,g.rows]))});
  else{const c=store("pf_ep");if(c&&Date.now()-c.at<12*HOUR)for(const k in c.ep)S.ep[k]=buildGauge(c.ep[k])}}
 /* Série contínua do marégrafo em metros sobre o nível médio:
    passado = medido; futuro = astronômica + resíduo, com o resíduo saindo do valor medido agora
    e convergindo para o resíduo previsto pelo MohidSC em ~12 h. */
-function buildGauge(rows){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm??0;
+function buildGauge(rows,harm){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm??0;
  const obsRows=rows.filter(r=>r.obs!=null),last=obsRows[obsRows.length-1]||null;
  const tail=last?obsRows.filter(r=>r.t>last.t-HOUR&&r.res!=null):[];const r0=tail.length?tail.reduce((s,r)=>s+r.res,0)/tail.length:null;
  const fut=rows.filter(r=>(!last||r.t>last.t)&&r.ast!=null);
@@ -576,10 +593,12 @@ function buildGauge(rows){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm??0;
   else if(r.ast!=null){let res=rp(r);if(res!=null){lastRp=res;lastRpT=r.t}else res=lastRp*Math.exp(-(r.t-lastRpT)/(24*HOUR));
    if(r0!=null&&last)res+=(r0-rp0)*Math.exp(-(r.t-last.t)/(12*HOUR));v=r.ast+res}
   if(v!=null){T.push(r.t);V.push((v-nmm)/100)}}
+ // depois da última maré astronômica publicada: continua com a análise harmônica (se houver histórico)
+ if(harm&&T.length){const tl=T[T.length-1];for(let x=tl+HOUR;x<=tl+6*24*HOUR;x+=HOUR){let res=lastRp*Math.exp(-(x-lastRpT)/(24*HOUR));if(r0!=null&&last)res+=(r0-rp0)*Math.exp(-(x-last.t)/(12*HOUR));T.push(x);V.push((harm.fn(x)+res-nmm)/100)}}
  const fn=x=>{if(!T.length||x<T[0]||x>T[T.length-1])return null;let lo=0,hi=T.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(T[m]<=x)lo=m;else hi=m}
   if(T[hi]-T[lo]>2*HOUR)return null;return T[hi]===T[lo]?V[lo]:V[lo]+(V[hi]-V[lo])*(x-T[lo])/(T[hi]-T[lo])};
  const pts=obsRows.map(r=>({t:r.t,h:(r.obs-nmm)/100,r:r.res!=null?r.res/100:undefined}));
- return{rows,nmm,last,r0,fn,pts,tEnd:T[T.length-1]}}
+ return{rows,nmm,last,r0,fn,pts,tEnd:T[T.length-1],harm:harm||null}}
 function gaugeFor(sp){if(!S.ep)return null;const k=sp.lat<-27.845?"imbituba":"floripa";const g=S.ep[k]||S.ep.floripa;if(!g)return null;const st=EP_ST[S.ep[k]?k:"floripa"];
  return{g,st,lag:sp.lag-st.lagRef,amp:sp.amp/st.ampRef}}
 function tideFor(sp){
@@ -889,7 +908,7 @@ function renderTide(sp,D,r){
  h+=`.`;if(r.rate!=null)h+=` Agora ${rising?"subindo":"descendo"} ${Math.round(Math.abs(r.rate)*100)} cm por hora.`;
  if(after)h+=`<br>Depois ${rising?"vaza":"enche"} até <b>${fmtH.format(after.t)}</b> (${cm(after.h)}), ${rising?"descendo":"subindo"} ${dm(after.h-next.h)}.`;
  const E=D.ep;
- if(E&&E.g.last){const L=E.g.last;h+=`<br><span class="small">Marégrafo EPAGRI ${E.st.n}: medido <b>${Math.round(L.obs)} cm</b> às ${fmtH.format(L.t)}${L.res!=null?`, resíduo (maré meteorológica) <b>${L.res>=0?"+":""}${Math.round(L.res)} cm</b>${Math.abs(L.res)>15?(L.res>0?": água acima do normal":": água abaixo do normal"):""}`:""}. Previsão com o modelo MohidSC da EPAGRI até ${fmtDH.format(E.g.tEnd)}.</span>`}
+ if(E&&E.g.last){const L=E.g.last;h+=`<br><span class="small">Marégrafo EPAGRI ${E.st.n}: medido <b>${Math.round(L.obs)} cm</b> às ${fmtH.format(L.t)}${L.res!=null?`, resíduo (maré meteorológica) <b>${L.res>=0?"+":""}${Math.round(L.res)} cm</b>${Math.abs(L.res)>15?(L.res>0?": água acima do normal":": água abaixo do normal"):""}`:""}. Previsão com o modelo MohidSC da EPAGRI${E.g.harm?` e análise harmônica (${E.g.harm.days.toFixed(0)} dias de histórico)`:""} até ${fmtDH.format(E.g.tEnd)}${E.g.harm?"":"; depois disso, estimativa do modelo global ajustada ao marégrafo"}.</span>`}
  else if(G)h+=`<br><span class="small">Marégrafo EPAGRI: maré meteorológica ${cm(G.surge)} na última medição (${fmtDH.format(G.tLast)}), já somada à previsão${Math.abs(G.surge)>.15?(G.surge>0?". A água está acima do normal":". A água está abaixo do normal"):""}.</span>`;
  $("#tideNow").innerHTML=h;
  const rows=D.rows,i0=rows.findIndex(x=>x.t===r.t);
