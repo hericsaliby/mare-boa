@@ -1697,12 +1697,12 @@ const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function ovFrame(){const c=OV.canvas;if(!c)return;const x=c.getContext("2d"),r=$("#map").getBoundingClientRect(),W=r.width,H=r.height,k=ovIdx();
  const kinds=[OV.on.wind&&"wind",OV.on.cur&&"cur"].filter(Boolean);
  // rastro: apaga aos poucos
- x.save();x.globalCompositeOperation="destination-in";x.fillStyle="rgba(0,0,0,.90)";x.fillRect(0,0,W,H);x.restore();
- const want=kinds.length?Math.round(W*H/900):0;while(OV.parts.length<want)OV.parts.push({x:Math.random()*W,y:Math.random()*H,a:Math.random()*60,k:kinds[OV.parts.length%kinds.length]});if(OV.parts.length>want)OV.parts.length=want;
+ x.save();x.globalCompositeOperation="destination-in";x.fillStyle="rgba(0,0,0,.94)";x.fillRect(0,0,W,H);x.restore();
+ const want=kinds.length?Math.round(W*H/900):0;while(OV.parts.length<want)OV.parts.push({x:Math.random()*W,y:Math.random()*H,a:Math.random()*140,k:kinds[OV.parts.length%kinds.length]});if(OV.parts.length>want)OV.parts.length=want;
  x.lineWidth=1.4;x.lineCap="round";
  for(const p of OV.parts){if(!kinds.includes(p.k))p.k=kinds[0];const ll=MAP.containerPointToLatLng([p.x,p.y]),v=ovAt(p.k,ll.lat,ll.lng,k);p.a++;
-  if(!v||p.a>70||p.x<0||p.y<0||p.x>W||p.y>H||(p.k==="cur"&&!isWater(ll.lat,ll.lng))){p.x=Math.random()*W;p.y=Math.random()*H;p.a=0;continue}
-  const sc=p.k==="wind"?.06:.9,nx=p.x+v[0]*sc,ny=p.y-v[1]*sc,spd=Math.hypot(v[0],v[1]),e=p.k==="wind"?windEdge(ll.lat,ll.lng):ovEdge(ll.lat,ll.lng);
+  if(!v||p.a>160||p.x<0||p.y<0||p.x>W||p.y>H||(p.k==="cur"&&!isWater(ll.lat,ll.lng))){p.x=Math.random()*W;p.y=Math.random()*H;p.a=0;continue}
+  const sc=p.k==="wind"?.022:.32,nx=p.x+v[0]*sc,ny=p.y-v[1]*sc,spd=Math.hypot(v[0],v[1]),e=p.k==="wind"?windEdge(ll.lat,ll.lng):ovEdge(ll.lat,ll.lng);
   x.strokeStyle=p.k==="wind"?`rgba(255,255,255,${e*Math.min(.9,.45+spd/50)})`:`rgba(0,200,255,${e*Math.min(.95,.45+spd/2)})`;
   x.beginPath();x.moveTo(p.x,p.y);x.lineTo(nx,ny);x.stroke();if(p.k==="wind"){x.strokeStyle=`rgba(10,40,50,${.22*e})`;x.beginPath();x.moveTo(p.x+.8,p.y+.8);x.lineTo(nx+.8,ny+.8);x.stroke()}p.x=nx;p.y=ny}
  OV.raf=requestAnimationFrame(ovFrame)}
@@ -1871,7 +1871,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-25.29";
+const APP_VERSION="2026-10-25.30";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
