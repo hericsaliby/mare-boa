@@ -257,6 +257,11 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .hlist{list-style:none;margin:0;padding:0}
 .hlist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
 .hlist .res{min-width:40px}
+.simlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.simlist button{width:100%;text-align:left;display:flex;gap:12px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;color:inherit;font:inherit}
+.simlist .pct{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:700 16px var(--mono);color:#fff;background:var(--good)}
+.simlist .pct.mid{background:color-mix(in srgb,var(--good) 60%,var(--warn))}
+.simlist b{display:block}
 .similar{background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:8px;padding:8px 10px;font-size:14px}
 .frontcard{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--surface))}
 .frontcard .fh{display:flex;gap:10px;align-items:center}
@@ -392,6 +397,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <article class="card sum" id="sumWx" aria-label="Tempo"></article>
       <article class="card sum" id="sumPres" aria-label="Pressão"></article>
     </div>
+    <article class="card simcard" id="simCard"><div class="row"><h3 class="grow">Parecido com suas pescarias boas</h3><span class="small muted" id="simInfo"></span></div><div id="simBody"></div></article>
     <article class="card hist" id="histCard">
       <div class="row"><h3 class="grow" id="histTitle">Histórico deste ponto</h3></div>
       <details id="logDet"><summary class="btn">+ Registrar pescaria</summary>
@@ -874,7 +880,9 @@ function pointM(lat,lon,T){const H={time:T.map(x=>x/1000)},rd=regionData(lat,lon
  if(w){const G=gridOf(rd.md.grid);if(!w.ok){const A=w.v.hs||[];w.ok=new Set();A.forEach(row=>{if(row)row.forEach((x,n)=>{if(x!=null)w.ok.add(n)})})}
   const W=mdWeights(G,lat,lon,n=>w.ok.has(n));H.wave_height=mdSeries(w,W,"hs",T);H.wave_period=mdSeries(w,W,"tp",T);H.wave_direction=mdSeries(w,W,"dp",T)}
  const m=rd.mar;if(m&&m.sst){const G=gridOf(m.grid),W=mdWeights(G,lat,lon,n=>!m.land[n]&&m.sst[n].some(x=>x!=null)),ix=new Map(m.t.map((x,i)=>[x,i]));
-  H.sea_surface_temperature=T.map(x=>{const i=ix.get(x/1000);if(i==null)return null;let s=0,ws=0;for(const[n,wt]of W){const v=m.sst[n][i];if(v!=null){s+=v*wt;ws+=wt}}return ws>.3?s/ws:null})}
+  H.sea_surface_temperature=T.map(x=>{const i=ix.get(x/1000);if(i==null)return null;let s=0,ws=0;for(const[n,wt]of W){const v=m.sst[n][i];if(v!=null){s+=v*wt;ws+=wt}}return ws>.3?s/ws:null});
+  if(m.cv){const cu=T.map(x=>{const i=ix.get(x/1000);if(i==null)return null;let u=0,v=0,ws=0;for(const[n,wt]of W){const sp=m.cv[n][i],d=m.cd[n][i];if(sp!=null&&d!=null){u+=sp*Math.sin(d*rad)*wt;v+=sp*Math.cos(d*rad)*wt;ws+=wt}}return ws>.3?[u/ws,v/ws]:null});
+   H.ocean_current_velocity=cu.map(x=>x&&Math.hypot(x[0],x[1]));H.ocean_current_direction=cu.map(x=>x&&(Math.atan2(x[0],x[1])/rad+360)%360)}}
  return H}
 function mirrorToData(src){MDR=src;const c=spot();MD=regionData(c.lat,c.lon)||Object.values(src.R)[0];const t0=Math.floor(Date.now()/HOUR)*HOUR-7*24*HOUR,T=[...Array(14*24)].map((_,h)=>t0+h*HOUR);
  const fr=SPOTS.map(sp=>({hourly:pointF(sp.lat,sp.lon,T)})),mr=SPOTS.map(sp=>{const c=sp.m||[sp.lat,sp.lon];return{hourly:pointM(c[0],c[1],T)}});
@@ -892,7 +900,7 @@ function parseSpot(t,F,M){ // alinha tudo pelo horário (funciona para um ponto 
  const pick=v=>{const arrs=MODELS.map(m=>al(F[v+"_"+m.k]||F[v],iF));return t.map((_,h)=>{for(const a of arrs)if(a[h]!=null)return a[h];return null})};
  o.pres=pick("pressure_msl");o.rain=pick("precipitation");o.temp=pick("temperature_2m");o.cloud=pick("cloud_cover");o.hum=pick("relative_humidity_2m");
  const g=v=>al(M?M[v]:null,iM);
- o.hs=g("wave_height");o.wdir=g("wave_direction");o.wper=g("wave_period");o.sea=g("sea_level_height_msl");o.sst=g("sea_surface_temperature");
+ o.hs=g("wave_height");o.wdir=g("wave_direction");o.wper=g("wave_period");o.sea=g("sea_level_height_msl");o.sst=g("sea_surface_temperature");o.cv=g("ocean_current_velocity");o.cd=g("ocean_current_direction");
  return o}
 
 /* Dados de exemplo para quando não há internet (claramente sinalizados) */
@@ -1088,11 +1096,21 @@ function fitLin(xs,ys){const n=xs.length;if(n<6)return null;let mx=0,my=0;for(le
 
 /* ================== NOTA DE PESCA ================== */
 const WEIGHTS={
- costao:{vento:.22,mar:.26,mare:.18,sol:.14,pres:.1,chuva:.1},
- praia:{vento:.22,mar:.22,mare:.22,sol:.14,pres:.1,chuva:.1},
- baia:{vento:.26,mar:.08,mare:.32,sol:.14,pres:.1,chuva:.1},
- canal:{vento:.18,mar:.1,mare:.38,sol:.16,pres:.08,chuva:.1},
- lagoa:{vento:.32,mar:.04,mare:.16,sol:.26,pres:.12,chuva:.1}};
+ costao:{vento:.2,mar:.23,mare:.16,sol:.12,pres:.09,chuva:.08,agua:.12},
+ praia:{vento:.2,mar:.2,mare:.2,sol:.12,pres:.09,chuva:.07,agua:.12},
+ baia:{vento:.24,mar:.07,mare:.29,sol:.12,pres:.09,chuva:.09,agua:.1},
+ canal:{vento:.16,mar:.09,mare:.35,sol:.14,pres:.07,chuva:.09,agua:.1},
+ lagoa:{vento:.3,mar:.04,mare:.15,sol:.24,pres:.11,chuva:.09,agua:.07}};
+/* Água: temperatura, tendência em 2 dias e corrente.
+   Queda brusca (≥1,5 °C em 48 h) = água fria subindo (ressurgência com nordeste) ou passagem de frente: o peixe "trava".
+   Água esquentando depois de dias frios = volta a comer. Corrente moderada traz alimento; parada ou forte demais atrapalha. */
+const AGUA_T=[[12,.1],[15,.35],[18,.75],[20,1],[26,1],[29,.7]];
+function waterInfo(o,i){const t=o.sst[i];if(t==null)return null;let t48=null;for(let k=i-48;k<=i-40;k++)if(k>=0&&o.sst[k]!=null){t48=o.sst[k];break}
+ const dT=t48!=null?t-t48:null,cv=o.cv?o.cv[i]:null,cd=o.cd?o.cd[i]:null;return{t,dT,cv,cd}}
+function waterScore(wi,curve){if(!wi)return .6;const temp=lerp(curve||AGUA_T,wi.t);
+ const tr=wi.dT==null?.75:wi.dT<=-2?.1:wi.dT<=-1?.1+.4*(wi.dT+2):wi.dT<=0?.5+.25*(wi.dT+1):wi.dT<=1?.75+.25*wi.dT:.95;
+ const cur=wi.cv==null?.7:wi.cv<.2?.55:wi.cv<=1.5?1:wi.cv<=2.5?1-.5*(wi.cv-1.5):.5; // km/h
+ return clamp(.5*temp+.3*tr+.2*cur,0,1)}
 function seaScore(type,w){if(w==null)return .6;
  if(type==="costao")return w<.3?.75:w<=1.3?1:w>=2.3?0:1-(w-1.3)/1;
  if(type==="praia")return w<.2?.55:w<.5?.8:w<=1.4?1:w>=2.6?0:1-(w-1.4)/1.2;
@@ -1133,6 +1151,42 @@ function applyFrontScores(rows){for(const r of rows){const fa=frontAt(r.t);if(!f
   else if(fa.post&&post){d=.6;why="pós-frente"}
   if(!d)continue;r.score=r.danger?Math.min(r.score,2):clamp(r.score+d,0,10);(r.adj=r.adj||[]).push({t:why,d:Math.round(d*10)});
   (r.fishWhy||r.bonus).push(why);r.front=fa}}
+/* ================== CONDIÇÕES PARECIDAS ==================
+ Cada hora vira um retrato: maré (enchendo/vazando, tempo desde a virada, força, nível), sizígia, horário e época do ano,
+ pressão (nível e tendência em 3 h e 24 h), véspera/passagem de frente fria, vento no ponto, água (temperatura, tendência, corrente)
+ e luz. A semelhança é a distância ponderada entre retratos (1 = igual). */
+const CV_W={enchendo:1.2,since:1.4,mov:1,lvl:.5,rf:.8,hs:.8,hc:.8,ds:.5,dc:.5,pres:.5,dp3:.8,dp24:.7,pre:1.1,post:.6,eff:1,agua:.8,dT:.6,cur:.5,luz:.8};
+function condVec(sp,r){const D=S.derived[sp.id],o=S.data.spots[sp.id];if(!D||!o||!r)return null;const i=r.i;
+ let prev=null;for(const e of D.ex){if(e.t<=r.t)prev=e;else break}const since=prev?(r.t-prev.t)/HOUR:null;
+ const hh=localHour(r.t),dt=new Date(r.t),doy=(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate())-Date.UTC(dt.getUTCFullYear(),0,1))/864e5;
+ const p=o.pres[i],p24=o.pres[i-24],fa=frontAt(r.t),al=sunAlt(r.t),cl=(x,a)=>Math.max(-a,Math.min(a,x)),f=x=>x==null||isNaN(x)?null:+x.toFixed(3);
+ return{enchendo:r.rising==null?null:r.rising?1:0,since:f(since!=null?Math.min(since,6.5)/6.5:null),mov:f(r.mov),lvl:f(r.lvl),rf:f(r.rf),
+  hs:f(Math.sin(2*Math.PI*hh/24)),hc:f(Math.cos(2*Math.PI*hh/24)),ds:f(Math.sin(2*Math.PI*doy/365)),dc:f(Math.cos(2*Math.PI*doy/365)),
+  pres:f(p!=null?cl((p-1013)/12,1.5):null),dp3:f(r.dp!=null?cl(r.dp/3,1.5):null),dp24:f(p!=null&&p24!=null?cl((p-p24)/10,1.5):null),
+  pre:fa&&fa.pre?f(1-fa.h/48):0,post:fa&&(fa.pass||fa.post)?1:0,eff:f(r.eff!=null?Math.min(r.eff,45)/30:null),
+  agua:f(r.wi?cl((r.wi.t-20)/5,2):null),dT:f(r.wi&&r.wi.dT!=null?cl(r.wi.dT/2,1.5):null),cur:f(r.wi&&r.wi.cv!=null?Math.min(r.wi.cv,3)/2:null),luz:al>6?1:al>-6?.5:0}}
+function condSim(a,b){if(!a||!b)return 0;let s=0,ws=0,all=0;for(const k in CV_W){all+=CV_W[k];if(a[k]==null||b[k]==null)continue;s+=CV_W[k]*(a[k]-b[k])**2;ws+=CV_W[k]}
+ if(ws<.6*all)return 0;return Math.max(0,1-Math.sqrt(s/ws)/.55)}
+// vetor de um registro: o guardado ou, se a hora ainda está nos dados, calculado agora
+function logVec(x){if(x.v)return x.v;const sp=SPOTS.find(s=>s.id===x.spot);if(!sp||!S.derived[sp.id])return null;const r=S.derived[sp.id].rows.find(q=>Math.abs(q.t-x.t)<=HOUR/2);return r?condVec(sp,r):null}
+/* Próximos 7 dias: horas nos seus pontos parecidas com as suas saídas boas (do mesmo ponto vale mais; mesmo tipo de lugar, um pouco menos). */
+function similarWindows(){if(!S.data)return[];const now=Date.now(),fishF=S.fish!=="geral"?FISH[S.fish].n:null;
+ const refs=S.log.filter(x=>x.res>=2&&(!fishF||x.sp===fishF)).map(x=>({x,v:logVec(x),sp:SPOTS.find(s=>s.id===x.spot)})).filter(o=>o.v&&o.sp);if(!refs.length)return[];
+ const cand=[...new Set([...refs.map(o=>o.sp),...SPOTS.filter(s=>s.custom&&!s.temp)])],out=[];
+ for(const sp of cand){const D=S.derived[sp.id];if(!D)continue;const R=refs.filter(o=>o.sp.id===sp.id||o.sp.t===sp.t);if(!R.length)continue;
+  let cur=null;for(const r of D.rows){if(r.t<now-HOUR||r.t>now+7*864e5)continue;const v=condVec(sp,r);let best=0,ref=null;
+   for(const o of R){const k=condSim(v,o.v)*(o.sp.id===sp.id?1:.85);if(k>best){best=k;ref=o}}
+   if(best>=.7&&!r.danger){if(cur&&r.t-cur.b<=HOUR)Object.assign(cur,{b:r.t,peak:Math.max(cur.peak,best),...(best>cur.peak?{ref,at:r.t,i:r.i}:{})});else{cur={sp,a:r.t,b:r.t,peak:best,ref,at:r.t,i:r.i};out.push(cur)}}else cur=null}}
+ return out.sort((a,b)=>b.peak-a.peak).slice(0,6)}
+function renderSimilar(){const el=$("#simBody");if(!el||!S.data)return;const good=S.log.filter(x=>x.res>=2);
+ if(!good.length){$("#simInfo").textContent="";el.innerHTML=`<p class="small muted" style="margin:0">Registre suas pescarias em "Registrar pescaria" (inclusive as fracas). Com uma saída boa registrada, o app já procura nos próximos 7 dias as horas com maré, lua, pressão, frente, vento e água parecidos com aquela.</p>`;return}
+ const W=similarWindows();$("#simInfo").textContent=`${good.length} saída${good.length>1?"s":""} boa${good.length>1?"s":""} como referência`;
+ if(!W.length){el.innerHTML=`<p class="small muted" style="margin:0">Nos próximos 7 dias nenhuma hora ficou parecida o bastante (70% ou mais) com as suas saídas boas${S.fish!=="geral"?" de "+FISH[S.fish].n.toLowerCase():""}.</p>`;return}
+ el.innerHTML=`<ul class="simlist">${W.map(w=>{const x=w.ref.x,p=Math.round(w.peak*100),same=w.ref.sp.id===w.sp.id;
+  return`<li><button type="button" data-simgo="${w.sp.id}|${w.at}"><span class="pct ${p<80?"mid":""}">${p}%</span><span><b>${fmtD.format(w.a)} · ${fmtH.format(w.a)}${w.b>w.a?"–"+fmtH.format(w.b+HOUR):""} · ${esc(w.sp.n)}</b>
+   <span class="small muted">parecido com ${fmtDM.format(x.t)}${same?"":" em "+esc(w.ref.sp.n)}: ${x.qty?x.qty+" ":""}${esc(x.sp.toLowerCase())}${x.bait?", "+esc(x.bait.toLowerCase()):""}</span></span></button></li>`}).join("")}</ul>`}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-simgo]");if(!b)return;const [id,t]=b.dataset.simgo.split("|");
+ if(S.spot!==id)selectSpot(id,false);const k=S.data.t.findIndex(x=>x===+t);if(k>=0){S.when=k;S.day=dayKey(+t);renderRank();renderSpot();window.scrollTo({top:0,behavior:"smooth"})}});
 function rebuild(){ // recalcula tudo do modelo atual
  detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
  trainML();applyML()}
@@ -1160,7 +1214,8 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
     else if(sp.t==="lagoa")mare=.5+.5*mov;
     else mare=.15+.45*mov+.4*(lvl??.5);
     mare=mare*(.85+.15*rf)}
-   const c={vento:eff!=null?windScore(eff):.5,mar:seaScore(sp.t,wave),mare:clamp(mare,0,1),sol:.65*sol.v+.35*rf,pres:presScore(dp),chuva:o.rain[i]==null?.8:o.rain[i]>5?.3:o.rain[i]>1.5?.65:1};
+   const wi=waterInfo(o,i);
+   const c={agua:waterScore(wi),vento:eff!=null?windScore(eff):.5,mar:seaScore(sp.t,wave),mare:clamp(mare,0,1),sol:.65*sol.v+.35*rf,pres:presScore(dp),chuva:o.rain[i]==null?.8:o.rain[i]>5?.3:o.rain[i]>1.5?.65:1};
    let sc=0;for(const k in W)sc+=W[k]*c[k];sc*=10;const adj=[];
    const bonus=[];const mon=+fmtKey.format(t[i]).slice(5,7);
    if([5,6,7].includes(mon)&&d!=null&&d>=150&&d<=250&&w>15&&(sp.t==="praia"||sp.t==="canal")){sc+=1;bonus.push("vento sul na safra da tainha");adj.push({t:"vento sul na safra da tainha",d:10})}
@@ -1168,7 +1223,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    if(sp.t==="costao"&&wave!=null&&wave>2.2)danger="mar grosso no costão";
    if(gc!=null&&gc>60)danger=(danger?danger+" e ":"")+"rajadas fortes";
    if(danger){sc=Math.min(sc,2);adj.push({t:"perigo: "+danger,d:null})}
-   rows.push({i,t:t[i],adj,rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],rain:o.rain[i],pres:o.pres[i]})}
+   rows.push({i,t:t[i],adj,rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],wi,rain:o.rain[i],pres:o.pres[i]})}
   const ex=tideExtremes(rows);
   if(S.fish!=="geral")applyFish(sp,rows,ex);
   applyFrontScores(rows);
@@ -1213,8 +1268,9 @@ function applyFish(sp,rows,ex){const F=FISH[S.fish];if(!F||!F.w)return;
   else if(F.luz==="crepusculo"){luz=Math.abs(al)<8?1:al>0?.55:.35;if(Math.abs(al)<8)why.push("amanhecer/entardecer")}
   else{luz=al>3?1:al>-4?.7:.25}
   // água
-  let agua=r.sst!=null?lerp(F.temp,r.sst):.6;
-  if(r.sst!=null){if(agua<.3)neg.push(`água fria ${r.sst.toFixed(0)} °C`);else if(agua>.85)why.push(`água ${r.sst.toFixed(0)} °C`)}
+  let agua=r.wi?waterScore(r.wi,F.temp):.6;
+  if(r.sst!=null){const tf=lerp(F.temp,r.sst);if(tf<.3)neg.push(`água fria ${r.sst.toFixed(0)} °C`);else if(tf>.85)why.push(`água ${r.sst.toFixed(0)} °C`)}
+  if(r.wi&&r.wi.dT!=null){if(r.wi.dT<=-1.5)neg.push(`água esfriou ${Math.abs(r.wi.dT).toFixed(1).replace(".",",")} °C em 2 dias`);else if(r.wi.dT>=1)why.push("água esquentando")}
   const lua=.5+.5*r.rf;if(r.rf>.8&&F.w.lua)why.push("lua nova/cheia (maré forte)");
   let chuva=r.c.chuva;if(F.chuvaBoa&&(sp.t==="canal"||sp.t==="baia"||sp.t==="lagoa")&&r.rain24>=8){chuva=1;why.push("água turva depois da chuva")}
   let esp=.5;
@@ -1228,8 +1284,9 @@ function applyFish(sp,rows,ex){const F=FISH[S.fish];if(!F||!F.w)return;
   r.gen=r.score;r.score=r.danger?Math.min(10*sc,2):clamp(10*sc,0,10);r.fishWhy=why;r.fishNeg=neg;r.since=since}}
 
 /* ================== APRENDIZADO PESSOAL (regressão logística) ================== */
-const FEATS=[["vento","Vento no ponto (fraco)"],["mar","Mar adequado"],["mare","Movimento de maré"],["enchendo","Maré enchendo"],["nivel","Maré alta"],["sol","Sol/lua (períodos)"],["pres","Pressão favorável"],["sizigia","Maré de sizígia"],["noite","Noite"],["agua","Água quente"]];
-function featOf(r){return{vento:r.c.vento,mar:r.c.mar,mare:r.mov??.5,enchendo:r.rising==null?.5:r.rising?1:0,nivel:r.lvl??.5,sol:r.c.sol,pres:r.c.pres,sizigia:r.rf,noite:sunAlt(r.t)<-6?1:0,agua:r.sst!=null?clamp((r.sst-15)/13,0,1):.5}}
+const FEATS=[["vento","Vento no ponto (fraco)"],["mar","Mar adequado"],["mare","Movimento de maré"],["enchendo","Maré enchendo"],["nivel","Maré alta"],["sol","Sol/lua (períodos)"],["pres","Pressão favorável"],["sizigia","Maré de sizígia"],["noite","Noite"],["agua","Água quente"],["frente","Véspera de frente fria"],["aguaSobe","Água esquentando"],["corrente","Corrente moderada"]];
+function featOf(r){return{vento:r.c.vento,mar:r.c.mar,mare:r.mov??.5,enchendo:r.rising==null?.5:r.rising?1:0,nivel:r.lvl??.5,sol:r.c.sol,pres:r.c.pres,sizigia:r.rf,noite:sunAlt(r.t)<-6?1:0,agua:r.sst!=null?clamp((r.sst-15)/13,0,1):.5,frente:(()=>{const fa=frontAt(r.t);return fa&&fa.pre?1-fa.h/48:0})(),
+ aguaSobe:r.wi&&r.wi.dT!=null?clamp(.5+r.wi.dT/3,0,1):.5,corrente:r.wi&&r.wi.cv!=null?(r.wi.cv>=.2&&r.wi.cv<=1.5?1:.3):.5}}
 function trainML(){
  const L=S.log.filter(x=>x.f);const ys=L.map(x=>x.res>=2?1:0);
  if(L.length<8||!ys.includes(0)||!ys.includes(1)){S.ml={n:L.length,ready:false};return}
@@ -1258,6 +1315,7 @@ function reasons(r,sp){const out=[];
  if(r.mov!=null){if(r.mov<.2)out.push("estofo de maré");else out.push(`maré ${r.rising?"enchendo":"vazando"}${r.mov>.7?" forte":""}`)}
  if(r.wave!=null&&(sp.t==="costao"||sp.t==="praia"))out.push(`mar ${r.wave.toFixed(1)} m`);
  if(r.sol.why&&r.sol.v>.7)out.push(r.sol.why);
+ if(r.wi&&r.wi.dT!=null&&r.wi.dT<=-1.5)out.push(`água esfriou ${Math.abs(r.wi.dT).toFixed(1).replace(".",",")} °C`);else if(r.wi&&r.wi.dT!=null&&r.wi.dT>=1)out.push("água esquentando");
  if(r.rf>.85)out.push(moonName(moonIllum(r.t).phase).toLowerCase()+" (maré grande)");
  r.bonus.forEach(b=>out.push(b));
  return out}
@@ -1359,7 +1417,7 @@ function gaugeSVG(sc,danger){const v=clamp(sc/10,0,1),R=62,cx=75,cy=72,a0=Math.P
  const pt=a=>[cx+R*Math.cos(a),cy-R*Math.sin(a)],[x0,y0]=pt(a0),[x1,y1]=pt(a1),[xe,ye]=pt(0);const col=danger?"var(--bad)":sc>=7?"var(--good)":sc>=5?"var(--warn)":"var(--bad)";
  return`<svg width="150" height="84" viewBox="0 0 150 84" aria-hidden="true"><path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${xe} ${ye}" fill="none" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>${v>0?`<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round"/>`:""}</svg>`}
 /* fatores da nota numa hora: nota 0–100 de cada fator, peso e explicação */
-const F_NAME={vento:"Vento no ponto",mar:"Mar",mare:"Maré",sol:"Horário e lua (solunar)",luz:"Horário (luz)",agua:"Temperatura da água",lua:"Fase da lua",chuva:"Chuva",pres:"Pressão",especial:"Condição especial"};
+const F_NAME={vento:"Vento no ponto",mar:"Mar",mare:"Maré",sol:"Horário e lua (solunar)",luz:"Horário (luz)",agua:"Água (temperatura e corrente)",lua:"Fase da lua",chuva:"Chuva",pres:"Pressão",especial:"Condição especial"};
 function factorList(r,sp){const fc=r.fc||r.c,fw=r.fw||WEIGHTS[sp.t],tot=Object.values(fw).reduce((a,b)=>a+b,0);
  const il=moonIllum(r.t),ph=moonName(il.phase).toLowerCase();
  const why={vento:r.eff!=null?`${wv(r.eff)} ${WU()} no ponto${r.d!=null?` (vento ${dir8(r.d)} ${wv(r.raw)}, ${r.exp<.3?"ponto abrigado":r.exp>.75?"ponto exposto":"exposição média"})`:""}`:"sem dado",
@@ -1367,7 +1425,7 @@ function factorList(r,sp){const fc=r.fc||r.c,fw=r.fw||WEIGHTS[sp.t],tot=Object.v
   mare:r.mov==null?"sem dado":r.mov<.15?"estofo (água parada)":`${r.rising?"enchendo":"vazando"}, correnteza ${r.mov>.7?"forte":r.mov>.4?"média":"fraca"}${r.since!=null?` · ${dur(r.since*HOUR)} após a virada`:""}`,
   sol:r.sol.why?`${r.sol.why} · ${ph}`:`fora dos períodos solunares · ${ph}`,
   luz:sunAlt(r.t)<-6?"noite":Math.abs(sunAlt(r.t))<6?"amanhecer/entardecer":"dia claro",
-  agua:r.sst!=null?`${r.sst.toFixed(0)} °C`:"sem dado",
+  agua:r.sst!=null?`${r.sst.toFixed(1).replace(".",",")} °C${r.wi&&r.wi.dT!=null&&Math.abs(r.wi.dT)>=.5?` (${r.wi.dT>0?"+":""}${r.wi.dT.toFixed(1).replace(".",",")} em 2 dias${r.wi.dT<=-1.5?": esfriou rápido":r.wi.dT>=1?": esquentando":""})`:""}${r.wi&&r.wi.cv!=null?` · corrente ${r.wi.cv<.2?"parada":r.wi.cv<=1.5?"moderada":"forte"} (${(r.wi.cv/3.6).toFixed(2).replace(".",",")} m/s para ${dir8(r.wi.cd)})`:""}`:"sem dado",
   lua:`${ph} · ${r.rf>.6?"maré grande":r.rf<.35?"maré pequena":"maré média"}`,
   chuva:r.rain!=null?(r.rain<.1?"sem chuva":`${r.rain.toFixed(1).replace(".",",")} mm nesta hora`)+(r.rain24>=8?` · ${Math.round(r.rain24)} mm em 24 h`:""):"sem dado",
   pres:r.pres!=null?`${Math.round(r.pres)} hPa${r.dp!=null?`, ${r.dp<-1.5?"caindo rápido":r.dp<-.5?"caindo":r.dp>1.5?"subindo forte":r.dp>.5?"subindo":"estável"} (${r.dp>0?"+":""}${r.dp.toFixed(1)} em 3 h)`:""}`:"sem dado",
@@ -1545,8 +1603,8 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
  let h="";
  // parecido com hoje
  const now=Date.now(),D=S.derived[sp.id],r=D.rows.find(x=>x.t===Math.floor(now/HOUR)*HOUR);
- if(r&&good.length){const cn=condSnap(sp.id,now,r);const sim=good.filter(x=>x.c&&x.c.mare).map(x=>{let k=0;const c=x.c;if(c.mare===cn.mare)k++;if(c.since!=null&&cn.since!=null&&Math.abs(c.since-cn.since)<=1)k++;if(horaBand(c.hora)===horaBand(cn.hora))k++;if(luaBand(c.rf)===luaBand(cn.rf))k++;if(c.eff!=null&&cn.eff!=null&&Math.abs(c.eff-cn.eff)<=8)k++;return{x,k}}).filter(o=>o.k>=4).sort((a,b)=>b.k-a.k);
-  if(sim.length)h+=`<div class="similar">Agora está parecido com <b>${sim.length} saída${sim.length>1?"s":""} boa${sim.length>1?"s":""}</b> sua${sim.length>1?"s":""} aqui: ${sim.slice(0,3).map(o=>`${fmtD.format(o.x.t)} (${o.x.qty!=null?o.x.qty+" ":""}${esc(o.x.sp.toLowerCase())}${o.x.bait?", "+esc(o.x.bait.toLowerCase()):""})`).join(" · ")}.</div>`}
+ if(r&&good.length){const vn=condVec(sp,r);const sim=good.map(x=>({x,k:condSim(vn,logVec(x))})).filter(o=>o.k>=.7).sort((a,b)=>b.k-a.k);
+  if(sim.length)h+=`<div class="similar">Agora está parecido com <b>${sim.length} saída${sim.length>1?"s":""} boa${sim.length>1?"s":""}</b> sua${sim.length>1?"s":""} aqui: ${sim.slice(0,3).map(o=>`${fmtD.format(o.x.t)} · ${Math.round(o.k*100)}% (${o.x.qty!=null?o.x.qty+" ":""}${esc(o.x.sp.toLowerCase())}${o.x.bait?", "+esc(o.x.bait.toLowerCase()):""})`).join(" · ")}.</div>`}
  // estatísticas das saídas boas
  if(good.length){const gc=good.filter(x=>x.c);const box=(k,v)=>v?`<div><b class="k">${k}</b>${v}</div>`:"";
   const baits=new Map();L.forEach(x=>{if(!x.bait)return;const b=x.bait.trim().toLowerCase();const o=baits.get(b)||{n:0,g:0,q:0,name:x.bait.trim()};o.n++;if(x.res>=2)o.g++;o.q+=x.qty||0;baits.set(b,o)});
@@ -1570,7 +1628,7 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span></span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
-function renderLog(){renderHistory();
+function renderLog(){renderHistory();renderSimilar();
  // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
  const lkey=logList.map(s=>s.id+s.n).join("|");
@@ -1624,7 +1682,7 @@ $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgM
  const D=S.derived[sp],r=D?D.rows.find(x=>Math.abs(x.t-t)<HOUR/2+1):null;
  const item={id:Math.random().toString(36).slice(2),t,spot:sp,sp:$("#lgSp").value,res:+$("#lgRes").value,note:$("#lgNote").value,
   qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
-  c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,model:S.model};
+  c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,v:r&&!S.demo?condVec(SPOTS.find(x=>x.id===sp),r):null,model:S.model};
  S.log.push(item);store("pf_log",S.log);
  $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
  // mostra o histórico do ponto onde a pescaria foi registrada
@@ -1984,7 +2042,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-26.2";
+const APP_VERSION="2026-10-26.3";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
