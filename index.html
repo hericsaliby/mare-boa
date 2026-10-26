@@ -1231,7 +1231,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-simgo]");i
  Horários fixos na semana (ex.: sexta 18h–24h, sábado e domingo) + datas avulsas (feriado, folga) e os tipos de lugar.
  Para cada janela livre dos próximos 7 dias: o melhor ponto e a melhor hora, com alternativas. */
 const AG_TIPOS=[["baia","Baía"],["canal","Rio, canal e barra"],["costao","Costão"],["praia","Praia"],["lagoa","Lagoa"]],DOW=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-function agenda(){const a=store("pf_agenda");if(a&&a.dias)return a;return{dias:{5:[18,24],6:[5,22],0:[5,22]},tipos:["baia","canal","costao"],extra:[]}}
+// cada pessoa monta a sua; começa vazia (sem dias), com todos os tipos de lugar
+function agenda(){const a=store("pf_agenda");if(a&&a.dias)return a;return{dias:{},tipos:AG_TIPOS.map(x=>x[0]),extra:[],vazia:true}}
+const AG_PRESETS=[["Fins de semana",{6:[5,22],0:[5,22]}],["Sexta à noite + fim de semana",{5:[18,24],6:[5,22],0:[5,22]}],["Todo dia cedo (5h–9h)",{0:[5,9],1:[5,9],2:[5,9],3:[5,9],4:[5,9],5:[5,9],6:[5,9]}],["Todo dia à noite (18h–23h)",{0:[18,23],1:[18,23],2:[18,23],3:[18,23],4:[18,23],5:[18,23],6:[18,23]}]];
+document.addEventListener("click",e=>{const b=e.target.closest("[data-agpre]");if(!b)return;const A=agenda();store("pf_agenda",{dias:AG_PRESETS[+b.dataset.agpre][1],tipos:A.tipos,extra:A.extra||[]});const f=$("#agForm");f.dataset.on="";renderAgenda();if(store("pf_push")&&PUSH_VAPID)pushEnable()});
 const dowOf=k=>new Date(k+"T12:00:00-03:00").getUTCDay();
 function agendaSlots(){if(!S.data)return[];const A=agenda(),now=Date.now(),keys=[...new Set(S.data.t.filter(t=>t>now-HOUR).map(dayKey))].slice(0,7),out=[];
  const L=(SPOTS.some(x=>x.custom&&!x.temp)?SPOTS.filter(x=>x.custom&&!x.temp):visSpots()).filter(x=>A.tipos.includes(x.t)&&S.derived[x.id]);
@@ -1241,14 +1244,17 @@ function agendaSlots(){if(!S.data)return[];const A=agenda(),now=Date.now(),keys=
    if(!best.length)continue;best.sort((a,b)=>b.r.score-a.r.score);out.push({k,ha,hb,best:best.slice(0,3),front:best[0].r.front})}}
  return out}
 function renderAgenda(){const el=$("#agBody");if(!el||!S.data)return;const A=agenda(),sl=agendaSlots();
- $("#agInfo").textContent=Object.keys(A.dias).sort().map(d=>`${DOW[d]} ${A.dias[d][0]}–${A.dias[d][1]}h`).join(" · ");
+ if(!Object.keys(A.dias).length&&!(A.extra||[]).length){$("#agInfo").textContent="";
+  el.innerHTML=`<p class="small" style="margin:0 0 8px">Diga quando você costuma pescar e o app mostra, para cada folga, o melhor ponto e a melhor hora, e avisa na véspera.</p><div class="agchips">${AG_PRESETS.map(([n],i)=>`<button type="button" class="chipbtn" data-agpre="${i}">${n}</button>`).join("")}</div><p class="small muted" style="margin:8px 0 0">Ou monte do seu jeito em "Editar" abaixo.</p>`}
+ else
+ {$("#agInfo").textContent=Object.keys(A.dias).sort().map(d=>`${DOW[d]} ${A.dias[d][0]}–${A.dias[d][1]}h`).join(" · ");
  el.innerHTML=sl.length?sl.map(o=>{const b=o.best[0],[v,cls]=verdict(b.r.score);return`<div class="agslot"><div class="row" style="gap:8px"><b class="grow">${o.k===dayKey(Date.now())?"Hoje":fmtD.format(noonOf(o.k))} · ${o.ha}h–${o.hb}h</b><span class="tag ${cls}">${v}</span></div>
   <button type="button" class="linkbtn" style="text-align:left;padding:0;text-decoration:none;color:inherit" data-simgo="${b.sp.id}|${b.r.t}"><b>${esc(b.sp.n)}</b> às <b>${fmtH.format(b.r.t)}</b> · nota <b>${N(b.r.score)}</b><br><span class="small muted">${esc(reasons(b.r,b.sp).slice(0,4).join(" · "))}</span></button>
   ${o.best.length>1?`<div class="alt">Também: ${o.best.slice(1).map(x=>`<button type="button" class="linkbtn small" data-simgo="${x.sp.id}|${x.r.t}">${esc(x.sp.n)} ${fmtH.format(x.r.t)} (${N(x.r.score)})</button>`).join(" · ")}</div>`:""}</div>`}).join("")
-  :`<p class="small muted" style="margin:0">Nenhuma janela sua nos próximos 7 dias${SPOTS.some(x=>x.custom)?" com pontos desses tipos":""}. Ajuste os dias e tipos abaixo.</p>`;
+  :`<p class="small muted" style="margin:0">Nenhuma janela sua nos próximos 7 dias${SPOTS.some(x=>x.custom)?" com pontos desses tipos":""}. Ajuste os dias e tipos abaixo.</p>`}
  const f=$("#agForm");if(f.dataset.on)return;f.dataset.on="1";
  const hs=(v,id)=>`<select id="${id}">${[...Array(25)].map((_,h)=>`<option value="${h}"${h===v?" selected":""}>${String(h).padStart(2,"0")}h</option>`).join("")}</select>`;
- f.innerHTML=`<div class="agdays">${[5,6,0,1,2,3,4].map(d=>`<label class="small"><input type="checkbox" data-agd="${d}"${A.dias[d]?" checked":""}> ${DOW[d]}</label>${hs(A.dias[d]?A.dias[d][0]:18,"aga"+d)}${hs(A.dias[d]?A.dias[d][1]:24,"agb"+d)}`).join("")}</div>
+ f.innerHTML=`<div class="agdays">${[1,2,3,4,5,6,0].map(d=>`<label class="small"><input type="checkbox" data-agd="${d}"${A.dias[d]?" checked":""}> ${DOW[d]}</label>${hs(A.dias[d]?A.dias[d][0]:6,"aga"+d)}${hs(A.dias[d]?A.dias[d][1]:18,"agb"+d)}`).join("")}</div>
   <div><span class="small muted">Onde costuma pescar</span><div class="agchips">${AG_TIPOS.map(([k,n])=>`<button type="button" class="chipbtn" data-agt="${k}" aria-pressed="${A.tipos.includes(k)}">${n}</button>`).join("")}</div></div>
   <div><span class="small muted">Datas avulsas (feriado, folga)</span><div class="row"><input type="date" id="agXd">${hs(6,"agXa")}${hs(18,"agXb")}<button class="btn ghost" type="button" id="agXadd">Adicionar</button></div><div id="agXlist" class="small"></div></div>
   <div class="row"><button class="btn" type="button" id="agSave">Salvar agenda</button><span class="small muted" id="agMsg"></span></div>`;
@@ -2203,7 +2209,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-26.7";
+const APP_VERSION="2026-10-26.8";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
