@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d3b4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Maré Boa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
@@ -298,6 +302,18 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .fv.good,.fb i.good{color:var(--good);background:var(--good)} .fv.warn,.fb i.warn{color:var(--warn);background:var(--warn)} .fv.bad,.fb i.bad{color:var(--bad);background:var(--bad)}
 .fv.good,.fv.warn,.fv.bad{background:none}
 .adjs{grid-column:1/-1;font-size:12.5px;color:var(--ink-2)}
+.bellbtn{position:relative}
+.bellbtn .badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font:700 11px/18px var(--body);padding:0 4px;text-align:center;box-shadow:0 0 0 2px var(--surface)}
+.bellpanel{position:fixed;top:64px;right:12px;width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);z-index:1200;padding:8px}
+.bellpanel h3{margin:6px 8px 8px;font-size:16px}
+.bellpanel ul{list-style:none;margin:0;padding:0}
+.bellpanel li button{width:100%;text-align:left;display:flex;gap:10px;align-items:flex-start;background:none;border:0;border-radius:10px;padding:10px;cursor:pointer;color:inherit;font:inherit}
+.bellpanel li button:hover{background:var(--surface-2)}
+.bellpanel li.new button{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.bellpanel .ic{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;background:var(--surface-2)}
+.bellpanel .tx{display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:1.35}
+.bellpanel .tx small{color:var(--ink-3)}
+.bellpanel .pushrow{border-top:1px solid var(--line);margin-top:6px;padding:10px 8px;font-size:13.5px}
 .iconbtn{flex:0 0 auto;width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .iconbtn:focus-visible{outline:2px solid var(--sand);outline-offset:2px}
 .saved-ok{background:color-mix(in srgb,var(--good) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 45%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
@@ -383,6 +399,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <div class="ctx-row">
     <span class="brand-m"><svg class="logo" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M6 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 6v7a3 3 0 0 1-6 0" fill="none" stroke="var(--sand)" stroke-width="2.2" stroke-linecap="round"/></svg></span>
     <label class="spotpick" for="spotSel"><span class="sr">Ponto</span><select id="spotSel" aria-label="Ponto de pesca"></select></label>
+    <button type="button" class="iconbtn bellbtn" id="bellBtn" aria-label="Avisos" aria-expanded="false" title="Avisos"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="badge" id="bellN" hidden></span></button>
     <button type="button" class="iconbtn" id="themeBtn" aria-label="Alternar modo claro/escuro" title="Modo claro/escuro"></button>
     <span class="status" id="status">Carregando…</span>
   </div>
@@ -857,7 +874,7 @@ function afterLoad(){
  S.day=dayKey(S.data.t[S.when]);
  setStatus((S.demo?"Exemplo · ":"Atualizado ")+fmtH.format(Date.now()));
  renderAll();
- showView(S.view||"resumo",false);loadCollective();
+ showView(S.view||"resumo",false);loadCollective();renderBell();if(!BELL_UNSUB.length)bellChat();
 }
 /* ===== Previsão preparada pelo robô do GitHub (branch "dados"): GFS e ondas da NOAA, ECMWF oficial,
    água e correntes da Open-Meteo. Cada ponto é interpolado da grade aqui no aparelho,
@@ -1240,7 +1257,7 @@ function renderAgenda(){const el=$("#agBody");if(!el||!S.data)return;const A=age
   const xd=e.target.closest("[data-agxdel]");if(xd){X.splice(+xd.dataset.agxdel,1);lx()}});
  $("#agXadd").onclick=()=>{const d=$("#agXd").value;if(!d)return;X.push({d,a:+$("#agXa").value,b:+$("#agXb").value});lx()};
  $("#agSave").onclick=()=>{const dias={};document.querySelectorAll("[data-agd]").forEach(c=>{const d=c.dataset.agd,a=+$("#aga"+d).value,b=+$("#agb"+d).value;if(c.checked&&b>a)dias[d]=[a,b]});
-  if(!T.size){$("#agMsg").textContent="Escolha pelo menos um tipo de lugar.";return}store("pf_agenda",{dias,tipos:[...T],extra:X.filter(e=>e.d>=dayKey(Date.now()))});$("#agMsg").textContent="Salvo.";$("#agEdit").open=false;renderAgenda()}}
+  if(!T.size){$("#agMsg").textContent="Escolha pelo menos um tipo de lugar.";return}store("pf_agenda",{dias,tipos:[...T],extra:X.filter(e=>e.d>=dayKey(Date.now()))});if(store("pf_push")&&PUSH_VAPID)pushEnable();$("#agMsg").textContent="Salvo.";$("#agEdit").open=false;renderAgenda()}}
 /* ================== RELATÓRIO PÓS-PESCARIA ================== */
 const br=v=>String(v).replace(".",",");
 function reportHTML(x){const c=x.c||{},sp=SPOTS.find(s=>s.id===x.spot),RES=["Nada","Fraco","Bom","Muito bom"],v=logVec(x);
@@ -1281,6 +1298,51 @@ async function shareCatch(x){if(!FB_CONFIG&&!window.__FAKE_FB)return false;const
 async function loadCollective(){COL=[];if(store("pf_share")!==true||(!FB_CONFIG&&!window.__FAKE_FB))return;
  try{const fb=await fbInit();if(!fb)return;const u=await fb.anon();const L=await fb.capList(S.reg);COL=L.filter(c=>c.uid!==u.uid&&c.v);renderSimilar();if(COL.length)renderSpot()}catch(e){console.warn("coletivo",e)}}
 const celDist=(cel,sp)=>{const [a,b]=cel.split("_").map(Number);return distKm({lat:a,lon:b},sp)};
+/* ================== AVISOS (sininho) ==================
+ Frente fria chegando, dias parecidos com as suas melhores pescarias, sua próxima janela da agenda e respostas/menções no chat. */
+let BELL_CHAT=[];
+function bellItems(){const out=[],now=Date.now();if(!S.data)return out;
+ const f=(S.fronts||[]).find(x=>x.t>now&&x.t<now+4*864e5);
+ if(f)out.push({id:"front-"+Math.round(f.t/HOUR),ic:"🌧",t:`Frente fria chegando ${fmtD.format(f.t)} por volta de ${fmtH.format(f.t)}`,d:`Véspera boa para pescar até ~${fmtDM.format(f.t-4*HOUR)}. Depois, vento sul forte.`,go:"front",at:f.t-36*HOUR});
+ const W=similarWindows().filter(w=>w.peak>=.8&&w.a<now+3*864e5).slice(0,2);
+ W.forEach(w=>out.push({id:`sim-${w.sp.id}-${Math.round(w.a/HOUR)}`,ic:"🎣",t:`${fmtD.format(w.a)} ${fmtH.format(w.a)} em ${w.sp.n}: ${Math.round(w.peak*100)}% parecido com ${w.ref.col?"uma saída boa da comunidade":"sua saída de "+fmtDM.format(w.ref.x.t)}`,d:`${w.ref.x.qty?w.ref.x.qty+" ":""}${w.ref.x.sp}${w.ref.x.bait?", "+w.ref.x.bait:""}`,go:`sim|${w.sp.id}|${w.at}`,at:w.a-24*HOUR}));
+ const ag=agendaSlots().find(o=>noonOf(o.k)<now+36*HOUR);
+ if(ag){const b=ag.best[0];out.push({id:`ag-${ag.k}-${ag.ha}`,ic:"📅",t:`${ag.k===dayKey(now)?"Hoje":fmtD.format(noonOf(ag.k))} (${ag.ha}h–${ag.hb}h): ${b.sp.n} às ${fmtH.format(b.r.t)}`,d:`Nota ${N(b.r.score)} · ${reasons(b.r,b.sp).slice(0,2).join(" · ")}`,go:`sim|${b.sp.id}|${b.r.t}`,at:noonOf(ag.k)-24*HOUR})}
+ BELL_CHAT.forEach(c=>out.push(c));
+ return out.sort((a,b)=>(b.at||0)-(a.at||0))}
+function renderBell(){const L=bellItems(),seen=new Set(store("pf_bell_seen")||[]),n=L.filter(x=>!seen.has(x.id)).length,b=$("#bellN");if(!b)return;
+ b.hidden=!n;b.textContent=n>9?"9+":n;BELL=L}
+let BELL=[];
+function openBell(){let p=$("#bellPanel");if(p){p.remove();$("#bellBtn").setAttribute("aria-expanded","false");return}
+ const seen=new Set(store("pf_bell_seen")||[]);p=document.createElement("div");p.className="bellpanel";p.id="bellPanel";p.setAttribute("role","dialog");p.setAttribute("aria-label","Avisos");
+ p.innerHTML=`<h3>Avisos</h3>${BELL.length?`<ul>${BELL.map(x=>`<li class="${seen.has(x.id)?"":"new"}"><button type="button" data-bellgo="${esc(x.go)}"><span class="ic" aria-hidden="true">${x.ic}</span><span class="tx"><b>${esc(x.t)}</b><small>${esc(x.d||"")}</small></span></button></li>`).join("")}</ul>`:`<p class="small muted" style="margin:8px">Nada novo. Aqui aparecem frente fria chegando, dias parecidos com as suas melhores pescarias, sua agenda e respostas no chat.</p>`}
+  <div class="pushrow" id="pushRow">${pushRowHTML()}</div>`;
+ document.body.appendChild(p);$("#bellBtn").setAttribute("aria-expanded","true");
+ store("pf_bell_seen",[...new Set([...seen,...BELL.map(x=>x.id)])].slice(-200));$("#bellN").hidden=true}
+$("#bellBtn").addEventListener("click",e=>{e.stopPropagation();openBell()});
+document.addEventListener("click",e=>{const p=$("#bellPanel");if(!p)return;const g=e.target.closest("[data-bellgo]");
+ if(g){const v=g.dataset.bellgo;p.remove();if(v==="front"){showView("resumo");setTimeout(()=>$("#frontAlert").scrollIntoView({behavior:"smooth",block:"start"}),80)}
+  else if(v.startsWith("sim|")){const [,id,t]=v.split("|");showView("resumo");if(S.spot!==id)selectSpot(id,false);const k=S.data.t.findIndex(x=>x===+t);if(k>=0){S.when=k;S.day=dayKey(+t);renderRank();renderSpot()}}
+  else if(v.startsWith("chat|")){const [,gid,pid]=v.split("|");CM.gid=gid;showView("grupos");setTimeout(()=>{const el=document.getElementById("pm_"+pid);if(el)el.scrollIntoView({block:"center"})},700)}return}
+ if(!p.contains(e.target)&&!e.target.closest("#bellBtn"))p.remove()});
+// respostas e menções: acompanha as últimas mensagens dos seus grupos (se você já entrou nos Grupos)
+let BELL_UNSUB=[];
+async function bellChat(){if(store("pf_cm_on")!==true||(!FB_CONFIG&&!window.__FAKE_FB))return;try{const fb=await fbInit();if(!fb)return;
+ fb.onAuth(async u=>{BELL_UNSUB.forEach(f=>f&&f());BELL_UNSUB=[];BELL_CHAT=[];if(!u||u.isAnonymous){renderBell();return}
+  let G=[];try{G=[...await fb.publicGroups(),...await fb.myGroups(u.uid)]}catch(e){}const per={};
+  for(const g of G)BELL_UNSUB.push(fb.listen(g.id,posts=>{if(!posts)return;per[g.id]=posts.filter(x=>x.uid!==u.uid&&((x.resp&&x.resp.uid===u.uid)||(x.mencoes||[]).includes(u.uid))).slice(0,10)
+   .map(x=>({id:"chat-"+x.id,ic:"💬",t:`${x.nome} ${x.resp&&x.resp.uid===u.uid?"respondeu você":"mencionou você"} em ${g.nome}`,d:(x.texto||"").slice(0,90),go:`chat|${g.id}|${x.id}`,at:tsMs(x.criadoEm)}));
+   BELL_CHAT=Object.values(per).flat();renderBell()}))})}catch(e){console.warn("avisos do chat",e)}}
+// avisos no celular: pede permissão, pega o token do Firebase Cloud Messaging e guarda o que o robô precisa (região, dias da agenda, tipos de aviso)
+async function pushEnable(){const m=$("#pushRow");try{
+ if(typeof Notification==="undefined"||!("serviceWorker" in navigator)){m.innerHTML=`<span class="muted">Este navegador não aceita avisos. No iPhone: abra no Safari, toque em Compartilhar → "Adicionar à Tela de Início" e ative por lá.</span>`;return}
+ const perm=await Notification.requestPermission();if(perm!=="granted"){m.innerHTML=`<span class="muted">Permissão negada. Dá para liberar nas configurações do navegador.</span>`;return}
+ const fb=await fbInit();const u=CM.user||await fb.anon();const token=await fb.pushToken(PUSH_VAPID);
+ await fb.savePush(u.uid,{token,reg:S.reg,dias:Object.keys(agenda().dias).map(Number),avisos:{frente:true,agenda:true,chat:true}});
+ store("pf_push",{uid:u.uid,at:Date.now()});m.innerHTML=pushRowHTML()}
+ catch(e){console.warn("push",e);m.innerHTML=`<span class="muted">Não consegui ativar agora (${esc(String(e.message||e).slice(0,80))}).</span>`}}
+document.addEventListener("click",e=>{if(e.target.closest("#pushOn"))pushEnable()});
+function pushRowHTML(){return PUSH_VAPID?`<b>Avisos no celular</b><br><span class="muted">${(typeof Notification!=="undefined"&&Notification.permission==="granted")&&store("pf_push")?"Ativados neste aparelho.":"Receba frente fria, sua agenda e respostas no chat mesmo com o app fechado."}</span>${(typeof Notification!=="undefined"&&Notification.permission==="granted")&&store("pf_push")?"":` <button type="button" class="btn ghost" id="pushOn" style="margin-top:6px">Ativar avisos no celular</button>`}`:`<span class="muted">Avisos no celular (com o app fechado): em breve.</span>`}
 function rebuild(){ // recalcula tudo do modelo atual
  detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
  trainML();applyML()}
@@ -1726,7 +1788,7 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
-function renderLog(){renderHistory();renderSimilar();renderAgenda();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true}
+function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true}
  // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
  const lkey=logList.map(s=>s.id+s.n).join("|");
@@ -2141,7 +2203,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-26.6";
+const APP_VERSION="2026-10-26.7";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2402,6 +2464,7 @@ function tlRead(i){if(!TL)return;const r=TL.rows[i];if(!r)return;renderFactors(i
  Os pontos de pesca continuam só no aparelho: nas postagens vai, se a pessoa quiser, só o nome do ponto. */
 // Config pública do app web (não é senha; a proteção está no firestore.rules). Sem Analytics, de propósito (LGPD).
 const FB_CONFIG={apiKey:"AIzaSyCPj7ywVSXpguBTU0mpFUzWX8RkW-eNOgQ",authDomain:"mareboa-2642f.firebaseapp.com",projectId:"mareboa-2642f",storageBucket:"mareboa-2642f.firebasestorage.app",messagingSenderId:"705491594133",appId:"1:705491594133:web:df0ef4a6ea78c7b069e49c"};
+const PUSH_VAPID=null; // ← chave pública "Web Push" do Firebase (Cloud Messaging) para ativar os avisos no celular
 const FB_VER="10.12.5",CONSENT_VER="2026-10-25";
 const CM={fb:null,user:null,profile:null,admin:false,gid:null,groups:[],unsub:null,panel:null,invite:null,posts:[]};
 async function fbInit(){if(CM.fb)return CM.fb;
@@ -2438,6 +2501,9 @@ async function fbInit(){if(CM.fb)return CM.fb;
   removeMember:(gid,uid)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayRemove(uid),["nomes."+uid]:F.deleteField()}),
   join:(gid,code,uid,nome)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayUnion(uid),["nomes."+uid]:nome,ultimoConvite:code}),
   async saveProfile(uid,prof,code){const b=F.writeBatch(db);b.set(d("users/"+uid),prof);b.set(d("codigos/"+code),{uid,nome:prof.nome});await b.commit()},
+  async pushToken(vapid){const M=await import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-messaging.js`);if(!(await M.isSupported()))throw new Error("sem suporte");
+   const reg=await navigator.serviceWorker.register("firebase-messaging-sw.js");const ms=M.getMessaging(app);return M.getToken(ms,{vapidKey:vapid,serviceWorkerRegistration:reg})},
+  savePush:(uid,data)=>F.setDoc(d("push/"+uid),{...data,atualizado:F.serverTimestamp()}),
   async anon(){if(auth.currentUser)return auth.currentUser;return(await Au.signInAnonymously(auth)).user},
   async capAdd(uid,data){const b=F.writeBatch(db),ref=F.doc(F.collection(db,"capturas"));b.set(ref,{...data,uid,criadoEm:F.serverTimestamp()});b.set(d("limitesCap/"+uid),{ultimo:F.serverTimestamp()});await b.commit();return ref.id},
   async capList(reg){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("reg","==",reg),F.limit(800)));return r.docs.map(x=>x.data())},
@@ -2450,7 +2516,7 @@ const tsMs=x=>x?(x.toMillis?x.toMillis():x.seconds?x.seconds*1000:+x):Date.now()
 const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:fmtDM.format(ms)};
 async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
  if(!fb){box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. Para entrar, basta a conta Google ou um e-mail.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
- if(CM.started)return;CM.started=true;fb.onAuth(async u=>{if(u&&u.isAnonymous)u=null;CM.user=u;CM.profile=null;CM.admin=false;
+ if(CM.started)return;CM.started=true;fb.onAuth(async u=>{if(u&&u.isAnonymous)u=null;CM.user=u;CM.profile=null;CM.admin=false;if(u&&store("pf_cm_on")!==true){store("pf_cm_on",true);bellChat()}
   if(u){try{CM.profile=await fb.get("users/"+u.uid);CM.admin=!!(await fb.get("admins/"+u.uid).catch(()=>null))}catch(e){console.warn(e)}}
   cmRender()})}
 const G_ICON='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>';
