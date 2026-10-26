@@ -1,7 +1,8 @@
 name: Avisos no celular
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "40 14 * * *"   # 11h40 em Brasília: frente fria
+    - cron: "40 20 * * *"   # 17h40 em Brasília: frente fria e véspera da agenda
   workflow_dispatch:
 permissions:
   contents: read

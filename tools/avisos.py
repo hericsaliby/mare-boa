@@ -1,4 +1,4 @@
-"""Envia avisos para o celular (Firebase Cloud Messaging), a cada 15 min:
+"""Envia avisos para o celular (Firebase Cloud Messaging), duas vezes por dia (11h40 e 17h40):
 
 - frente fria chegando na região (uma vez por frente, cerca de 1 a 2 dias antes);
 - véspera do dia de pesca da agenda (no fim da tarde do dia anterior);
@@ -172,7 +172,7 @@ for reg in ("sc", "pr", "sp"):
 
 # ---------------- véspera do dia de pesca ----------------
 local = NOW.astimezone(BRT)
-if 18 <= local.hour < 21:
+if local.hour >= 17:  # fim da tarde/noite da véspera (o GitHub às vezes atrasa a execução)
     amanha = (local + dt.timedelta(days=1)).date()
     dow_js = (amanha.weekday() + 1) % 7  # 0 = domingo, como no app
     for uid, p in PUSH.items():
