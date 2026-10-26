@@ -112,6 +112,33 @@ service cloud.firestore {
       }
     }
 
+    // Coletivo anônimo: condições das pescarias (sem o ponto; só uma área de ~10 km). Login anônimo basta.
+    function authed() { return request.auth != null; }
+    match /limitesCap/{uid} {
+      allow read: if authed() && request.auth.uid == uid;
+      allow create: if authed() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time;
+      allow update: if authed() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time
+        && request.time > resource.data.ultimo + duration.value(5, 's');
+    }
+    match /capturas/{id} {
+      allow read: if authed();
+      allow create: if authed() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'reg', 'cel', 't', 'mes', 'sp', 'res', 'qty', 'isca', 'tipo', 'v', 'criadoEm'])
+        && request.resource.data.reg in ['sc', 'pr', 'sp']
+        && request.resource.data.cel is string && request.resource.data.cel.size() <= 16
+        && request.resource.data.t is int && request.resource.data.mes is int
+        && request.resource.data.sp is string && request.resource.data.sp.size() <= 30
+        && request.resource.data.res is int && request.resource.data.res >= 0 && request.resource.data.res <= 3
+        && (!('qty' in request.resource.data) || (request.resource.data.qty is int && request.resource.data.qty >= 0 && request.resource.data.qty <= 100))
+        && optStr(request.resource.data, 'isca', 40)
+        && request.resource.data.tipo is string && request.resource.data.tipo.size() <= 10
+        && request.resource.data.v is map && request.resource.data.v.size() <= 24
+        && request.resource.data.criadoEm == request.time
+        && getAfter(/databases/$(database)/documents/limitesCap/$(request.auth.uid)).data.ultimo == request.time;
+      allow update: if false;
+      allow delete: if authed() && resource.data.uid == request.auth.uid;
+    }
+
     // Denúncias: qualquer membro cria; só administrador lê e apaga
     match /reports/{rid} {
       allow create: if hasProfile()

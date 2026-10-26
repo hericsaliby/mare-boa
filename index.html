@@ -421,6 +421,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
           <label class="inline" for="lgBait">Isca<input type="text" id="lgBait" list="baitList" placeholder="ex.: camarão vivo"></label>
           <label class="inline" for="lgRes">Resultado<select id="lgRes"><option value="0">Nada</option><option value="1">Fraco</option><option value="2" selected>Bom</option><option value="3">Muito bom</option></select></label>
           <label class="inline" for="lgNote" style="grid-column:1/-1">Observações<input type="text" id="lgNote" placeholder="profundidade, onde bateu, cor da isca, água turva..."></label>
+          <label class="small" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="lgShare"> <span>Ajudar a comunidade: enviar <b>anonimamente</b> as condições desta pescaria (maré, vento, pressão, água, peixe, isca e a região de ~10 km). <b>O local do ponto não é enviado.</b></span></label>
           <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar pescaria</button><span id="lgMsg" class="small muted"></span></div>
           <datalist id="baitList"><option value="Camarão vivo"><option value="Camarão morto"><option value="Artificial de meia-água"><option value="Artificial de superfície"><option value="Jig head + shad"><option value="Sardinha"><option value="Corrupto"><option value="Tatuíra"><option value="Lula"><option value="Filé de peixe"><option value="Siri"><option value="Manjuba"><option value="Minhoca"></datalist>
         </form>
@@ -846,7 +847,7 @@ function afterLoad(){
  S.day=dayKey(S.data.t[S.when]);
  setStatus((S.demo?"Exemplo · ":"Atualizado ")+fmtH.format(Date.now()));
  renderAll();
- showView(S.view||"resumo",false);
+ showView(S.view||"resumo",false);loadCollective();
 }
 /* ===== Previsão preparada pelo robô do GitHub (branch "dados"): GFS e ondas da NOAA, ECMWF oficial,
    água e correntes da Open-Meteo. Cada ponto é interpolado da grade aqui no aparelho,
@@ -1181,20 +1182,21 @@ function condSim(a,b){if(!a||!b)return 0;let s=0,ws=0,all=0;for(const k in CV_W)
 function logVec(x){if(x.v)return x.v;const sp=SPOTS.find(s=>s.id===x.spot);if(!sp||!S.derived[sp.id])return null;const r=S.derived[sp.id].rows.find(q=>Math.abs(q.t-x.t)<=HOUR/2);return r?condVec(sp,r):null}
 /* Próximos 7 dias: horas nos seus pontos parecidas com as suas saídas boas (do mesmo ponto vale mais; mesmo tipo de lugar, um pouco menos). */
 function similarWindows(){if(!S.data)return[];const now=Date.now(),fishF=S.fish!=="geral"?FISH[S.fish].n:null;
- const refs=S.log.filter(x=>x.res>=2&&(!fishF||x.sp===fishF)).map(x=>({x,v:logVec(x),sp:SPOTS.find(s=>s.id===x.spot)})).filter(o=>o.v&&o.sp);if(!refs.length)return[];
- const cand=[...new Set([...refs.map(o=>o.sp),...SPOTS.filter(s=>s.custom&&!s.temp)])],out=[];
- for(const sp of cand){const D=S.derived[sp.id];if(!D)continue;const R=refs.filter(o=>o.sp.id===sp.id||o.sp.t===sp.t);if(!R.length)continue;
+ const refs=S.log.filter(x=>x.res>=2&&(!fishF||x.sp===fishF)).map(x=>({x,v:logVec(x),sp:SPOTS.find(s=>s.id===x.spot)})).filter(o=>o.v&&o.sp);
+ const col=COL.filter(c=>c.res>=2&&(!fishF||c.sp===fishF)).map(c=>({x:{t:c.t,sp:c.sp,qty:c.qty,bait:c.isca,res:c.res},v:c.v,col:c}));if(!refs.length&&!col.length)return[];
+ const mine=SPOTS.filter(s=>s.custom&&!s.temp),cand=[...new Set([...refs.map(o=>o.sp),...(mine.length?mine:visSpots().filter(s=>!s.temp))])],out=[];
+ for(const sp of cand){const D=S.derived[sp.id];if(!D)continue;const R=[...refs.filter(o=>o.sp.id===sp.id||o.sp.t===sp.t),...col.filter(o=>o.col.tipo===sp.t&&celDist(o.col.cel,sp)<=35).map(o=>({...o,sp:{id:"col",t:sp.t,n:"comunidade"}}))];if(!R.length)continue;
   let cur=null;for(const r of D.rows){if(r.t<now-HOUR||r.t>now+7*864e5)continue;const v=condVec(sp,r);let best=0,ref=null;
-   for(const o of R){const k=condSim(v,o.v)*(o.sp.id===sp.id?1:.85);if(k>best){best=k;ref=o}}
+   for(const o of R){const k=condSim(v,o.v)*(o.sp.id===sp.id?1:o.col?.8:.85);if(k>best){best=k;ref=o}}
    if(best>=.7&&!r.danger){if(cur&&r.t-cur.b<=HOUR)Object.assign(cur,{b:r.t,peak:Math.max(cur.peak,best),...(best>cur.peak?{ref,at:r.t,i:r.i}:{})});else{cur={sp,a:r.t,b:r.t,peak:best,ref,at:r.t,i:r.i};out.push(cur)}}else cur=null}}
  return out.sort((a,b)=>b.peak-a.peak).slice(0,6)}
-function renderSimilar(){const el=$("#simBody");if(!el||!S.data)return;const good=S.log.filter(x=>x.res>=2);
- if(!good.length){$("#simInfo").textContent="";el.innerHTML=`<p class="small muted" style="margin:0">Registre suas pescarias em "Registrar pescaria" (inclusive as fracas). Com uma saída boa registrada, o app já procura nos próximos 7 dias as horas com maré, lua, pressão, frente, vento e água parecidos com aquela.</p>`;return}
- const W=similarWindows();$("#simInfo").textContent=`${good.length} saída${good.length>1?"s":""} boa${good.length>1?"s":""} como referência`;
+function renderSimilar(){const el=$("#simBody");if(!el||!S.data)return;const good=S.log.filter(x=>x.res>=2);const colN=COL.filter(c=>c.res>=2).length;
+ if(!good.length&&!colN){$("#simInfo").textContent="";el.innerHTML=`<p class="small muted" style="margin:0">Registre suas pescarias em "Registrar pescaria" (inclusive as fracas). Com uma saída boa registrada, o app já procura nos próximos 7 dias as horas com maré, lua, pressão, frente, vento e água parecidos com aquela.</p>`;return}
+ const W=similarWindows();$("#simInfo").textContent=[good.length?`${good.length} saída${good.length>1?"s":""} boa${good.length>1?"s":""} sua${good.length>1?"s":""}`:"",colN?`${colN} da comunidade`:""].filter(Boolean).join(" + ");
  if(!W.length){el.innerHTML=`<p class="small muted" style="margin:0">Nos próximos 7 dias nenhuma hora ficou parecida o bastante (70% ou mais) com as suas saídas boas${S.fish!=="geral"?" de "+FISH[S.fish].n.toLowerCase():""}.</p>`;return}
  el.innerHTML=`<ul class="simlist">${W.map(w=>{const x=w.ref.x,p=Math.round(w.peak*100),same=w.ref.sp.id===w.sp.id;
   return`<li><button type="button" data-simgo="${w.sp.id}|${w.at}"><span class="pct ${p<80?"mid":""}">${p}%</span><span><b>${fmtD.format(w.a)} · ${fmtH.format(w.a)}${w.b>w.a?"–"+fmtH.format(w.b+HOUR):""} · ${esc(w.sp.n)}</b>
-   <span class="small muted">parecido com ${fmtDM.format(x.t)}${same?"":" em "+esc(w.ref.sp.n)}: ${x.qty?x.qty+" ":""}${esc(x.sp.toLowerCase())}${x.bait?", "+esc(x.bait.toLowerCase()):""}</span></span></button></li>`}).join("")}</ul>`}
+   <span class="small muted">parecido com ${w.ref.col?"saída da comunidade em ":""}${fmtDM.format(x.t)}${same||w.ref.col?"":" em "+esc(w.ref.sp.n)}: ${x.qty?x.qty+" ":""}${esc(x.sp.toLowerCase())}${x.bait?", "+esc(x.bait.toLowerCase()):""}</span></span></button></li>`}).join("")}</ul>`}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-rep]");if(!b)return;const el=$("#rep_"+b.dataset.rep);if(!el)return;if(el.hidden){const x=S.log.find(y=>y.id===b.dataset.rep);el.innerHTML=x?reportHTML(x):"";}el.hidden=!el.hidden});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-simgo]");if(!b)return;const [id,t]=b.dataset.simgo.split("|");
  if(S.spot!==id)selectSpot(id,false);const k=S.data.t.findIndex(x=>x===+t);if(k>=0){S.when=k;S.day=dayKey(+t);renderRank();renderSpot();window.scrollTo({top:0,behavior:"smooth"})}});
@@ -1251,9 +1253,24 @@ const BAIT_BASE={Robalo:["Camarão vivo","Artificial de meia-água (shad)","Corr
 function baitFor(sp,r){const vn=condVec(sp,r),fishN=S.fish!=="geral"?FISH[S.fish].n:null,m=new Map();
  for(const x of S.log){if(!x.bait||(fishN&&x.sp!==fishN))continue;const k=x.bait.trim().toLowerCase(),w=(.25+.75*(logVec(x)?condSim(vn,logVec(x)):.3))*(x.spot===sp.id?1.3:1);const o=m.get(k)||{n:x.bait.trim(),s:0,ok:0,tot:0};
   o.s+=w*(x.res>=2?1:-.6);o.tot++;if(x.res>=2)o.ok++;m.set(k,o)}
+ for(const c of COL){if(!c.isca||(fishN&&c.sp!==fishN)||c.tipo!==sp.t)continue;const k=c.isca.trim().toLowerCase(),w=.6*(.25+.75*condSim(vn,c.v));const o=m.get(k)||{n:c.isca.trim(),s:0,ok:0,tot:0};o.s+=w*(c.res>=2?1:-.6);o.tot++;if(c.res>=2)o.ok++;m.set(k,o)}
  const L=[...m.values()].filter(o=>o.s>0).sort((a,b)=>b.s-a.s).slice(0,3);
- if(L.length)return`<div class="small"><b>Isca para agora:</b> ${L.map(o=>`<b>${esc(o.n)}</b> <span class="muted">(${o.ok} de ${o.tot} saídas)</span>`).join(" · ")}</div>`;
+ if(L.length)return`<div class="small"><b>Isca para agora:</b> ${L.map(o=>`<b>${esc(o.n)}</b> <span class="muted">(${o.ok} de ${o.tot} saídas${COL.length?", suas e da região":""})</span>`).join(" · ")}</div>`;
  const b=BAIT_BASE[fishN||"Qualquer peixe"];return b?`<div class="small"><b>Isca sugerida:</b> ${b.join(" · ")} <span class="muted">(sugestão geral; seus registros personalizam)</span></div>`:""}
+/* ================== COLETIVO ANÔNIMO ==================
+ Quem quiser envia as condições de cada pescaria (sem o ponto: só uma área de ~10 km). O app junta os registros da região
+ para achar dias parecidos e iscas que funcionaram, ajudando quem ainda tem poucos registros. Login anônimo do Firebase. */
+let COL=[];
+const celOf=(lat,lon)=>`${(Math.round(lat*10)/10).toFixed(1)}_${(Math.round(lon*10)/10).toFixed(1)}`;
+async function shareCatch(x){if(!FB_CONFIG&&!window.__FAKE_FB)return false;const sp=SPOTS.find(s=>s.id===x.spot);if(!sp||!x.v)return false;
+ const fb=await fbInit();if(!fb)return false;const u=await fb.anon();
+ const v={};for(const k in x.v)if(x.v[k]!=null)v[k]=+x.v[k];
+ const d={reg:regionOf(sp.lat,sp.lon),cel:celOf(sp.lat,sp.lon),t:Math.floor(x.t/HOUR)*HOUR,mes:+fmtKey.format(x.t).slice(5,7),sp:String(x.sp).slice(0,30),res:x.res,tipo:sp.t,v};
+ if(x.qty!=null)d.qty=Math.min(100,Math.max(0,x.qty|0));if(x.bait)d.isca=x.bait.slice(0,40);
+ await fb.capAdd(u.uid,d);x.shared=true;store("pf_log",S.log);return true}
+async function loadCollective(){COL=[];if(store("pf_share")!==true||(!FB_CONFIG&&!window.__FAKE_FB))return;
+ try{const fb=await fbInit();if(!fb)return;const u=await fb.anon();const L=await fb.capList(S.reg);COL=L.filter(c=>c.uid!==u.uid&&c.v);renderSimilar();if(COL.length)renderSpot()}catch(e){console.warn("coletivo",e)}}
+const celDist=(cel,sp)=>{const [a,b]=cel.split("_").map(Number);return distKm({lat:a,lon:b},sp)};
 function rebuild(){ // recalcula tudo do modelo atual
  detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
  trainML();applyML()}
@@ -1699,7 +1716,7 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
-function renderLog(){renderHistory();renderSimilar();renderAgenda();
+function renderLog(){renderHistory();renderSimilar();renderAgenda();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true}
  // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
  const lkey=logList.map(s=>s.id+s.n).join("|");
@@ -1755,6 +1772,7 @@ $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgM
   qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
   c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,v:r&&!S.demo?condVec(SPOTS.find(x=>x.id===sp),r):null,model:S.model};
  S.log.push(item);store("pf_log",S.log);
+ {const sh=$("#lgShare").checked;store("pf_share",sh);if(sh&&item.v)shareCatch(item).then(ok=>{if(ok)$("#lgMsg").textContent="Compartilhado anonimamente. Obrigado!"}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui compartilhar agora."})}
  $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
  // mostra o histórico do ponto onde a pescaria foi registrada
  if(S.spot!==sp)S.spot=sp;trainML();applyML();renderAll();$("#logDet").open=false;
@@ -2113,7 +2131,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-26.4";
+const APP_VERSION="2026-10-26.5";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2410,6 +2428,10 @@ async function fbInit(){if(CM.fb)return CM.fb;
   removeMember:(gid,uid)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayRemove(uid),["nomes."+uid]:F.deleteField()}),
   join:(gid,code,uid,nome)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayUnion(uid),["nomes."+uid]:nome,ultimoConvite:code}),
   async saveProfile(uid,prof,code){const b=F.writeBatch(db);b.set(d("users/"+uid),prof);b.set(d("codigos/"+code),{uid,nome:prof.nome});await b.commit()},
+  async anon(){if(auth.currentUser)return auth.currentUser;return(await Au.signInAnonymously(auth)).user},
+  async capAdd(uid,data){const b=F.writeBatch(db),ref=F.doc(F.collection(db,"capturas"));b.set(ref,{...data,uid,criadoEm:F.serverTimestamp()});b.set(d("limitesCap/"+uid),{ultimo:F.serverTimestamp()});await b.commit();return ref.id},
+  async capList(reg){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("reg","==",reg),F.limit(800)));return r.docs.map(x=>x.data())},
+  async capDelMine(uid){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("uid","==",uid)));for(const x of r.docs)await F.deleteDoc(x.ref);return r.size},
   async setCode(uid,nome,code){const b=F.writeBatch(db);b.set(d("codigos/"+code),{uid,nome});b.update(d("users/"+uid),{codigo:code});await b.commit()}};
  return CM.fb}
 const GROUPS_DEFAULT=[{id:"geral",nome:"Geral",ordem:1,tipo:"publico"},{id:"vendas",nome:"Vendas e trocas",ordem:2,tipo:"publico"}];
@@ -2418,7 +2440,7 @@ const tsMs=x=>x?(x.toMillis?x.toMillis():x.seconds?x.seconds*1000:+x):Date.now()
 const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:fmtDM.format(ms)};
 async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
  if(!fb){box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. Para entrar, basta a conta Google ou um e-mail.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
- if(CM.started)return;CM.started=true;fb.onAuth(async u=>{CM.user=u;CM.profile=null;CM.admin=false;
+ if(CM.started)return;CM.started=true;fb.onAuth(async u=>{if(u&&u.isAnonymous)u=null;CM.user=u;CM.profile=null;CM.admin=false;
   if(u){try{CM.profile=await fb.get("users/"+u.uid);CM.admin=!!(await fb.get("admins/"+u.uid).catch(()=>null))}catch(e){console.warn(e)}}
   cmRender()})}
 const G_ICON='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>';
@@ -2559,7 +2581,8 @@ $("#dataExport").addEventListener("click",()=>{const out={app:"mare-boa",tipo:"t
  const blob=new Blob([JSON.stringify(out,null,1)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mare-boa-meus-dados.json";document.body.appendChild(a);a.click();a.remove();
  $("#dataMsg").textContent="Arquivo baixado: mare-boa-meus-dados.json (pontos, diário e preferências)."});
 $("#dataWipe").addEventListener("click",e=>{const b=e.currentTarget;if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Toque de novo para apagar tudo";$("#dataMsg").innerHTML="Isso apaga seus pontos, o diário e as preferências <b>deste aparelho</b>, sem volta. Se quiser, baixe uma cópia antes.";setTimeout(()=>{b.dataset.armed="";b.textContent="Apagar todos os meus dados"},8000);return}
- for(const k of MY_KEYS())try{localStorage.removeItem(k)}catch(err){}location.reload()});
+ (async()=>{try{if(store("pf_share")===true||S.log.some(x=>x.shared)){const fb=await fbInit();if(fb){const u=await fb.anon();await fb.capDelMine(u.uid)}}}catch(err){console.warn(err)}
+  for(const k of MY_KEYS())try{localStorage.removeItem(k)}catch(err){}location.reload()})()});
 load();
 showView(routeHash(location.hash.slice(1))||"resumo",false);
 </script>
