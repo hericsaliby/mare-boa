@@ -2209,7 +2209,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-27.1";
+const APP_VERSION="2026-10-27.2";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2476,7 +2476,7 @@ const CM={fb:null,user:null,profile:null,admin:false,gid:null,groups:[],unsub:nu
 async function fbInit(){if(CM.fb)return CM.fb;
  if(window.__FAKE_FB){CM.fb=window.__FAKE_FB;return CM.fb} // usado nos testes automáticos
  if(!FB_CONFIG)return null;
- const base=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+ const base=`./fb/`;
  const [A,Au,F]=await Promise.all([import(base+"firebase-app.js"),import(base+"firebase-auth.js"),import(base+"firebase-firestore.js")]);
  const app=A.initializeApp(FB_CONFIG),auth=Au.getAuth(app),db=F.getFirestore(app);auth.languageCode="pt";
  const d=path=>F.doc(db,...path.split("/"));
@@ -2507,7 +2507,7 @@ async function fbInit(){if(CM.fb)return CM.fb;
   removeMember:(gid,uid)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayRemove(uid),["nomes."+uid]:F.deleteField()}),
   join:(gid,code,uid,nome)=>F.updateDoc(d("groups/"+gid),{membros:F.arrayUnion(uid),["nomes."+uid]:nome,ultimoConvite:code}),
   async saveProfile(uid,prof,code){const b=F.writeBatch(db);b.set(d("users/"+uid),prof);b.set(d("codigos/"+code),{uid,nome:prof.nome});await b.commit()},
-  async pushToken(vapid){const M=await import(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-messaging.js`);if(!(await M.isSupported()))throw new Error("sem suporte");
+  async pushToken(vapid){const M=await import(`./fb/firebase-messaging.js`);if(!(await M.isSupported()))throw new Error("sem suporte");
    const reg=await navigator.serviceWorker.register("firebase-messaging-sw.js");const ms=M.getMessaging(app);return M.getToken(ms,{vapidKey:vapid,serviceWorkerRegistration:reg})},
   savePush:(uid,data)=>F.setDoc(d("push/"+uid),{...data,atualizado:F.serverTimestamp()}),
   async anon(){if(auth.currentUser)return auth.currentUser;return(await Au.signInAnonymously(auth)).user},

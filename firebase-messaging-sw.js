@@ -1,6 +1,6 @@
 /* Maré Boa: recebe os avisos no celular mesmo com o app fechado (Firebase Cloud Messaging). */
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
+importScripts("fb/firebase-app-compat.js");
+importScripts("fb/firebase-messaging-compat.js");
 firebase.initializeApp({apiKey:"AIzaSyCPj7ywVSXpguBTU0mpFUzWX8RkW-eNOgQ",authDomain:"mareboa-2642f.firebaseapp.com",projectId:"mareboa-2642f",storageBucket:"mareboa-2642f.firebasestorage.app",messagingSenderId:"705491594133",appId:"1:705491594133:web:df0ef4a6ea78c7b069e49c"});
 const messaging = firebase.messaging();
 messaging.onBackgroundMessage(p => {
