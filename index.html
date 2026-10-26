@@ -350,6 +350,14 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .chatextra[open]>.row{position:absolute;bottom:56px;left:0;right:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:5}
 .chatinfo{display:flex;justify-content:space-between;gap:8px;min-height:1.2em}
 .umenu{display:flex;flex-direction:column;gap:6px}
+.replybar{display:flex;gap:8px;align-items:center;background:var(--surface-2);border-left:3px solid var(--accent);border-radius:8px;padding:6px 10px;font-size:13.5px}
+.replybar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mentionbox{display:flex;flex-wrap:wrap;gap:6px}
+.chat .bub{min-width:0;max-width:100%;overflow:hidden}
+.chat .quote{display:block;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:6px;padding:4px 8px;font-size:13px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chat li.me .quote{border-left-color:#fff}
+.chat .mention{font-weight:700}
+.chat li.tome .bub{box-shadow:0 0 0 2px var(--sand)}
 #cmAddCode::placeholder{text-transform:none}
 .partners{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
 .partner{background:var(--surface-2);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
@@ -520,6 +528,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="chathead" id="cmHead"></div>
       <div class="chatpanel" id="cmPanel" hidden></div>
       <ul class="chat" id="cmPosts" aria-live="polite"></ul>
+      <div class="replybar" id="cmReply" hidden></div>
+      <div class="mentionbox" id="cmMention" hidden></div>
       <form id="cmForm" class="chatform" autocomplete="off">
         <details class="chatextra"><summary aria-label="Marcar ponto ou peixe"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></summary>
           <div class="row"><label class="inline" for="cmPonto">Ponto<select id="cmPonto"></select></label><label class="inline" for="cmPeixe">Peixe<select id="cmPeixe"></select></label></div></details>
@@ -2131,7 +2141,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-26.5";
+const APP_VERSION="2026-10-26.6";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2514,7 +2524,7 @@ function cmPanel(){const el=$("#cmPanel"),g=cmG(),k=CM.panel;el.hidden=!k;if(!k)
    :`<div class="row"><button class="btn ghost" type="button" data-cmleave="1">Sair do grupo</button></div>`}<div class="small" id="cmPanelMsg"></div>`;
   const f=$("#cmAddForm");if(f)f.addEventListener("submit",cmAddByCode);return}
  if(k.startsWith("user:")){const [,uid,nome]=k.split(":");const own=CM.groups.filter(x=>x.tipo==="privado"&&x.dono===CM.user.uid);
-  el.innerHTML=`<b>${esc(decodeURIComponent(nome))}</b>${own.length?`<span class="small">Adicionar a um grupo seu:</span><div class="umenu">${own.map(x=>`<button class="btn ghost" type="button" data-cmaddto="${esc(x.id)}" data-uid="${esc(uid)}" data-nome="${esc(nome)}" ${(x.membros||[]).includes(uid)?"disabled":""}>${esc(x.nome)}${(x.membros||[]).includes(uid)?" (já está)":""}</button>`).join("")}</div>`:`<span class="small muted">Crie um grupo privado para poder adicionar pessoas.</span>`}<div class="row"><button class="btn ghost" type="button" data-cmpanel="">Fechar</button></div><div class="small" id="cmPanelMsg"></div>`;return}
+  el.innerHTML=`<b>${esc(decodeURIComponent(nome))}</b><div class="row"><button class="btn ghost" type="button" data-cmment="${esc(uid)}" data-nome="${esc(decodeURIComponent(nome))}">Mencionar</button></div>${own.length?`<span class="small">Adicionar a um grupo seu:</span><div class="umenu">${own.map(x=>`<button class="btn ghost" type="button" data-cmaddto="${esc(x.id)}" data-uid="${esc(uid)}" data-nome="${esc(nome)}" ${(x.membros||[]).includes(uid)?"disabled":""}>${esc(x.nome)}${(x.membros||[]).includes(uid)?" (já está)":""}</button>`).join("")}</div>`:`<span class="small muted">Crie um grupo privado para poder adicionar pessoas.</span>`}<div class="row"><button class="btn ghost" type="button" data-cmpanel="">Fechar</button></div><div class="small" id="cmPanelMsg"></div>`;return}
  el.hidden=true}
 async function cmReloadGroups(gid){if(gid)CM.gid=gid;try{const [pub,mine]=await Promise.all([CM.fb.publicGroups(),CM.fb.myGroups(CM.user.uid)]);pub.sort((a,b)=>(a.ordem||9)-(b.ordem||9));CM.groups=[...pub,...mine.sort((a,b)=>tsMs(a.criadoEm)-tsMs(b.criadoEm))]}catch(e){console.warn(e)}
  if(!CM.groups.some(g=>g.id===CM.gid))CM.gid=CM.groups[0]?CM.groups[0].id:null;cmChips();cmHead();if(CM.gid)cmListen()}
@@ -2523,15 +2533,23 @@ async function cmCreate(e){e.preventDefault();const nome=$("#cmNewName").value.t
 async function cmAddByCode(e){e.preventDefault();const m=$("#cmPanelMsg"),c=$("#cmAddCode").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<6){m.textContent="O código tem 6 letras e números.";return}
  try{const r=await CM.fb.get("codigos/"+c);if(!r){m.textContent="Não achei ninguém com esse código.";return}const g=cmG();if((g.membros||[]).includes(r.uid)){m.textContent=r.nome+" já está no grupo.";return}
   await CM.fb.addMember(g.id,r.uid,r.nome);await cmReloadGroups();cmNote(r.nome+" foi adicionado.")}catch(err){console.warn(err);m.textContent="Não consegui adicionar agora."}}
+const cmMentions=h=>h.replace(/(^|\s)@([\p{L}][\p{L}'.-]*(?: [\p{Lu}][\p{L}'.-]*)?)/gu,'$1<span class="mention">@$2</span>');
+// pessoas que dá para mencionar: membros do grupo privado ou quem escreveu recentemente no público
+function cmPeople(){const g=cmG(),me=CM.user.uid,m=new Map();if(g&&g.nomes)for(const u in g.nomes)if(u!==me)m.set(u,g.nomes[u]);
+ for(const x of (CM.posts||[]).slice().reverse())if(x.uid!==me&&!m.has(x.uid))m.set(x.uid,x.nome);return[...m].slice(0,30).map(([uid,nome])=>({uid,nome}))}
+CM.reply=null;CM.ment=new Map();
+function cmReplyBar(){const el=$("#cmReply"),r=CM.reply;el.hidden=!r;if(!r)return;el.innerHTML=`<span>↩ Respondendo <b>${esc(r.nome)}</b>: ${esc(r.trecho)}</span><button type="button" class="linkbtn small" data-cmnoreply="1">cancelar</button>`}
 const cmDay=ms=>{const d=dayKey(ms),t=dayKey(Date.now()),y=dayKey(Date.now()-864e5);return d===t?"Hoje":d===y?"Ontem":fmtDM.format(ms)};
 function cmListen(){if(CM.unsub)CM.unsub();const ul=$("#cmPosts");ul.innerHTML=`<li class="sys">Carregando…</li>`;let first=true;
  CM.unsub=CM.fb.listen(CM.gid,(posts,err)=>{if(err||!posts){ul.innerHTML=`<li class="sys">Não consegui carregar as mensagens agora.</li>`;return}
   const near=ul.scrollHeight-ul.scrollTop-ul.clientHeight<80,me=CM.user.uid,g=cmG(),canDel=x=>x.uid===me||CM.admin||(g&&g.dono===me);let lastDay="";
   const list=posts.slice().reverse();CM.posts=list;
   ul.innerHTML=list.length?list.map(x=>{const ms=tsMs(x.criadoEm),dk=dayKey(ms),sep=dk!==lastDay?`<li class="day">${cmDay(ms)}</li>`:"";lastDay=dk;const mine=x.uid===me;
-   return sep+`<li class="${mine?"me":""}"><div class="bub">${mine?"":`<button type="button" class="who" data-cmuser="${esc(x.uid)}" data-nome="${esc(encodeURIComponent(x.nome||""))}">${esc(x.nome||"")}</button>`}
-    <span class="txt">${esc(x.texto||"")}</span>${x.ponto||x.peixe?`<span class="tags">${x.ponto?`<span class="tag neu">${esc(x.ponto)}</span>`:""}${x.peixe?`<span class="tag good">${esc(x.peixe)}</span>`:""}</span>`:""}<span class="meta num">${fmtH.format(ms)}</span></div>
-    <div class="act">${canDel(x)?`<button type="button" data-cmdel="${esc(x.id)}">apagar</button>`:""}${!mine?`<button type="button" data-cmrep="${esc(x.id)}">denunciar</button>`:""}</div></li>`}).join("")
+   const toMe=!mine&&((x.resp&&x.resp.uid===me)||(x.mencoes||[]).includes(me));
+   return sep+`<li class="${mine?"me":""}${toMe?" tome":""}" id="pm_${esc(x.id)}"><div class="bub">${mine?"":`<button type="button" class="who" data-cmuser="${esc(x.uid)}" data-nome="${esc(encodeURIComponent(x.nome||""))}">${esc(x.nome||"")}</button>`}
+    ${x.resp?`<span class="quote">↩ <b>${esc(x.resp.nome||"")}</b>: ${esc(x.resp.trecho||"")}</span>`:""}
+    <span class="txt">${cmMentions(esc(x.texto||""))}</span>${x.ponto||x.peixe?`<span class="tags">${x.ponto?`<span class="tag neu">${esc(x.ponto)}</span>`:""}${x.peixe?`<span class="tag good">${esc(x.peixe)}</span>`:""}</span>`:""}<span class="meta num">${fmtH.format(ms)}</span></div>
+    <div class="act"><button type="button" data-cmreply="${esc(x.id)}">responder</button>${canDel(x)?`<button type="button" data-cmdel="${esc(x.id)}">apagar</button>`:""}${!mine?`<button type="button" data-cmrep="${esc(x.id)}">denunciar</button>`:""}</div></li>`}).join("")
    :`<li class="sys">Nenhuma mensagem ainda. Comece a conversa!</li>`;
   if(first||near)ul.scrollTop=ul.scrollHeight;first=false})}
 async function cmPartners(){const el=$("#cmPartnerList");if(!el)return;let L=[];try{const fb=CM.fb||await fbInit();if(fb)L=(await fb.list("partners","ordem")).filter(x=>x.ativo!==false)}catch(e){}
@@ -2544,15 +2562,23 @@ async function cmPartners(){const el=$("#cmPartnerList");if(!el)return;let L=[];
   <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar parceiro</button></div></form></details>`:"";
  const pf=$("#pForm");if(pf)pf.addEventListener("submit",async e=>{e.preventDefault();await CM.fb.add("partners",{nome:$("#pNome").value.trim(),tipo:$("#pTipo").value.trim(),telefone:$("#pTel").value.trim(),endereco:$("#pEnd").value.trim(),link:$("#pLink").value.trim(),descricao:$("#pDesc").value.trim(),ativo:true,ordem:Date.now()});cmPartners()})}
 $("#cmText").addEventListener("input",e=>{const t=e.target;$("#cmCount").textContent=t.value.length+"/500";t.style.height="auto";t.style.height=Math.min(140,t.scrollHeight)+"px"});
+$("#cmText").addEventListener("input",e=>{const t=e.target,v=t.value.slice(0,t.selectionStart),m=v.match(/(?:^|\s)@([\p{L}]*)$/u),box=$("#cmMention");
+ if(!m||!CM.user){box.hidden=true;return}const q=m[1].toLowerCase(),L=cmPeople().filter(p=>p.nome.toLowerCase().startsWith(q)).slice(0,6);
+ box.hidden=!L.length;box.innerHTML=L.map(p=>`<button type="button" class="chipbtn" data-cmment="${esc(p.uid)}" data-nome="${esc(p.nome)}">@${esc(p.nome)}</button>`).join("")});
 $("#cmText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!matchMedia("(pointer:coarse)").matches){e.preventDefault();$("#cmForm").requestSubmit()}});
 $("#cmForm").addEventListener("submit",async e=>{e.preventDefault();const m=$("#cmMsg"),t=$("#cmText").value.trim();if(!t){m.textContent="Escreva uma mensagem.";return}
- const data={nome:CM.profile.nome,texto:t.slice(0,500)};if($("#cmPonto").value)data.ponto=$("#cmPonto").value.slice(0,60);if($("#cmPeixe").value)data.peixe=$("#cmPeixe").value;
+ const data={nome:CM.profile.nome,texto:t.slice(0,500)};
+ if(CM.reply)data.resp={pid:CM.reply.pid,uid:CM.reply.uid,nome:CM.reply.nome.slice(0,40),trecho:CM.reply.trecho.slice(0,80)};
+ {const ms=[...CM.ment].filter(([,n])=>data.texto.includes("@"+n)).map(([u])=>u).slice(0,10);if(ms.length)data.mencoes=ms}if($("#cmPonto").value)data.ponto=$("#cmPonto").value.slice(0,60);if($("#cmPeixe").value)data.peixe=$("#cmPeixe").value;
  if(!CM.gid){m.textContent="Escolha um grupo.";return}
- try{await CM.fb.post(CM.gid,CM.user.uid,data);const t=$("#cmText");t.value="";t.style.height="auto";$("#cmCount").textContent="0/500";m.textContent="";$("#cmPonto").value="";$("#cmPeixe").value="";$(".chatextra").open=false;const ul=$("#cmPosts");ul.scrollTop=ul.scrollHeight}
+ try{await CM.fb.post(CM.gid,CM.user.uid,data);const t=$("#cmText");t.value="";t.style.height="auto";$("#cmCount").textContent="0/500";m.textContent="";$("#cmPonto").value="";$("#cmPeixe").value="";$(".chatextra").open=false;CM.reply=null;CM.ment.clear();cmReplyBar();$("#cmMention").hidden=true;const ul=$("#cmPosts");ul.scrollTop=ul.scrollHeight}
  catch(err){console.warn(err);m.textContent=/permission/.test(String(err.code||err.message))?"Espere uns segundos entre uma mensagem e outra.":"Não consegui publicar agora. Tente de novo."}});
-document.addEventListener("click",async e=>{const b=e.target.closest("[data-gid],[data-cmdel],[data-cmrep],[data-pdel],[data-cmnew],[data-cmpanel],[data-cmuser],[data-cmaddto],[data-cmkick],[data-cmleave],[data-cmdelg],[data-cmshare]");if(!b||!CM.fb)return;
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-gid],[data-cmdel],[data-cmrep],[data-pdel],[data-cmnew],[data-cmreply],[data-cmnoreply],[data-cmment],[data-cmpanel],[data-cmuser],[data-cmaddto],[data-cmkick],[data-cmleave],[data-cmdelg],[data-cmshare]");if(!b||!CM.fb)return;
  if(b.dataset.gid){CM.gid=b.dataset.gid;CM.panel=null;document.querySelectorAll("#cmGroups [data-gid]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.gid===CM.gid));cmHead();cmListen()}
  else if(b.dataset.cmnew){CM.panel=CM.panel==="novo"?null:"novo";cmPanel()}
+ else if(b.dataset.cmreply){const x=(CM.posts||[]).find(p=>p.id===b.dataset.cmreply);if(x){CM.reply={pid:x.id,uid:x.uid,nome:x.nome||"",trecho:(x.texto||"").slice(0,80)};cmReplyBar();$("#cmText").focus()}}
+ else if(b.dataset.cmnoreply){CM.reply=null;cmReplyBar()}
+ else if(b.dataset.cmment){const t=$("#cmText"),n=b.dataset.nome,pos=t.selectionStart??t.value.length,raw=t.value.slice(0,pos);let before=raw.replace(/@([\p{L}]*)$/u,"@"+n+" ");if(before===raw)before=raw+(raw&&!/\s$/.test(raw)?" ":"")+"@"+n+" ";t.value=before+t.value.slice(pos);CM.ment.set(b.dataset.cmment,n);$("#cmMention").hidden=true;if(CM.panel&&CM.panel.startsWith("user:")){CM.panel=null;cmPanel()}t.focus()}
  else if(b.dataset.cmpanel!==undefined){CM.panel=b.dataset.cmpanel&&CM.panel!==b.dataset.cmpanel?b.dataset.cmpanel:null;cmPanel()}
  else if(b.dataset.cmuser){CM.panel="user:"+b.dataset.cmuser+":"+b.dataset.nome;cmPanel();$("#cmPanel").scrollIntoView({block:"nearest"})}
  else if(b.dataset.cmaddto){const m=$("#cmPanelMsg");try{await CM.fb.addMember(b.dataset.cmaddto,b.dataset.uid,decodeURIComponent(b.dataset.nome));CM.panel=null;await cmReloadGroups();cmNote(decodeURIComponent(b.dataset.nome)+" foi adicionado.")}catch(err){console.warn(err);m.textContent="Não consegui adicionar agora."}}
