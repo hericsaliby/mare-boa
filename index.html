@@ -801,8 +801,9 @@ const fmtDM=new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,weekday:"short",day:"2-
 const fmtD=new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,weekday:"short",day:"2-digit",month:"2-digit"});
 const fmtKey=new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"});
 const fmtHr=new Intl.DateTimeFormat("en-GB",{timeZone:TZ,hour:"2-digit",hourCycle:"h23"});
-const dayKey=ms=>fmtKey.format(ms);
-const localHour=ms=>+fmtHr.format(ms)%24;
+const memo=(f,max=60000)=>{const m=new Map();return x=>{let v=m.get(x);if(v===undefined){if(m.size>max)m.clear();v=f(x);m.set(x,v)}return v}};
+const dayKey=memo(ms=>fmtKey.format(ms));
+const localHour=memo(ms=>+fmtHr.format(ms)%24);
 const dir16=d=>DIR16[Math.round(((d%360)+360)%360/22.5)%16];
 const dir8=d=>DIR8[Math.round(((d%360)+360)%360/45)%8];
 function sect(arr,d){const x=(((d%360)+360)%360)/45,i=Math.floor(x)%8,j=(i+1)%8,f=x-Math.floor(x);return arr[i]*(1-f)+arr[j]*f}
@@ -812,7 +813,7 @@ function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(
  catch(e){if(v!==undefined&&STORE_CRIT.has(k)){console.error("não gravou",k,e);try{showBanner("Não consegui gravar no aparelho: a memória do navegador está cheia. Tente de novo; se continuar, use Mais → Baixar todos os meus dados e me avise.",true,true)}catch(_){}}return v===undefined?null:false}}
 // cópias grandes (previsão, relevo) no IndexedDB, que tem muito mais espaço e não disputa com os seus pontos
 const IDB={p:null,db(){return this.p||(this.p=new Promise((ok,no)=>{try{const r=indexedDB.open("mareboa",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}}))},
- async get(k){try{const d=await this.db();return await new Promise(ok=>{const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>ok(q.result??null);q.onerror=()=>ok(null)})}catch(e){return null}},
+ async get(k){try{const d=await Promise.race([this.db(),new Promise((_,no)=>setTimeout(()=>no("tempo"),2500))]);return await new Promise(ok=>{setTimeout(()=>ok(null),2500);const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>ok(q.result??null);q.onerror=()=>ok(null)})}catch(e){return null}},
  async set(k,v){try{const d=await this.db();await new Promise(ok=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=ok;t.onerror=ok;t.onabort=ok})}catch(e){}}};
 // limpa as cópias grandes que versões anteriores guardavam no localStorage
 try{for(const k of Object.keys(localStorage))if(/^pf_(md1|md2|cache3|ovw|rel1|rel2|rel3_\w+|mask1|mask2)$/.test(k))localStorage.removeItem(k)}catch(e){}
@@ -827,7 +828,8 @@ const ALT=(H,phi,dec)=>Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.
 const SID=(d,lw)=>rad*(280.16+360.9856235*d)-lw;
 function sunCoords(d){const M=rad*(357.5291+0.98560028*d);const L=M+rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M))+rad*102.9372+Math.PI;return{dec:DEC(L,0),ra:RA(L,0)}}
 function moonCoords(d){const L=rad*(218.316+13.176396*d),M=rad*(134.963+13.064993*d),F=rad*(93.272+13.229350*d);const l=L+rad*6.289*Math.sin(M),b=rad*5.128*Math.sin(F);return{ra:RA(l,b),dec:DEC(l,b),dist:385001-20905*Math.cos(M)}}
-function sunAlt(ms){const d=toDays(ms),c=sunCoords(d);return ALT(SID(d,-rad*CENTER.lon)-c.ra,rad*CENTER.lat,c.dec)/rad}
+const SUNM=new Map();
+function sunAlt(ms){let v=SUNM.get(ms);if(v!==undefined)return v;const d=toDays(ms),c=sunCoords(d);v=ALT(SID(d,-rad*CENTER.lon)-c.ra,rad*CENTER.lat,c.dec)/rad;if(SUNM.size>60000)SUNM.clear();SUNM.set(ms,v);return v}
 function moonAlt(ms){const d=toDays(ms),c=moonCoords(d);return ALT(SID(d,-rad*CENTER.lon)-c.ra,rad*CENTER.lat,c.dec)/rad}
 function moonDist(ms){const d=toDays(ms),D=rad*(297.85+12.190749*d),M=rad*(134.963+13.064993*d),Ms=rad*(357.529+0.98560028*d);
  return 385001-20905*Math.cos(M)-3699*Math.cos(2*D-M)-2956*Math.cos(2*D)-570*Math.cos(2*M)+246*Math.cos(2*M-2*D)-205*Math.cos(Ms-2*D)}
@@ -1215,7 +1217,8 @@ function applyFrontScores(rows){for(const r of rows){const fa=frontAt(r.t);if(!f
  pressão (nível e tendência em 3 h e 24 h), véspera/passagem de frente fria, vento no ponto, água (temperatura, tendência, corrente)
  e luz. A semelhança é a distância ponderada entre retratos (1 = igual). */
 const CV_W={enchendo:1.2,since:1.4,mov:1,lvl:.5,rf:.8,hs:.8,hc:.8,ds:.5,dc:.5,pres:.5,dp3:.8,dp24:.7,pre:1.1,post:.6,eff:1,agua:.8,dT:.6,cur:.5,luz:.8};
-function condVec(sp,r){const D=S.derived[sp.id],o=S.data.spots[sp.id];if(!D||!o||!r)return null;const i=r.i;
+function condVec(sp,r){if(r&&r._cv&&r._cvs===sp.id)return r._cv;const v=condVec0(sp,r);if(r&&v){r._cv=v;r._cvs=sp.id}return v}
+function condVec0(sp,r){const D=S.derived[sp.id],o=S.data.spots[sp.id];if(!D||!o||!r)return null;const i=r.i;
  let prev=null;for(const e of D.ex){if(e.t<=r.t)prev=e;else break}const since=prev?(r.t-prev.t)/HOUR:null;
  const hh=localHour(r.t),dt=new Date(r.t),doy=(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate())-Date.UTC(dt.getUTCFullYear(),0,1))/864e5;
  const p=o.pres[i],p24=o.pres[i-24],fa=frontAt(r.t),al=sunAlt(r.t),cl=(x,a)=>Math.max(-a,Math.min(a,x)),f=x=>x==null||isNaN(x)?null:+x.toFixed(3);
@@ -1229,7 +1232,10 @@ function condSim(a,b){if(!a||!b)return 0;let s=0,ws=0,all=0;for(const k in CV_W)
 // vetor de um registro: o guardado ou, se a hora ainda está nos dados, calculado agora
 function logVec(x){if(x.v)return x.v;const sp=SPOTS.find(s=>s.id===x.spot);if(!sp||!S.derived[sp.id])return null;const r=S.derived[sp.id].rows.find(q=>Math.abs(q.t-x.t)<=HOUR/2);return r?condVec(sp,r):null}
 /* Próximos 7 dias: horas nos seus pontos parecidas com as suas saídas boas (do mesmo ponto vale mais; mesmo tipo de lugar, um pouco menos). */
-function similarWindows(){if(!S.data)return[];const now=Date.now(),fishF=S.fish!=="geral"?FISH[S.fish].n:null;
+let CALC_V=0;const CALC={};
+function cached(name,key,f){const k=CALC_V+"|"+key;if(CALC[name]&&CALC[name].k===k)return CALC[name].v;const v=f();CALC[name]={k,v};return v}
+function similarWindows(){return cached("sim",S.fish+"|"+S.log.length+"|"+COL.length+"|"+S.log.reduce((a,x)=>a+x.res,0),similarWindows0)}
+function similarWindows0(){if(!S.data)return[];const now=Date.now(),fishF=S.fish!=="geral"?FISH[S.fish].n:null;
  const refs=S.log.filter(x=>x.res>=2&&(!fishF||x.sp===fishF)).map(x=>({x,v:logVec(x),sp:SPOTS.find(s=>s.id===x.spot)})).filter(o=>o.v&&o.sp);
  const col=COL.filter(c=>c.res>=2&&(!fishF||c.sp===fishF)).map(c=>({x:{t:c.t,sp:c.sp,qty:c.qty,bait:c.isca,res:c.res},v:c.v,col:c}));if(!refs.length&&!col.length)return[];
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cand=[...new Set([...refs.map(o=>o.sp),...(mine.length?mine:visSpots().filter(s=>!s.temp))])],out=[];
@@ -1257,7 +1263,8 @@ function agenda(){const a=store("pf_agenda");if(a&&a.dias)return a;return{dias:{
 const AG_PRESETS=[["Fins de semana",{6:[5,22],0:[5,22]}],["Sexta à noite + fim de semana",{5:[18,24],6:[5,22],0:[5,22]}],["Todo dia cedo (5h–9h)",{0:[5,9],1:[5,9],2:[5,9],3:[5,9],4:[5,9],5:[5,9],6:[5,9]}],["Todo dia à noite (18h–23h)",{0:[18,23],1:[18,23],2:[18,23],3:[18,23],4:[18,23],5:[18,23],6:[18,23]}]];
 document.addEventListener("click",e=>{const b=e.target.closest("[data-agpre]");if(!b)return;const A=agenda();store("pf_agenda",{dias:AG_PRESETS[+b.dataset.agpre][1],tipos:A.tipos,extra:A.extra||[]});const f=$("#agForm");f.dataset.on="";renderAgenda();if(store("pf_push")&&PUSH_VAPID)pushEnable()});
 const dowOf=k=>new Date(k+"T12:00:00-03:00").getUTCDay();
-function agendaSlots(){if(!S.data)return[];const A=agenda(),now=Date.now(),keys=[...new Set(S.data.t.filter(t=>t>now-HOUR).map(dayKey))].slice(0,7),out=[];
+function agendaSlots(){return cached("ag",JSON.stringify(agenda())+"|"+SPOTS.length+"|"+S.allBase,agendaSlots0)}
+function agendaSlots0(){if(!S.data)return[];const A=agenda(),now=Date.now(),keys=[...new Set(S.data.t.filter(t=>t>now-HOUR).map(dayKey))].slice(0,7),out=[];
  const L=(SPOTS.some(x=>x.custom&&!x.temp)?SPOTS.filter(x=>x.custom&&!x.temp):visSpots()).filter(x=>A.tipos.includes(x.t)&&S.derived[x.id]);
  for(const k of keys){const wins=[];const d=A.dias[dowOf(k)];if(d)wins.push(d);A.extra.filter(e=>e.d===k).forEach(e=>wins.push([e.a,e.b]));
   for(const [ha,hb] of wins){const best=[];
@@ -1371,7 +1378,7 @@ async function pushEnable(){const m=$("#pushRow");try{
 document.addEventListener("click",e=>{if(e.target.closest("#pushOn"))pushEnable()});
 function pushRowHTML(){return PUSH_VAPID?`<b>Avisos no celular</b><br><span class="muted">${(typeof Notification!=="undefined"&&Notification.permission==="granted")&&store("pf_push")?"Ativados neste aparelho.":"Receba frente fria, sua agenda e respostas no chat mesmo com o app fechado."}</span>${(typeof Notification!=="undefined"&&Notification.permission==="granted")&&store("pf_push")?"":` <button type="button" class="btn ghost" id="pushOn" style="margin-top:6px">Ativar avisos no celular</button>`}`:`<span class="muted">Avisos no celular (com o app fechado): em breve.</span>`}
 function rebuild(){ // recalcula tudo do modelo atual
- detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
+ CALC_V++;detectFronts();fitGauge();S.derived={};for(const sp of SPOTS)computeSpot(sp);
  trainML();applyML()}
 function computeSpot(sp){const t=S.data.t,n=t.length;
  {const o=S.data.spots[sp.id],tide=tideFor(sp),cal=calibFor(sp.id,S.model);
@@ -2238,7 +2245,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-27.4";
+const APP_VERSION="2026-10-27.5";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
