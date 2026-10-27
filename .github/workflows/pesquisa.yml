@@ -13,39 +13,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Baixa páginas e listas de estações
+      - name: Baixa a página de temperatura da superfície do mar da EPAGRI e o que ela carrega
         run: |
           mkdir p && cd p
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          g(){ curl -sSL -A "$UA" -m 60 "$2" -o "$1" -w "%{http_code} $2\n" >> log.txt 2>&1 || echo "ERRO $2" >> log.txt; }
-          g ioc_stations.json "https://www.ioc-sealevelmonitoring.org/service.php?query=stationlist&showall=all"
-          g uhslc_brazil.csv 'https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_fast.csv?station_name,station_country,latitude,longitude,uhslc_id,time&station_country=%22Brazil%22&time%3E=2026-09-01'
-          g uhslc_rq_brazil.csv 'https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_rqds.csv?station_name,station_country,latitude,longitude,uhslc_id&station_country=%22Brazil%22&distinct()'
-          g femar_indice.html "https://www.fundacaofemar.org.br/biblioteca/emb/indice.html"
-          g femar_estacoes.html "https://www.fundacaofemar.org.br/biblioteca/emb/tabelas.html"
-          g marinha_mare.html "https://www.marinha.mil.br/chm/dados-do-segnav/dados-de-mare-mapa"
-          g marinha_tabuas.html "https://www.marinha.mil.br/chm/tabuas-de-mare"
-          g epagri_maregrafos.html "https://ciram.epagri.sc.gov.br/index.php/maregrafos/"
-          g simepar_home.html "https://www.simepar.br/"
-          g simepar_mare.html "https://www.simepar.br/prognozweb/simepar/forecast_by_counties/4118204"
-          g simcosta_home.html "https://simcosta.furg.br/"
-          g simcosta_api.html "https://simcosta.furg.br/api"
-          g simcosta_estacoes.json "https://simcosta.furg.br/api/stations"
-          g ioc_parg_7d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=parg&timestart=2026-10-19&timestop=2026-10-26&format=json"
-          g ioc_pont_1d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=pont&timestart=2026-10-25&timestop=2026-10-26&format=json"
-          g ioc_pont_40d.json "https://www.ioc-sealevelmonitoring.org/service.php?query=data&code=pont&timestart=2026-09-15&timestop=2026-10-26&format=json"
-          g uhslc_281.csv "https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_rqds.csv?time,sea_level&uhslc_id=281&time%3E=2015-01-01"
-          for u in $(grep -oiE 'href="[^"]+"' simepar_home.html simcosta_home.html 2>/dev/null | cut -d'"' -f2 | grep -iE 'mare|maré|tide|oceano|litoral|costeir|estac|api|dados' | sort -u | head -30); do
-            case "$u" in http*) url="$u";; *) continue;; esac; g "link_$(echo "$url" | tr -c 'A-Za-z0-9' '_' | cut -c1-80).html" "$url"; done
-          g ibge_rmpg.html "https://www.ibge.gov.br/geociencias/informacoes-sobre-posicionamento-geodesico/rede-geodesica/10842-rmpg-rede-maregrafica-permanente-para-geodesia.html"
-          # páginas de estações do FEMAR citadas no índice (SP, PR, SC)
-          for u in $(grep -oiE 'href="[^"]+"' femar_indice.html femar_estacoes.html 2>/dev/null | cut -d'"' -f2 | grep -iE 'paranagu|santos|canan|ubatuba|sebasti|guaratuba|iguape|bertioga|pontal|antonina|galheta|cotinga|superagui|francisco|itaja|imbituba|florian|laguna' | sort -u | head -60); do
-            case "$u" in http*) url="$u";; /*) url="https://www.fundacaofemar.org.br$u";; *) url="https://www.fundacaofemar.org.br/biblioteca/emb/$u";; esac
-            g "femar_$(basename "$u" | tr -c 'A-Za-z0-9._-' '_')" "$url"
-          done
-          for s in 2951 2963; do :; done
-          # outras estações da EPAGRI (getDataMareN_XXXX)
-          grep -oE 'getDataMare[0-9]+_[0-9]+' epagri_maregrafos.html | sort -u > epagri_estacoes.txt || true
+          g(){ curl -sSL -A "$UA" -m 60 "$2" -o "$1" -w "%{http_code} %{size_download} $2\n" >> log.txt 2>&1 || echo "ERRO $2" >> log.txt; }
+          g tsm.html "https://ciram.epagri.sc.gov.br/index.php/temperatura-da-superficie-do-mar/"
+          # tudo que parece dado, imagem de mapa, script de gráfico ou iframe
+          grep -oE '(src|href|url|data-src)=["'"'"'][^"'"'"']+' tsm.html | sed -E 's/^[a-z-]+=["'"'"']//' | grep -viE '\.(css|woff2?|ttf)(\?|$)|wp-content/themes|wp-includes|google|facebook|twitter|instagram|youtube|whatsapp' | sort -u > links.txt
+          grep -oE 'https?://[^"'"'"' )<>]+' tsm.html | grep -iE 'tsm|sst|temperatura|oceano|mar|getData|graficos|ciram_arquivos|\.json|\.csv|\.png|\.gif|\.jpg|\.nc|php' | sort -u >> links.txt
+          sort -u links.txt -o links.txt
+          n=0; while read -r u; do case "$u" in //*) u="https:$u";; /*) u="https://ciram.epagri.sc.gov.br$u";; http*) ;; *) u="https://ciram.epagri.sc.gov.br/$u";; esac
+            n=$((n+1)); [ $n -gt 60 ] && break
+            f="r_$(echo "$u" | tr -c 'A-Za-z0-9._-' '_' | cut -c1-120)"; g "$f" "$u"; done < links.txt
           ls -la >> log.txt
       - name: Grava no branch "pesquisa"
         run: |
