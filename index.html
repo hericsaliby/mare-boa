@@ -1355,7 +1355,7 @@ function baitFor(sp,r){const vn=condVec(sp,r),fishN=S.fish!=="geral"?FISH[S.fish
  for(const c of COL){if(!c.isca||(fishN&&c.sp!==fishN)||c.tipo!==sp.t)continue;const k=c.isca.trim().toLowerCase(),w=.6*(.25+.75*condSim(vn,c.v));const o=m.get(k)||{n:c.isca.trim(),s:0,ok:0,tot:0};o.s+=w*(c.res>=2?1:-.6);o.tot++;if(c.res>=2)o.ok++;m.set(k,o)}
  const L=[...m.values()].filter(o=>o.s>0).sort((a,b)=>b.s-a.s).slice(0,3);
  if(L.length)return`<div class="small"><b>Isca para agora:</b> ${L.map(o=>`<b>${esc(o.n)}</b> <span class="muted">(${o.ok} de ${o.tot} saídas${COL.length?", suas e da região":""})</span>`).join(" · ")}</div>`;
- const b=BAIT_BASE[fishN||"Qualquer peixe"];return b?`<div class="small"><b>Isca sugerida:</b> ${b.join(" · ")} <span class="muted">(sugestão geral; seus registros personalizam)</span></div>`:""}
+ return""} // sem registros, não mostra sugestão genérica
 /* ================== COLETIVO ANÔNIMO ==================
  Quem quiser envia as condições de cada pescaria (sem o ponto: só uma área de ~10 km). O app junta os registros da região
  para achar dias parecidos e iscas que funcionaram, ajudando quem ainda tem poucos registros. Login anônimo do Firebase. */
@@ -2289,7 +2289,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-27.11";
+const APP_VERSION="2026-10-27.12";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
