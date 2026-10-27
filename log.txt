@@ -1,0 +1,146 @@
+200 10713 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/estacoesMapa 
+200 10713 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/estacoesMapa {}
+200 10713 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/estacoesMapa null
+200 215 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/bacias.txt
+códigos: 2901 2903 2905 2909 2913 2927 2951 2963 2967 2975 
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2901,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2901381semana.txt
+200 2865 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2901382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2901,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2901381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2901
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2903,"variaveis":[381,382]}
+200 1532 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2903381semana.txt
+200 2865 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2903382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2903,"variaveis":[381,382]}
+200 383 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2903381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2903
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2905,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2905381semana.txt
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2905382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2905,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2905381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2905
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2909,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2909381semana.txt
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2909382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2909,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2909381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2909
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2913,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2913381semana.txt
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2913382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2913,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2913381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2913
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2927,"variaveis":[381,382]}
+200 1526 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2927381semana.txt
+200 2869 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2927382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2927,"variaveis":[381,382]}
+200 378 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2927381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2927
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2951,"variaveis":[381,382]}
+200 1525 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951381semana.txt
+200 2866 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2951,"variaveis":[381,382]}
+200 380 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2951
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2963,"variaveis":[381,382]}
+200 1524 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963381semana.txt
+200 2871 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2963,"variaveis":[381,382]}
+200 380 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2963
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2967,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2967381semana.txt
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2967382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2967,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2967381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2967
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2975,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2975381semana.txt
+200 2868 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2975382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2975,"variaveis":[381,382]}
+200 2 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2975381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2975
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2951,"variaveis":[381,382]}
+200 1525 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951381semana.txt
+200 2866 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2951,"variaveis":[381,382]}
+200 380 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2951381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2951
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafSemana {"cdEstac":2963,"variaveis":[381,382]}
+200 1524 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963381semana.txt
+200 2871 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963382semana.txt
+200 4 POST https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/variaveisGrafDia {"cdEstac":2963,"variaveis":[381,382]}
+200 380 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/cache/2963381.txt
+404 145 GET https://ciram.epagri.sc.gov.br/api/litoral-online-server/webresources/monitoramentolitoral/2963
+total 304
+drwxr-xr-x 2 runner runner  4096 Oct 27 19:01 .
+drwxr-xr-x 3 runner runner  4096 Oct 27 19:00 ..
+-rw-r--r-- 1 runner runner   215 Oct 27 19:00 bacias.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2901381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2901381semana.txt
+-rw-r--r-- 1 runner runner  2865 Oct 27 19:00 c_2901382semana.txt
+-rw-r--r-- 1 runner runner   383 Oct 27 19:00 c_2903381.txt
+-rw-r--r-- 1 runner runner  1532 Oct 27 19:00 c_2903381semana.txt
+-rw-r--r-- 1 runner runner  2865 Oct 27 19:00 c_2903382semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2905381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2905381semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2905382semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2909381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2909381semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2909382semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2913381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2913381semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:00 c_2913382semana.txt
+-rw-r--r-- 1 runner runner   378 Oct 27 19:00 c_2927381.txt
+-rw-r--r-- 1 runner runner  1526 Oct 27 19:00 c_2927381semana.txt
+-rw-r--r-- 1 runner runner  2869 Oct 27 19:00 c_2927382semana.txt
+-rw-r--r-- 1 runner runner   380 Oct 27 19:01 c_2951381.txt
+-rw-r--r-- 1 runner runner  1525 Oct 27 19:01 c_2951381semana.txt
+-rw-r--r-- 1 runner runner  2866 Oct 27 19:01 c_2951382semana.txt
+-rw-r--r-- 1 runner runner   380 Oct 27 19:01 c_2963381.txt
+-rw-r--r-- 1 runner runner  1524 Oct 27 19:01 c_2963381semana.txt
+-rw-r--r-- 1 runner runner  2871 Oct 27 19:01 c_2963382semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:01 c_2967381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:01 c_2967381semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:01 c_2967382semana.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:01 c_2975381.txt
+-rw-r--r-- 1 runner runner     2 Oct 27 19:01 c_2975381semana.txt
+-rw-r--r-- 1 runner runner  2868 Oct 27 19:01 c_2975382semana.txt
+-rw-r--r-- 1 runner runner    50 Oct 27 19:00 cods.txt
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2901.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2903.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2905.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2909.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2913.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:00 e_2927.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:01 e_2951.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:01 e_2963.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:01 e_2967.json
+-rw-r--r-- 1 runner runner   145 Oct 27 19:01 e_2975.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2901.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2903.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2905.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2909.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2913.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gd_2927.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gd_2951.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gd_2963.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gd_2967.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gd_2975.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2901.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2903.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2905.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2909.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2913.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:00 gs_2927.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gs_2951.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gs_2963.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gs_2967.json
+-rw-r--r-- 1 runner runner     4 Oct 27 19:01 gs_2975.json
+-rw-r--r-- 1 runner runner  8895 Oct 27 19:01 log.txt
+-rw-r--r-- 1 runner runner 10713 Oct 27 19:00 mapa_null.json
+-rw-r--r-- 1 runner runner 10713 Oct 27 19:00 mapa_obj.json
+-rw-r--r-- 1 runner runner 10713 Oct 27 19:00 mapa_vazio.json

@@ -1,0 +1,1 @@
+{"bacias":[ {"cod":"65" ,"nome":"Litoral Central"} ,{"cod":"64" ,"nome":"Litoral Centro-Norte"} ,{"cod":"66" ,"nome":"Litoral Centro-Sul"} ,{"cod":"63" ,"nome":"Litoral Norte"} ,{"cod":"67" ,"nome":"Litoral Sul"} ]}
