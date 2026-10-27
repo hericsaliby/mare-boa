@@ -2109,7 +2109,9 @@ function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdic
  return`<div class="pop"><h4>${esc(sp.n)}</h4><div><span class="tag ${r.danger?"bad":cls}">${r.danger?"Perigoso":v}</span> <b class="num">${N(r.score)}</b>/100 · ${fmtDH.format(r.t)}</div>
  <div class="small">${esc(reasons(r,sp).join(" · "))}</div>
  <div class="small num" style="margin-top:4px">Vento ${r.d!=null?dir16(r.d):"–"} ${r.raw!=null?wv(r.raw):"–"} → ${r.eff!=null?wv(r.eff):"–"} ${WU()} no ponto · onda ${r.wave!=null?r.wave.toFixed(1)+" m":"–"} · maré ${r.tide!=null?r.tide.toFixed(2)+" m"+(r.rate!=null?(r.rate>0?" ↑":" ↓"):""):"–"}</div>
- ${OV.data?(()=>{const k=ovIdx(),w=sstAt(sp.lat,sp.lon,k),c=ovAt("cur",sp.lat,sp.lon,k);return`<div class="small" style="margin-top:4px">Água ~<b>${w!=null?w.toFixed(1).replace(".",","):"–"} °C</b>${c?` · corrente ${(Math.hypot(c[0],c[1])/3.6).toFixed(2).replace(".",",")} m/s para ${dir8((Math.atan2(c[0],c[1])/rad+360)%360)}`:""}</div>`})():""}
+ ${(()=>{const wi=r.wi;let w=wi?wi.t:null,cv=wi?wi.cv:null,cd=wi?wi.cd:null;
+  if(w==null&&OV.data&&OV.data.M){const k=ovIdx(),c=ovAt("cur",sp.lat,sp.lon,k);w=sstAt(sp.lat,sp.lon,k);if(c){cv=Math.hypot(c[0],c[1]);cd=(Math.atan2(c[0],c[1])/rad+360)%360}}
+  if(w==null)return"";return`<div class="small" style="margin-top:4px">Água <b>${w.toFixed(1).replace(".",",")} °C</b>${wi&&wi.dT!=null&&Math.abs(wi.dT)>=.5?` (${wi.dT>0?"▲":"▼"} ${Math.abs(wi.dT).toFixed(1).replace(".",",")} em 2 dias)`:""}${cv!=null?(cv<.2?" · corrente fraca":` · corrente ${(cv/3.6).toFixed(2).replace(".",",")} m/s para ${dir8(cd)}`):""}</div>`})()}
  ${sp.temp?`<div class="small muted" style="margin-top:4px">${esc(sp.notes)}</div><div class="row"><input type="text" id="pinName" placeholder="Nome do ponto (ex.: Pedra do robalo)" style="flex:1;min-width:0" maxlength="60"><button class="btn" type="button" data-pinsave="1">Salvar</button></div><div class="small" id="pinMsg" style="color:var(--bad)"></div>`:""}
  <div class="row"><button class="btn ghost" type="button" data-spot="${sp.id}">Ver detalhes e gráficos</button></div></div>`}
 function openPopup(sp){const m=MK[sp.id];if(!m){L.popup({maxWidth:300}).setLatLng([sp.lat,sp.lon]).setContent(popupHTML(sp)).openOn(MAP);return}m.unbindPopup();m.bindPopup(popupHTML(sp),{maxWidth:300,autoPanPadding:[20,20]}).openPopup()}
@@ -2245,7 +2247,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-27.5";
+const APP_VERSION="2026-10-27.6";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
