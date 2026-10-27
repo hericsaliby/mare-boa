@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="author" content="Heric Saliby">
+<meta name="copyright" content="© 2026 Heric Saliby. Todos os direitos reservados.">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d3b4a">
 <link rel="manifest" href="manifest.webmanifest">
@@ -690,7 +692,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         </div>
       </div>
     </article>
-    <footer><p style="margin:0 0 6px">© 2026 Maré Boa. Todos os direitos reservados. · <a href="privacidade.html">Política de Privacidade</a> · Versão do app: <b id="appVer"></b>. Se não for a mais nova, puxe a página para baixo para recarregar.</p>
+    <footer><p style="margin:0 0 6px">Maré Boa · criado por <b>Heric Saliby</b>. © 2026 Todos os direitos reservados. · <a href="privacidade.html">Política de Privacidade</a> · Versão do app: <b id="appVer"></b>. Se não for a mais nova, puxe a página para baixo para recarregar.</p>
     Dados: GFS e ondas WaveWatch III da NOAA, ECMWF IFS (dados abertos), temperatura da água e correntes da Open-Meteo (3 vezes por semana), marégrafos e tábua da EPAGRI/CIRAM, cálculo de sol e lua no próprio app, calibração opcional com estações EPAGRI/CIRAM. A nota é uma estimativa. Confira a previsão oficial, a Marinha e as condições no local antes de sair. Costão com mar grosso mata: na dúvida, não vá.
   </footer>
   </section>
@@ -2312,7 +2314,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-27.16";
+const APP_VERSION="2026-10-27.17";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));

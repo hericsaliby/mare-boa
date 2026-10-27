@@ -1,6 +1,6 @@
 # Maré Boa
 
-© 2026 Maré Boa — todos os direitos reservados (veja LICENSE).
+Criado por **Heric Saliby**. © 2026 Heric Saliby — todos os direitos reservados (veja LICENSE).
 
 Previsão de pesca para o litoral de Santa Catarina, Paraná e São Paulo: junta vento (GFS ou ECMWF), ondas, maré, sol e lua, e aplica regras de abrigo por ponto. Exemplo: com vento sul, o Ribeirão da Ilha, Jurerê e Ingleses ficam abrigados, enquanto Pântano do Sul e Naufragados recebem o vento de frente.
 
