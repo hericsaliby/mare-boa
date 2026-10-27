@@ -1935,9 +1935,13 @@ const distKm=(a,b)=>Math.hypot((a.lat-b.lat)*110.57,(a.lon-b.lon)*111.32*Math.co
 function initMap(){if(MAP)return;
  if(!window.L){$("#map").innerHTML='<p class="small muted" style="padding:12px">O mapa não carregou (sem internet ou biblioteca bloqueada). O resto do app funciona.</p>';return}
  MAP=L.map("map").setView([-27.62,-48.52],10);
- const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"});
- const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:18,attribution:"Imagem © Esri"});
- osm.addTo(MAP);L.control.layers({"Mapa":osm,"Satélite":sat},null,{position:"topright"}).addTo(MAP);
+ // estilo parecido com o Google Maps (CARTO Voyager); satélite com nomes por cima; OpenStreetMap como alternativa
+ const voy=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:19,subdomains:"abcd",attribution:"© OpenStreetMap · © CARTO"});
+ const sat=L.layerGroup([L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagem © Esri"}),
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:19})]);
+ const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+ const base={"Mapa":voy,"Satélite":sat,"OpenStreetMap":osm},pick=store("pf_base");(base[pick]||voy).addTo(MAP);
+ L.control.layers(base,null,{position:"topright"}).addTo(MAP);MAP.on("baselayerchange",e=>store("pf_base",e.name));
  MAP.fitBounds(L.latLngBounds(SPOTS.filter(s=>!s.custom).map(s=>[s.lat,s.lon])).pad(.05));
  MAP.on("click",e=>dropPin(e.latlng.lat,e.latlng.lng));
  updateMarkers()}
@@ -2234,7 +2238,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-27.3";
+const APP_VERSION="2026-10-27.4";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
