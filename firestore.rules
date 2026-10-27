@@ -18,7 +18,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && (me() == uid || isAdmin());
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent', 'codigo'])
+        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent', 'codigo', 'ultimoAcesso', 'acessos', 'pontos', 'nivel', 'selos', 'especies', 'capturas'])
         && request.resource.data.nome is string
         && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 40
         && request.resource.data.regiao is string && request.resource.data.regiao.matches('^[0-9]{5}$')
@@ -66,7 +66,7 @@ service cloud.firestore {
     function podeVer(g) { return hasProfile() && (g.tipo == 'publico' || me() in g.membros); }
     function so(campos) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos); }
     match /groups/{gid} {
-      allow get, list: if resource.data.tipo == 'publico' || (signedIn() && me() in resource.data.membros);
+      allow get, list: if resource.data.tipo == 'publico' || (signedIn() && me() in resource.data.membros) || isAdmin();
       allow create: if (isAdmin() && request.resource.data.tipo == 'publico'
             && request.resource.data.keys().hasOnly(['nome', 'ordem', 'descricao', 'tipo']))
         || (hasProfile() && request.resource.data.tipo == 'privado'
@@ -99,7 +99,8 @@ service cloud.firestore {
         allow read: if podeVer(grupo(gid));
         allow create: if podeVer(grupo(gid))
           && request.resource.data.uid == me()
-          && request.resource.data.keys().hasOnly(['uid', 'nome', 'texto', 'ponto', 'peixe', 'criadoEm', 'resp', 'mencoes', 'foto'])
+          && request.resource.data.keys().hasOnly(['uid', 'nome', 'texto', 'ponto', 'peixe', 'criadoEm', 'resp', 'mencoes', 'foto', 'nivel'])
+          && (!('nivel' in request.resource.data) || (request.resource.data.nivel is int && request.resource.data.nivel >= 0 && request.resource.data.nivel <= 9))
           && (!('resp' in request.resource.data) || (request.resource.data.resp is map && request.resource.data.resp.size() <= 4))
           && (!('mencoes' in request.resource.data) || (request.resource.data.mencoes is list && request.resource.data.mencoes.size() <= 10))
           && (!('foto' in request.resource.data) || (request.resource.data.foto is string && request.resource.data.foto.size() <= 40))
@@ -117,7 +118,8 @@ service cloud.firestore {
 
     // Avisos no celular: cada aparelho guarda o próprio token; só o robô (conta de serviço) lê todos
     match /push/{uid} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['token', 'reg', 'dias', 'avisos', 'atualizado'])
         && request.resource.data.token is string && request.resource.data.token.size() < 400
