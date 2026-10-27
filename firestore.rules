@@ -18,11 +18,12 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && (me() == uid || isAdmin());
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent', 'codigo', 'ultimoAcesso', 'acessos', 'pontos', 'nivel', 'selos', 'especies', 'capturas'])
+        && request.resource.data.keys().hasOnly(['nome', 'regiao', 'criadoEm', 'consent', 'codigo', 'ultimoAcesso', 'acessos', 'pontos', 'nivel', 'selos', 'especies', 'capturas', 'exp'])
         && request.resource.data.nome is string
         && request.resource.data.nome.size() >= 2 && request.resource.data.nome.size() <= 40
         && request.resource.data.regiao is string && request.resource.data.regiao.matches('^[0-9]{5}$')
-        && request.resource.data.consent.versao is string;
+        && request.resource.data.consent.versao is string
+        && (!('exp' in request.resource.data) || request.resource.data.exp in ['ini', 'int', 'exp', 'pro']);
       allow delete: if signedIn() && me() == uid;
 
       // Índice das próprias mensagens (para apagar tudo ao excluir a conta)
