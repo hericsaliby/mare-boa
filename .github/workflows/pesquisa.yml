@@ -18,14 +18,13 @@ jobs:
           mkdir p && cd p
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
           g(){ curl -sSL -A "$UA" -m 60 "$2" -o "$1" -w "%{http_code} %{size_download} $2\n" >> log.txt 2>&1 || echo "ERRO $2" >> log.txt; }
-          g tsm.html "https://ciram.epagri.sc.gov.br/index.php/temperatura-da-superficie-do-mar/"
-          # tudo que parece dado, imagem de mapa, script de gráfico ou iframe
-          grep -oE '(src|href|url|data-src)=["'"'"'][^"'"'"']+' tsm.html | sed -E 's/^[a-z-]+=["'"'"']//' | grep -viE '\.(css|woff2?|ttf)(\?|$)|wp-content/themes|wp-includes|google|facebook|twitter|instagram|youtube|whatsapp' | sort -u > links.txt
-          grep -oE 'https?://[^"'"'"' )<>]+' tsm.html | grep -iE 'tsm|sst|temperatura|oceano|mar|getData|graficos|ciram_arquivos|\.json|\.csv|\.png|\.gif|\.jpg|\.nc|php' | sort -u >> links.txt
-          sort -u links.txt -o links.txt
-          n=0; while read -r u; do case "$u" in //*) u="https:$u";; /*) u="https://ciram.epagri.sc.gov.br$u";; http*) ;; *) u="https://ciram.epagri.sc.gov.br/$u";; esac
-            n=$((n+1)); [ $n -gt 60 ] && break
-            f="r_$(echo "$u" | tr -c 'A-Za-z0-9._-' '_' | cut -c1-120)"; g "$f" "$u"; done < links.txt
+          g lo.html "https://ciram.epagri.sc.gov.br/litoral-online/"
+          # scripts e endereços citados pela página (e dentro dos scripts dela)
+          grep -oE '(src|href)=["'"'"'][^"'"'"']+' lo.html | sed -E 's/^[a-z]+=["'"'"']//' | grep -viE '\.(css|woff2?|ttf|png|jpg|svg|ico)(\?|$)' | sort -u > l1.txt
+          n=0; while read -r u; do case "$u" in //*) u="https:$u";; /*) u="https://ciram.epagri.sc.gov.br$u";; http*) ;; *) u="https://ciram.epagri.sc.gov.br/litoral-online/$u";; esac
+            n=$((n+1)); [ $n -gt 40 ] && break; f="s_$(echo "$u" | tr -c 'A-Za-z0-9._-' '_' | cut -c1-120)"; g "$f" "$u"; done < l1.txt
+          cat lo.html s_* 2>/dev/null | grep -oE '["'"'"'`][^"'"'"'`]*\.(php|json|csv)[^"'"'"'`]*["'"'"'`]' | sort -u > endpoints.txt || true
+          cat lo.html s_* 2>/dev/null | grep -oE 'https?://[^"'"'"'` )<>]+' | sort -u > urls.txt || true
           ls -la >> log.txt
       - name: Grava no branch "pesquisa"
         run: |
