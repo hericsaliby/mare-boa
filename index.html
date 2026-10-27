@@ -309,6 +309,7 @@ body.locked .view:not(#v-conta){display:none!important}
 .gatehead{display:none;text-align:center;padding:24px 8px 4px}
 body.locked .gatehead{display:block}
 .gatehead h1{margin:8px 0 4px;font-size:28px}.gatehead p{margin:0;color:var(--ink-2)}
+#regSeg button[disabled]{opacity:.5;cursor:not-allowed}#regSeg small{font-size:10.5px;font-weight:600}
 .delbtn{color:var(--bad)!important;border-color:color-mix(in srgb,var(--bad) 50%,var(--line))!important}
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .game{display:flex;flex-direction:column;gap:10px;margin-top:8px}
@@ -708,6 +709,7 @@ try{const th=JSON.parse(localStorage.getItem("pf_theme"));if(th==="dark"||th==="
  m = coordenada do ponto de mar (ondas/maré) quando diferente */
 /* Regiões atendidas. Cada uma tem um ponto padrão (o único ponto do app que aparece sem "Mostrar todos"). */
 const REGS={sc:{n:"Santa Catarina",home:"pontes"},pr:{n:"Paraná",home:"pontal"},sp:{n:"São Paulo",home:"santos"}};
+const REGS_ATIVAS=["sc"]; // PR e SP prontos, mas fora do ar por enquanto: para religar, inclua "pr" e "sp"
 const regionOf=(lat,lon)=>lat<-25.97?"sc":lat<-25.3?"pr":"sp";
 // wx/sx aproximados a partir da direção para onde o ponto está virado (graus) e de quanto é aberto (0–1)
 function expo(face,open=1,swell=1){const wx=[],sx=[];for(let k=0;k<8;k++){const d=Math.cos((k*45-face)*Math.PI/180);wx.push(+Math.min(1,Math.max(.1,.15+.85*open*Math.max(0,(d+.35)/1.35))).toFixed(2));sx.push(+(swell*Math.max(0,d)**1.5).toFixed(2))}return{wx,sx}}
@@ -804,7 +806,7 @@ const BASE_SPOTS=[
 ];
 // SPOTS = pontos da região escolhida + todos os pontos do usuário (de qualquer região)
 const ALL_BASE=()=>[...BASE_SPOTS.map(s=>(s.reg=s.reg||"sc",s)),...NEW_SPOTS];
-let SPOTS=[...ALL_BASE().filter(s=>s.reg===(store("pf_reg")||"sc")),...(store("pf_custom")||[])];
+let SPOTS=[...ALL_BASE().filter(s=>s.reg===(REGS_ATIVAS.includes(store("pf_reg"))?store("pf_reg"):"sc")),...(store("pf_custom")||[])];
 const TYPE_LBL={costao:"Costão",praia:"Praia",baia:"Baía",canal:"Canal/Barra",lagoa:"Lagoa"};
 const MODELS=[{k:"gfs_seamless",n:"GFS"},{k:"ecmwf_ifs025",n:"ECMWF"}];
 const TZ="America/Sao_Paulo", HOUR=3600e3, CENTER={lat:-27.6,lon:-48.5};
@@ -892,7 +894,7 @@ function astroEvents(t0,t1){
  return ev}
 
 /* ================== ESTADO ================== */
-const S={allBase:store("pf_allbase")===true,fish:(()=>{try{const f=JSON.parse(localStorage.getItem("pf_fish"));return f&&FISH_KEYS.includes(f)?f:"geral"}catch(e){return"geral"}})(),unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:["gfs_seamless","ecmwf_ifs025"].includes(store("pf_model"))?store("pf_model"):"gfs_seamless",reg:REGS[store("pf_reg")]?store("pf_reg"):"sc",spot:store("pf_spot")||HOME_SPOT,when:0,day:null,
+const S={allBase:store("pf_allbase")===true,fish:(()=>{try{const f=JSON.parse(localStorage.getItem("pf_fish"));return f&&FISH_KEYS.includes(f)?f:"geral"}catch(e){return"geral"}})(),unit:(()=>{try{const u=JSON.parse(localStorage.getItem("pf_unit"));return u in UNITS?u:"kmh"}catch(e){return"kmh"}})(),data:null,demo:false,model:["gfs_seamless","ecmwf_ifs025"].includes(store("pf_model"))?store("pf_model"):"gfs_seamless",reg:REGS_ATIVAS.includes(store("pf_reg"))?store("pf_reg"):"sc",spot:store("pf_spot")||HOME_SPOT,when:0,day:null,
  log:store("pf_log")||[],calib:store("pf_calib_kmh")||{},tideTable:store("pf_tide")||null,gauge:store("pf_gauge")||null,useCal:store("pf_usecal")!==false,events:[],ml:null,derived:{}};
 
 /* ================== BUSCA DE DADOS ================== */
@@ -1559,7 +1561,7 @@ function hideBanner(){const b=$("#banner");if(b)b.hidden=true}
 HOME_SPOT=REGS[S.reg].home;if(!store("pf_spot"))S.spot=HOME_SPOT;
 function visSpots(){return S.allBase?SPOTS:SPOTS.filter(s=>s.custom||s.id===HOME_SPOT)}
 // trocar de região: pontos padrão daquela região, ponto inicial dela e nova busca dos dados
-function setRegion(r){if(!REGS[r]||r===S.reg)return;S.reg=r;store("pf_reg",r);HOME_SPOT=REGS[r].home;
+function setRegion(r){if(!REGS[r]||!REGS_ATIVAS.includes(r)||r===S.reg)return;S.reg=r;store("pf_reg",r);HOME_SPOT=REGS[r].home;
  SPOTS=[...ALL_BASE().filter(s=>s.reg===r),...SPOTS.filter(s=>s.custom&&!s.temp)];S.spot=HOME_SPOT;store("pf_spot",S.spot);
  OV.data=null;REL=null;AGUA=null;WATER=null;if(MAP)MAP._enq=false;$("#spotSel").dataset.k="";load()}
 function spot(){const V=visSpots();return V.find(s=>s.id===S.spot)||V[0]}
@@ -1600,7 +1602,7 @@ function renderMoon(){if(!S.data)return;const today=dayKey(Date.now());
  $("#moonPeriods").innerHTML=`<tbody>${rowsP.map(r=>`<tr>${r.h}</tr>`).join("")}</tbody>`;
  $("#moonPhases").innerHTML=nextPhases(now,8).map(o=>`<div>${moonSVG(o.g===0?0:o.g,26)}<span><b>${PH_NAMES[o.g]}</b><br><span class="muted">${fmtDM.format(o.t)}</span></span></div>`).join("")}
 function renderAll(){renderEpStatus();renderRules();if($("#rulesLinks"))$("#rulesLinks").innerHTML=RULE_LINKS;renderMyList();renderMoon();renderModels();renderRank();renderSpot();renderSpecies();renderLog()}
-function renderRegSeg(){const el=$("#regSeg");if(el)el.innerHTML=Object.entries(REGS).map(([k,r])=>`<button type="button" data-reg="${k}" aria-pressed="${k===S.reg}">${k.toUpperCase()}</button>`).join("")}
+function renderRegSeg(){const el=$("#regSeg");if(!el)return;el.innerHTML=Object.keys(REGS).map(k=>REGS_ATIVAS.includes(k)?`<button type="button" data-reg="${k}" aria-pressed="${k===S.reg}">${k.toUpperCase()}</button>`:`<button type="button" disabled title="${REGS[k].n}: em breve">${k.toUpperCase()} <small>em breve</small></button>`).join("")}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-reg]");if(b)setRegion(b.dataset.reg)});
 function renderUnits(){renderRegSeg();document.querySelectorAll("#unitSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.u===S.unit));document.querySelectorAll(".wu").forEach(e=>e.textContent=WU())}
 function renderModels(){renderUnits();const el=$("#modelSeg");el.innerHTML=MODELS.map(m=>`<button type="button" data-m="${m.k}" aria-pressed="${m.k===S.model}">${m.n}</button>`).join("");
@@ -2289,7 +2291,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-27.12";
+const APP_VERSION="2026-10-27.13";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2307,7 +2309,7 @@ addEventListener("hashchange",()=>showView(routeHash(location.hash.slice(1)),fal
 function renderSpotSel(){const sel=$("#spotSel");const V=visSpots();const key=V.map(s=>s.id+s.n).join();
  if(sel.dataset.k!==key){const groups={};V.forEach(s=>{const g=s.custom?"Meus pontos":s.r.split(" · ")[0];(groups[g]=groups[g]||[]).push(s)});
   sel.innerHTML=Object.entries(groups).map(([g,l])=>`<optgroup label="${esc(g)}">${l.map(s=>`<option value="${s.id}">${esc(s.n)}</option>`).join("")}</optgroup>`).join("")
-   +`<optgroup label="Trocar de região">${Object.entries(REGS).filter(([k])=>k!==S.reg).map(([k,r])=>`<option value="reg:${k}">${r.n}</option>`).join("")}</optgroup>`;sel.dataset.k=key}
+   +`<optgroup label="Outras regiões">${Object.keys(REGS).filter(k=>k!==S.reg).map(k=>REGS_ATIVAS.includes(k)?`<option value="reg:${k}">${REGS[k].n}</option>`:`<option value="" disabled>${REGS[k].n} (em breve)</option>`).join("")}</optgroup>`;sel.dataset.k=key}
  sel.value=spot().id;
  $("#sideFoot").innerHTML=`Modelo ${MODELS.find(m=>m.k===S.model).n} · ${WU()}<br>${esc($("#status").textContent)}<br>versão ${APP_VERSION}`;const fv=$("#appVer");if(fv)fv.textContent=APP_VERSION}
 $("#spotSel").addEventListener("change",e=>{const v=e.target.value;if(v.startsWith("reg:")){setRegion(v.slice(4));return}selectSpot(v,false)});
