@@ -156,6 +156,7 @@ summary{cursor:pointer;font-weight:600}
 .wscale span{flex:1;display:flex;align-items:center;padding-left:4px}
 .wscale span:first-child{flex:0 0 auto;padding:0 6px;background:#2a3a40}
 .ovlegend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-size:13px;color:var(--ink-2)}
+.tmk span{display:inline-block;transform:translate(-50%,-50%);background:#fff;color:#12324a;border:2px solid #e2483d;border-radius:11px;padding:1px 6px;font:700 12px/1.3 system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .ovlegend .sstbar{display:inline-block;width:140px;height:10px;border-radius:5px;vertical-align:middle;margin:0 6px}
 .leaflet-container a.leaflet-popup-close-button{color:var(--ink-3)}
 .pop h4{margin:0 0 4px;font-size:15px}
@@ -949,7 +950,8 @@ async function mirrorData(regs){const q="?t="+Math.floor(Date.now()/6e5),R={};
    try{[md,mar]=await Promise.all([fetchJSON(EP_MIRROR+`modelos_${r}.json`+q),fetchJSON(EP_MIRROR+`mar_${r}.json`+q).catch(()=>null)])}
    catch(e){if(r==="sc")[md,mar]=await Promise.all([fetchJSON(EP_MIRROR+"modelos.json"+q),fetchJSON(EP_MIRROR+"mar.json"+q).catch(()=>null)]);else throw e}
    if(!md||!md.grid||!(md.gfs||md.ecmwf))throw new Error("modelos de "+r+" ainda não disponíveis");R[r]={md,mar}}));
-  const src={at:Date.now(),R};IDB.set("md2",src);return src}
+  const TM=await fetchJSON(EP_MIRROR+"temp_mar.json?t="+Math.floor(Date.now()/6e5)).catch(()=>null);
+  const src={at:Date.now(),R,TM};IDB.set("md2",src);return src}
  catch(e){const c=await IDB.get("md2");if(c&&c.R&&regs.every(r=>c.R[r])&&Date.now()-c.at<36*HOUR){c.old=true;return c}throw e}}
 async function ensureRegion(r){if(!MDR||MDR.R[r])return;try{const x=await mirrorData([r]);MDR.R[r]=x.R[r]}catch(e){console.warn("região",r,e)}}
 const regionData=(lat,lon)=>{if(!MDR)return null;const R=MDR.R,r=R[regionOf(lat,lon)];if(r)return r;
@@ -982,9 +984,23 @@ function pointM(lat,lon,T){const H={time:T.map(x=>x/1000)},rd=regionData(lat,lon
   const W=mdWeights(G,lat,lon,n=>w.ok.has(n));H.wave_height=mdSeries(w,W,"hs",T);H.wave_period=mdSeries(w,W,"tp",T);H.wave_direction=mdSeries(w,W,"dp",T)}
  const m=rd.mar;if(m&&m.sst){const G=gridOf(m.grid),W=mdWeights(G,lat,lon,n=>!m.land[n]&&m.sst[n].some(x=>x!=null)),ix=new Map(m.t.map((x,i)=>[x,i]));
   H.sea_surface_temperature=T.map(x=>{const i=ix.get(x/1000);if(i==null)return null;let s=0,ws=0;for(const[n,wt]of W){const v=m.sst[n][i];if(v!=null){s+=v*wt;ws+=wt}}return ws>.3?s/ws:null});
+  const cr=tmCorr(lat,lon),now=Date.now();if(cr.g>.02)H.sea_surface_temperature=H.sea_surface_temperature.map((v,k)=>v==null?null:v+cr.b*tmFade(T[k]-now));
   if(m.cv){const cu=T.map(x=>{const i=ix.get(x/1000);if(i==null)return null;let u=0,v=0,ws=0;for(const[n,wt]of W){const sp=m.cv[n][i],d=m.cd[n][i];if(sp!=null&&d!=null){u+=sp*Math.sin(d*rad)*wt;v+=sp*Math.cos(d*rad)*wt;ws+=wt}}return ws>.3?[u/ws,v/ws]:null});
    H.ocean_current_velocity=cu.map(x=>x&&Math.hypot(x[0],x[1]));H.ocean_current_direction=cu.map(x=>x&&(Math.atan2(x[0],x[1])/rad+360)%360)}}
  return H}
+/* temperatura da água medida nos marégrafos da EPAGRI (Litoral On-Line): mede a diferença entre a medição
+   e o modelo nas últimas 48 h e corrige o modelo perto de cada estação (até ~50 km, diminuindo com a distância) */
+const TM_R=30;let TMB=null;
+const tmFade=dt=>dt<=48*HOUR?1:Math.max(.4,1-(dt-48*HOUR)/(240*HOUR));
+function tmBias(){if(TMB&&TMB.src===MDR)return TMB.l;const l=[],tm=MDR&&MDR.TM,now=Date.now()/1000;
+ if(tm&&tm.est)for(const e of tm.est){if(!e.obs||!e.obs.length)continue;const last=e.obs[e.obs.length-1];if(now-last[0]>36*3600)continue;
+  const rd=regionData(e.lat,e.lon),m=rd&&rd.mar;let b=0,nb=0;
+  if(m&&m.sst){const G=gridOf(m.grid),W=mdWeights(G,e.lat,e.lon,n=>!m.land[n]&&m.sst[n].some(x=>x!=null)),ix=new Map(m.t.map((x,i)=>[x,i]));
+   for(const[t,v]of e.obs){if(t<last[0]-48*3600)continue;const i=ix.get(t);if(i==null)continue;let s=0,ws=0;for(const[n,wt]of W){const x=m.sst[n][i];if(x!=null){s+=x*wt;ws+=wt}}if(ws>.3){b+=v-s/ws;nb++}}}
+  l.push({c:e.c,n:e.n,lat:e.lat,lon:e.lon,b:nb>=6?clamp(b/nb,-4,4):null,last})}
+ TMB={src:MDR,l};return l}
+function tmCorr(lat,lon){let s=0,g=0,near=null;for(const e of tmBias()){const d=distKm({lat,lon},e);if(!near||d<near.d)near={...e,d};if(e.b==null)continue;const w=Math.exp(-((d/TM_R)**2));s+=w*e.b;g+=w}
+ return{b:g>0?s/Math.max(1,g):0,g,near}}
 function mirrorToData(src){MDR=src;const c=spot();MD=regionData(c.lat,c.lon)||Object.values(src.R)[0];const t0=Math.floor(Date.now()/HOUR)*HOUR-7*24*HOUR,T=[...Array(14*24)].map((_,h)=>t0+h*HOUR);
  const fr=SPOTS.map(sp=>({hourly:pointF(sp.lat,sp.lon,T)})),mr=SPOTS.map(sp=>{const c=sp.m||[sp.lat,sp.lon];return{hourly:pointM(c[0],c[1],T)}});
  return parseData(fr,mr)}
@@ -2034,7 +2050,12 @@ async function ovLoadSea(){if(!MD)return ovLoadSeaOM();if(OV.data.M)return true;
  if(!m||!m.sst){$("#ovInfo").textContent="Temperatura da água e correntes ainda não disponíveis.";return false}
  Object.assign(OVG,{la0:m.grid.la0,la1:m.grid.la1,lo0:m.grid.lo0,lo1:m.grid.lo1,nla:m.grid.nla,nlo:m.grid.nlo});loadRelevo();
  const ix=new Map(m.t.map((x,i)=>[x,i])),al=a=>OV.data.t.map(x=>{const i=ix.get(x/1000);return i==null?null:a[i]});
- OV.data.M=m.sst.map((_,n)=>({sea_surface_temperature:al(m.sst[n]),ocean_current_velocity:al(m.cv[n]),ocean_current_direction:al(m.cd[n])}));OV.data.land=m.land;SSTF.k=null;return true}
+ const G=gridOf(m.grid),now=Date.now();
+ OV.data.M=m.sst.map((_,n)=>{let st=al(m.sst[n]);const cr=tmCorr(G.la0+Math.floor(n/G.nlo)*G.sla,G.lo0+(n%G.nlo)*G.slo);if(cr.g>.02)st=st.map((v,k)=>v==null?null:v+cr.b*tmFade(OV.data.t[k]-now));
+  return{sea_surface_temperature:st,ocean_current_velocity:al(m.cv[n]),ocean_current_direction:al(m.cd[n])}});OV.data.land=m.land;SSTF.k=null;return true}
+let TML=null;function tmMarkers(){if(!MAP||typeof L==="undefined")return;if(!TML)TML=L.layerGroup().addTo(MAP);TML.clearLayers();if(!OV.on.sst)return;
+ for(const e of tmBias()){const[t,v]=e.last;L.marker([e.lat,e.lon],{icon:L.divIcon({className:"tmk",html:`<span>${v.toFixed(1).replace(".",",")}°</span>`,iconSize:null,iconAnchor:[0,0]}),keyboard:false,zIndexOffset:500})
+  .bindPopup(`<b>Água medida: ${v.toFixed(1).replace(".",",")} °C</b><br>${esc(e.n)}<br><span class="small muted">Marégrafo da EPAGRI · ${fmtDH.format(t*1000)}</span>`).addTo(TML)}}
 function ovIdx(){const d=OV.data,t=S.data?S.data.t[S.when]:Date.now();let best=0;d.t.forEach((x,k)=>{if(Math.abs(x-t)<Math.abs(d.t[best]-t))best=k});return best}
 // interpolação bilinear na grade; kind: wind→[u,v] km/h (para onde sopra), cur→[u,v] km/h, sst→°C
 function ovAt(kind,lat,lon,k){const fi=(lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1),fj=(lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1);
@@ -2130,10 +2151,10 @@ function ovLegend(){const L=$("#ovLegend");const any=OV.on.cur||OV.on.sst;L.hidd
  wScale();
  if(OV.on.cur){const v=ovAt("cur",c.lat,c.lng,k);h+=`<span><b style="color:#00a8d8">Correntes</b> (linhas azuis)${v?` · centro: ${(Math.hypot(v[0],v[1])/3.6).toFixed(2).replace(".",",")} m/s`:" · sem dado dentro das baías"}</span>`}
  if(OV.on.sst){const sv=sstAt(c.lat,c.lng,k);h+=`<span><b>Água</b> 12 °C<span class="sstbar" style="background:linear-gradient(90deg,rgb(60,40,170),rgb(30,110,220),rgb(20,180,210),rgb(60,200,120),rgb(200,220,60),rgb(250,180,40),rgb(245,120,30),rgb(220,50,40))"></span>27 °C${sv!=null?` · centro: ${sv.toFixed(1).replace(".",",")} °C`:""}</span>`}
- h+=`<span class="muted">${fmtDH.format(OV.data.t[k])} · modelo oceânico de ~8 km; dentro das baías a água é estimada pelo mar mais próximo e as correntes não aparecem</span>`;L.innerHTML=h}
+ h+=`<span class="muted">${fmtDH.format(OV.data.t[k])} · modelo oceânico de ~8 km${OV.on.sst&&tmBias().length?", ajustado pela água medida nos marégrafos da EPAGRI (etiquetas vermelhas)":""}; dentro das baías a água é estimada pelo mar mais próximo e as correntes não aparecem</span>`;L.innerHTML=h}
 async function ovRefresh(){if(!MAP)return;const any=OV.on.wind||OV.on.cur||OV.on.sst;document.querySelectorAll("[data-ov]").forEach(b=>b.setAttribute("aria-pressed",OV.on[b.dataset.ov]));
- cancelAnimationFrame(OV.raf);if(!any){wReadout();wScale();if(OV.canvas){OV.canvas.getContext("2d").clearRect(0,0,OV.canvas.width,OV.canvas.height);OV.sstCanvas.getContext("2d").clearRect(0,0,OV.sstCanvas.width,OV.sstCanvas.height)}ovLegend();return}
- if(!(await ovLoad()))return;if(OV.on.sst||OV.on.cur)await loadMask();ovCanvas();ovStatic();ovLegend();OV.parts=[];if(reduceMotion||!(OV.on.wind||OV.on.cur)){ovArrows()}else ovFrame()}
+ cancelAnimationFrame(OV.raf);if(!any){tmMarkers();wReadout();wScale();if(OV.canvas){OV.canvas.getContext("2d").clearRect(0,0,OV.canvas.width,OV.canvas.height);OV.sstCanvas.getContext("2d").clearRect(0,0,OV.sstCanvas.width,OV.sstCanvas.height)}ovLegend();return}
+ if(!(await ovLoad()))return;if(OV.on.sst||OV.on.cur)await loadMask();ovCanvas();ovStatic();ovLegend();tmMarkers();OV.parts=[];if(reduceMotion||!(OV.on.wind||OV.on.cur)){ovArrows()}else ovFrame()}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-ov]");if(!b)return;OV.on[b.dataset.ov]=!OV.on[b.dataset.ov];store("pf_ov",OV.on);ovRefresh()});
 $("#wHere").addEventListener("click",e=>{e.stopPropagation();const c=MAP.getCenter();dropPin(c.lat,c.lng)});
 // play: anda hora a hora (para quando sai do mapa ou chega ao fim)
@@ -2291,7 +2312,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-27.13";
+const APP_VERSION="2026-10-27.14";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2481,7 +2502,8 @@ function renderWater(){const el=$("#sumWater");if(!el||!S.data)return;const sp=s
  el.innerHTML=`<div class="sum-h"><h3>Água</h3><span class="small muted">${today?"agora":"7h"}</span></div>
   <div class="big num">${br(wi.t)} °C</div><div class="small ${wi.dT!=null&&wi.dT<=-1?"dn":wi.dT!=null&&wi.dT>=.5?"up":""}">${tr}</div>
   ${f5!=null?`<div class="small muted">Em 5 dias: ${br(f5)} °C</div>`:""}${cur?`<div class="small">${cur}</div>`:""}${sig?`<p class="small" style="margin:6px 0 0">${sig}</p>`:""}
-  <p class="small muted" style="margin:6px 0 0">Modelo oceânico (Open-Meteo), atualizado 3 vezes por semana; dentro das baías é estimada pelo mar mais próximo.</p>`}
+  ${(()=>{const c=sp.m||[sp.lat,sp.lon],cr=tmCorr(c[0],c[1]),e=cr.near;const med=e&&e.d<=60?`<div class="small" style="margin-top:6px">Medida agora pela EPAGRI em ${esc(e.n)}${e.d>=3?` (${Math.round(e.d)} km)`:""}: <b>${br(e.last[1])} °C</b> <span class="muted">às ${fmtH.format(e.last[0]*1000)}</span></div>`:"";
+   return med+`<p class="small muted" style="margin:6px 0 0">${cr.g>.02?`Modelo oceânico (Open-Meteo) ajustado pela água medida nos marégrafos da EPAGRI${Math.abs(cr.b)>=.3?` (${cr.b>0?"+":""}${br(cr.b)} °C aqui)`:""}.`:"Modelo oceânico (Open-Meteo), atualizado 3 vezes por semana; dentro das baías é estimada pelo mar mais próximo."}</p>`})()}`}
 function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,P=o.pres;
  const now=Date.now(),today=dayKey(now)===S.day;let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;
  const p=P[i],d3=P[i-3]!=null?p-P[i-3]:null,d24=P[i-24]!=null?p-P[i-24]:null;
