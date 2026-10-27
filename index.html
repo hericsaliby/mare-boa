@@ -126,6 +126,8 @@ details{border-top:1px solid var(--line);padding-top:10px}
 summary{cursor:pointer;font-weight:600}
 .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
 #map{height:min(62vh,520px);border-radius:8px;border:1px solid var(--line);background:var(--surface-2);z-index:0}
+.mkwrap{overflow:visible}
+.mkwrap .mk{position:absolute;left:0;top:0;transform:translate(-50%,-50%)}
 .mk{display:flex;align-items:center;gap:2px;font:500 12px var(--mono);border-radius:6px;padding:2px 5px;box-shadow:0 0 0 2px var(--surface);white-space:nowrap}
 .mk svg{flex:0 0 auto}
 .mk.sel{box-shadow:0 0 0 3px var(--sand)}
@@ -321,6 +323,15 @@ table.wt td.sel{box-shadow:inset 0 0 0 2px var(--ink)}
 .side .brand{font-family:var(--body);font-weight:700;font-size:24px;letter-spacing:-.02em}
 .brand-m{display:flex;align-items:center}
 @media (min-width:900px){.brand-m{display:none}}
+.greetrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.greetrow .greet{flex:1 1 380px;min-width:0}
+.nowtiles{flex:1 1 420px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.nowtiles .nt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.nowtiles .nt span{font-size:12px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.nowtiles .nt b{font:700 22px/1.1 var(--display,var(--body));display:flex;align-items:center;gap:5px;white-space:nowrap}
+.nowtiles .nt small{font-size:12.5px;color:var(--ink-2);line-height:1.3}
+.nowtiles .up{color:var(--good)}.nowtiles .dn{color:var(--bad)}
+@media (max-width:520px){.nowtiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .greet{padding:4px 2px 2px}
 .greet h1{font-family:var(--body);font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.15}
 .greet .gd{color:var(--ink-3);font-size:14.5px;margin-top:2px}
@@ -409,7 +420,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <div id="banner" class="banner" hidden></div>
 
   <section class="view" id="v-resumo" aria-label="Resumo">
-    <div class="greet" id="greet"></div>
+    <div class="greetrow"><div class="greet" id="greet"></div><div class="nowtiles" id="nowTiles" aria-label="Condições agora"></div></div>
     <div class="hero card">
       <div class="gauge" id="spotScore"></div>
       <div style="min-width:0;flex:1"><div class="row" style="gap:8px"><h2 id="spotName"></h2><span id="spotType" class="tag neu"></span></div><div id="spotVerdict" style="font-weight:600;margin-top:4px"></div><div id="spotWhy" class="small" style="color:var(--ink-2)"></div><div id="spotBait" style="margin-top:6px"></div>
@@ -429,6 +440,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <article class="card sum" id="sumMoon" aria-label="Lua"></article>
       <article class="card sum" id="sumWx" aria-label="Tempo"></article>
       <article class="card sum" id="sumPres" aria-label="Pressão"></article>
+      <article class="card sum" id="sumWater" aria-label="Água"></article>
     </div>
     <article class="card" id="agCard"><div class="row"><h3 class="grow">Sua agenda de pesca</h3><span class="small muted" id="agInfo"></span></div><div id="agBody"></div>
       <details id="agEdit"><summary class="small">Editar dias, horários e tipos de lugar</summary><div id="agForm" class="agform"></div></details></article>
@@ -794,7 +806,16 @@ const localHour=ms=>+fmtHr.format(ms)%24;
 const dir16=d=>DIR16[Math.round(((d%360)+360)%360/22.5)%16];
 const dir8=d=>DIR8[Math.round(((d%360)+360)%360/45)%8];
 function sect(arr,d){const x=(((d%360)+360)%360)/45,i=Math.floor(x)%8,j=(i+1)%8,f=x-Math.floor(x);return arr[i]*(1-f)+arr[j]*f}
-function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+// pequenos dados (pontos, diário, preferências) no localStorage; se falhar ao gravar algo importante, avisa
+const STORE_CRIT=new Set(["pf_custom","pf_log","pf_agenda"]);
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));return true}
+ catch(e){if(v!==undefined&&STORE_CRIT.has(k)){console.error("não gravou",k,e);try{showBanner("Não consegui gravar no aparelho: a memória do navegador está cheia. Tente de novo; se continuar, use Mais → Baixar todos os meus dados e me avise.",true,true)}catch(_){}}return v===undefined?null:false}}
+// cópias grandes (previsão, relevo) no IndexedDB, que tem muito mais espaço e não disputa com os seus pontos
+const IDB={p:null,db(){return this.p||(this.p=new Promise((ok,no)=>{try{const r=indexedDB.open("mareboa",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}}))},
+ async get(k){try{const d=await this.db();return await new Promise(ok=>{const q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=()=>ok(q.result??null);q.onerror=()=>ok(null)})}catch(e){return null}},
+ async set(k,v){try{const d=await this.db();await new Promise(ok=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=ok;t.onerror=ok;t.onabort=ok})}catch(e){}}};
+// limpa as cópias grandes que versões anteriores guardavam no localStorage
+try{for(const k of Object.keys(localStorage))if(/^pf_(md1|md2|cache3|ovw|rel1|rel2|rel3_\w+|mask1|mask2)$/.test(k))localStorage.removeItem(k)}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ================== SOL E LUA (baseado em SunCalc, V. Agafonkin, BSD) ================== */
@@ -858,10 +879,10 @@ async function load(){
   const fr=DF.expand(fr0),mr=mr0?DM.expand(mr0):null;
   S.data=parseData(Array.isArray(fr)?fr:[fr],mr?(Array.isArray(mr)?mr:[mr]):null);S.demo=false;
   if(!mr)showBanner(Object.keys(S.ep||{}).length?"O modelo de ondas não respondeu agora: ondas e temperatura da água estão indisponíveis. A maré continua vindo da EPAGRI.":"O modelo de ondas e maré não respondeu agora. Tente de novo em alguns minutos.",true,true);else hideBanner();
-  store("pf_cache3",{at:Date.now(),n:SPOTS.length,fr,mr});
+  IDB.set("cache3",{at:Date.now(),n:SPOTS.length,fr,mr});
  }catch(err){
   console.warn(err);
-  const c=store("pf_cache3");
+  const c=await IDB.get("cache3");
   if(c&&c.n===SPOTS.length&&Date.now()-c.at<36*HOUR){S.data=parseData(Array.isArray(c.fr)?c.fr:[c.fr],c.mr?(Array.isArray(c.mr)?c.mr:[c.mr]):null);
    showBanner("Sem conexão. Mostrando a última previsão salva ("+fmtDH.format(c.at)+").",true,true)}
   else{S.data=demoData();S.demo=true;S.ep=null;showBanner("Não consegui buscar a previsão (sem internet ou serviço fora do ar). Mostrando DADOS DE EXEMPLO, que não são previsão real.",true,true)}
@@ -886,8 +907,8 @@ async function mirrorData(regs){const q="?t="+Math.floor(Date.now()/6e5),R={};
    try{[md,mar]=await Promise.all([fetchJSON(EP_MIRROR+`modelos_${r}.json`+q),fetchJSON(EP_MIRROR+`mar_${r}.json`+q).catch(()=>null)])}
    catch(e){if(r==="sc")[md,mar]=await Promise.all([fetchJSON(EP_MIRROR+"modelos.json"+q),fetchJSON(EP_MIRROR+"mar.json"+q).catch(()=>null)]);else throw e}
    if(!md||!md.grid||!(md.gfs||md.ecmwf))throw new Error("modelos de "+r+" ainda não disponíveis");R[r]={md,mar}}));
-  const src={at:Date.now(),R};store("pf_md2",src);return src}
- catch(e){const c=store("pf_md2");if(c&&c.R&&regs.every(r=>c.R[r])&&Date.now()-c.at<36*HOUR){c.old=true;return c}throw e}}
+  const src={at:Date.now(),R};IDB.set("md2",src);return src}
+ catch(e){const c=await IDB.get("md2");if(c&&c.R&&regs.every(r=>c.R[r])&&Date.now()-c.at<36*HOUR){c.old=true;return c}throw e}}
 async function ensureRegion(r){if(!MDR||MDR.R[r])return;try{const x=await mirrorData([r]);MDR.R[r]=x.R[r]}catch(e){console.warn("região",r,e)}}
 const regionData=(lat,lon)=>{if(!MDR)return null;const R=MDR.R,r=R[regionOf(lat,lon)];if(r)return r;
  for(const k in R){const g=R[k].md.grid;if(lat>=g.la0&&lat<=g.la0+(g.nla-1)*g.st&&lon>=g.lo0&&lon<=g.lo0+(g.nlo-1)*g.st)return R[k]}return null};
@@ -1920,7 +1941,7 @@ function initMap(){if(MAP)return;
  MAP.fitBounds(L.latLngBounds(SPOTS.filter(s=>!s.custom).map(s=>[s.lat,s.lon])).pad(.05));
  MAP.on("click",e=>dropPin(e.latlng.lat,e.latlng.lng));
  updateMarkers()}
-function markerIcon(sp,r){return L.divIcon({className:"",iconSize:null,iconAnchor:[20,12],
+function markerIcon(sp,r){return L.divIcon({className:"mkwrap",iconSize:[0,0],iconAnchor:[0,0],
  html:`<div class="mk${sp.id===S.spot?" sel":""}${sp.temp?" pin":""}" style="${sp.temp?"":pillStyle(r.score)}">${arrow(r.d,11)}${N(r.score)}</div>`})}
 /* ================== CAMADAS DO MAPA: vento animado, correntes e temperatura da água ==================
  Grade de pontos sobre a Grande Florianópolis (Open-Meteo: modelo de vento escolhido e modelo marinho).
@@ -1932,10 +1953,10 @@ const OV={on:Object.assign({wind:true,cur:false,sst:false},store("pf_ov")||{}),d
 // Mar (correntes/temperatura): grade fina de 99 pontos, só quando uma dessas camadas é ligada.
 const OV_COMMON="&timeformat=unixtime&timezone=America%2FSao_Paulo&past_days=1&forecast_days=7";
 async function ovLoadOM(){if(OV.data&&OV.model===S.model)return(OV.on.cur||OV.on.sst)?ovLoadSea():true;if(OV.loading)return false;OV.loading=true;$("#ovInfo").textContent="Carregando camadas…";
- try{let rr=null;const c=store("pf_ovw");if(c&&c.model===S.model&&Date.now()-c.at<HOUR)rr=c.rr;
+ try{let rr=null;const c=await IDB.get("ovw");if(c&&c.model===S.model&&Date.now()-c.at<HOUR)rr=c.rr;
   if(!rr){const rla=[],rlo=[];for(let i=0;i<OVR.nla;i++)for(let j=0;j<OVR.nlo;j++){rla.push((OVR.la0+(OVR.la1-OVR.la0)*i/(OVR.nla-1)).toFixed(2));rlo.push((OVR.lo0+(OVR.lo1-OVR.lo0)*j/(OVR.nlo-1)).toFixed(2))}
    const j=await fetchJSON(`https://api.open-meteo.com/v1/forecast?latitude=${rla}&longitude=${rlo}&hourly=wind_speed_10m,wind_direction_10m&models=${S.model}&wind_speed_unit=kmh${OV_COMMON}`);
-   rr=(Array.isArray(j)?j:[j]).map(x=>({time:x.hourly.time,wind_speed_10m:x.hourly.wind_speed_10m,wind_direction_10m:x.hourly.wind_direction_10m}));store("pf_ovw",{at:Date.now(),model:S.model,rr})}
+   rr=(Array.isArray(j)?j:[j]).map(x=>({time:x.hourly.time,wind_speed_10m:x.hourly.wind_speed_10m,wind_direction_10m:x.hourly.wind_direction_10m}));IDB.set("ovw",{at:Date.now(),model:S.model,rr})}
   if(rr.length!==OVR.nla*OVR.nlo)throw new Error("grade incompleta");
   OV.data={t:rr[0].time.map(x=>x*1000),R:rr,F:null,M:null,land:null};OV.model=S.model;$("#ovInfo").textContent="";
   return(OV.on.cur||OV.on.sst)?ovLoadSea():true}
@@ -1981,15 +2002,15 @@ const wcol=k=>{if(k<=WCOL[0][0])return WCOL[0][1];for(let i=1;i<WCOL.length;i++)
 const MASK={la0:-28.05,la1:-27.30,lo0:-48.85,lo1:-48.30,st:.012};MASK.nla=Math.round((MASK.la1-MASK.la0)/MASK.st)+1;MASK.nlo=Math.round((MASK.lo1-MASK.lo0)/MASK.st)+1;
 let WATER=null,MASK_TRIED=false;
 let REL=null,AGUA=null;
-async function loadRelevo(reg){reg=reg||(()=>{const c=spot();return regionOf(c.lat,c.lon)})();if(REL&&REL.reg===reg)return true;let r=store("pf_rel3_"+reg);
- if(!(r&&r.h&&r.h.length===r.nla*r.nlo)){try{r=await fetchJSON(EP_MIRROR+`relevo_${reg}.json`);if(r&&r.h&&r.h.length===r.nla*r.nlo)store("pf_rel3_"+reg,r);else r=null}catch(e){r=null}
+async function loadRelevo(reg){reg=reg||(()=>{const c=spot();return regionOf(c.lat,c.lon)})();if(REL&&REL.reg===reg)return true;let r=await IDB.get("rel3_"+reg);
+ if(!(r&&r.h&&r.h.length===r.nla*r.nlo)){try{r=await fetchJSON(EP_MIRROR+`relevo_${reg}.json`);if(r&&r.h&&r.h.length===r.nla*r.nlo)IDB.set("rel3_"+reg,r);else r=null}catch(e){r=null}
   if(!r&&reg==="sc"){try{r=await fetchJSON(EP_MIRROR+"relevo.json");if(!(r&&r.h&&r.h.length===r.nla*r.nlo))r=null}catch(e){r=null}}}
  if(!r)return false;r.reg=reg;AGUA=null;
  // contorno do mar em imagem (~80 m, já na projeção do mapa): recorta a temperatura da água com a costa nítida
  if(r.agua&&!AGUA){const im=new Image();im.crossOrigin="anonymous";im.onload=()=>{AGUA={img:im,b:r.agua};if(OV.on.sst)ovStatic()};im.src=EP_MIRROR+(r.v>=3?`agua_${reg}.png`:"agua.png")+"?v="+(r.v||1)}REL=r;Object.assign(MASK,{la0:r.la0,lo0:r.lo0,st:r.st,nla:r.nla,nlo:r.nlo});WATER=r.h.map(x=>x!=null&&x<=1?"1":"0").join("");return true}
 const elevAt=(lat,lon)=>{const i=Math.round((lat-REL.la0)/REL.st),j=Math.round((lon-REL.lo0)/REL.st);if(i<0||j<0||i>=REL.nla||j>=REL.nlo)return 0;return REL.h[i*REL.nlo+j]||0};
-async function loadMask(){if(WATER)return true;if(await loadRelevo())return true;const c=store("pf_mask2");if(c&&c.b&&c.b.length===c.nla*c.nlo){Object.assign(MASK,{la0:c.la0,lo0:c.lo0,st:c.st,nla:c.nla,nlo:c.nlo});WATER=c.b;return true}
- try{const m=await fetchJSON(EP_MIRROR+"mascara.json");if(m&&m.b&&m.b.length===m.nla*m.nlo){Object.assign(MASK,{la0:m.la0,lo0:m.lo0,st:m.st,nla:m.nla,nlo:m.nlo});WATER=m.b;store("pf_mask2",m);return true}}catch(e){}
+async function loadMask(){if(WATER)return true;if(await loadRelevo())return true;const c=await IDB.get("mask2");if(c&&c.b&&c.b.length===c.nla*c.nlo){Object.assign(MASK,{la0:c.la0,lo0:c.lo0,st:c.st,nla:c.nla,nlo:c.nlo});WATER=c.b;return true}
+ try{const m=await fetchJSON(EP_MIRROR+"mascara.json");if(m&&m.b&&m.b.length===m.nla*m.nlo){Object.assign(MASK,{la0:m.la0,lo0:m.lo0,st:m.st,nla:m.nla,nlo:m.nlo});WATER=m.b;IDB.set("mask2",m);return true}}catch(e){}
  return false}
 function isWater(lat,lon){if(!WATER){if(!OV.data||!OV.data.land)return true;const i=Math.round((lat-OVG.la0)/(OVG.la1-OVG.la0)*(OVG.nla-1)),j=Math.round((lon-OVG.lo0)/(OVG.lo1-OVG.lo0)*(OVG.nlo-1));if(i<0||j<0||i>=OVG.nla||j>=OVG.nlo)return true;return !OV.data.land[i*OVG.nlo+j]}const i=Math.round((lat-MASK.la0)/MASK.st),j=Math.round((lon-MASK.lo0)/MASK.st);if(i<0||j<0||i>=MASK.nla||j>=MASK.nlo)return true;return WATER[i*MASK.nlo+j]==="1"}
 // temperatura da água preenchida também dentro das baías (vizinhos mais próximos do modelo oceânico)
@@ -2069,7 +2090,9 @@ function updateMarkers(){if(!MAP||!S.data)return;if(OV.data&&(OV.on.wind||OV.on.
  for(const id in MK)if(!ids.has(id)){MAP.removeLayer(MK[id]);delete MK[id]}
  for(const sp of visSpots()){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
   if(!MK[sp.id])MK[sp.id]=L.marker([sp.lat,sp.lon],{title:sp.n}).addTo(MAP).on("click",ev=>{L.DomEvent.stopPropagation(ev);const s2=SPOTS.find(x=>x.id===sp.id);if(!s2)return;selectSpot(s2.id,false);openPopup(s2)});
-  MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id].setZIndexOffset(sp.id===S.spot?1000:0)}}
+  // só troca o ícone quando muda (redesenhar a cada toque fazia o toque "vazar" para o mapa no celular)
+  const key=`${sp.id===S.spot}|${sp.temp}|${N(r.score)}|${Math.round(r.d||0)}|${sp.n}`;if(MK[sp.id]._k!==key){MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id]._k=key}
+  MK[sp.id].setZIndexOffset(sp.id===S.spot?1000:0)}}
 function selectSpot(id,scroll=true){S.spot=id;store("pf_spot",S.spot);S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot();renderLog();if(scroll)showView("resumo")}
 function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdict(r.score);
  return`<div class="pop"><h4>${esc(sp.n)}</h4><div><span class="tag ${r.danger?"bad":cls}">${r.danger?"Perigoso":v}</span> <b class="num">${N(r.score)}</b>/100 · ${fmtDH.format(r.t)}</div>
@@ -2117,7 +2140,9 @@ function makePinSpot(lat,lon,ex,mc){
   lag:mc.kind==="lagoa"?180:mc.kind==="baia"?(legacy?45:20):0,amp:mc.kind==="lagoa"?.15:mc.kind==="baia"?(legacy?1.1:1):1,m:mc.m,g:legacy?undefined:near.g,reg:regionOf(lat,lon),notes}}
 async function dropPin(lat,lon){
  // só abre um ponto existente se o toque foi praticamente em cima dele (e se ele está visível no mapa)
- const near=visSpots().find(s=>!s.temp&&MK[s.id]&&distKm(s,{lat,lon})<.06);
+ // toque em cima (ou bem perto, na tela) de um ponto existente abre esse ponto em vez de criar pin
+ const tp=MAP.latLngToContainerPoint([lat,lon]);let near=null,bd=28;
+ for(const s of visSpots()){if(s.temp||!MK[s.id])continue;const d=MAP.latLngToContainerPoint([s.lat,s.lon]).distanceTo(tp);if(d<bd){bd=d;near=s}}
  if(near){selectSpot(near.id,false);openPopup(near);return}
  PIN=L.popup({maxWidth:300}).setLatLng([lat,lon]).setContent('<div class="pop">Buscando a previsão e analisando o relevo em volta…</div>').openOn(MAP);
  try{const mc=pinMarineCoord(lat,lon);
@@ -2209,7 +2234,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","mais"];
-const APP_VERSION="2026-10-27.2";
+const APP_VERSION="2026-10-27.3";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2333,7 +2358,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="small">${corre}</div>
   ${cd}
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")} · distância <b>${Math.round(md.km/1000)} mil km</b>${md.txt?`<br><b>${md.txt}</b>`:""}</div>`;
- renderGreeting();renderFactors();renderWeather();renderPressure();renderFront();renderFishCard();renderTimeline();renderHistory()}
+ renderGreeting();renderFactors();renderWeather();renderPressure();renderWater();renderFront();renderFishCard();renderTimeline();renderHistory()}
 /* tempo: temperatura, chuva, nuvens e umidade */
 function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0 1 1 11.5 7a5.5 5.5 0 0 0 8.5 8.5z" fill="var(--moon-lit)" stroke="var(--ink-3)" stroke-width="1"/>`:`<circle cx="12" cy="12" r="5" fill="#f2c230"/><g stroke="#f2c230" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>`;
  const cl=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 9.5 4.25 4.25 0 0 0 7 18z" fill="var(--surface-2)" stroke="var(--ink-3)" stroke-width="1.3"/>`;
@@ -2342,7 +2367,20 @@ function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0
  return`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" aria-hidden="true">${g}</svg>`}
 /* abertura do Resumo: saudação e o dia contado em poucas frases */
 const fmtLong=new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,weekday:"long",day:"numeric",month:"long"});
-function renderGreeting(){const el=$("#greet");if(!el||!S.data)return;const sp=spot(),D=S.derived[sp.id],rows=dayRows();if(!rows.length)return;
+// painel "agora" ao lado da saudação: água, pressão, vento no ponto e maré
+function renderNow(){const el=$("#nowTiles");if(!el||!S.data)return;const sp=spot(),D=S.derived[sp.id],o=S.data.spots[sp.id],t=S.data.t,now=Date.now(),today=dayKey(now)===S.day;
+ let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):S.when;if(i<0)i=S.when;const r=D.rows[i];if(!r){el.innerHTML="";return}
+ const br=(v,d=1)=>v.toFixed(d).replace(".",",");
+ const day=D.rows.filter(x=>dayKey(x.t)===dayKey(t[i])&&x.wi).map(x=>x.wi.t),avg=day.length?day.reduce((a,b)=>a+b,0)/day.length:null;
+ const p=o.pres[i],d3=o.pres[i-3]!=null&&p!=null?p-o.pres[i-3]:null;
+ const nx=D.ex.find(e=>e.t>t[i]);
+ const T=(lab,val,sub,cls="")=>`<div class="nt"><span>${lab}</span><b class="${cls}">${val}</b><small>${sub}</small></div>`;
+ el.innerHTML=
+  T("Água",avg!=null?`${br(avg)}°`:"–",avg!=null?`média do dia${r.wi&&r.wi.dT!=null&&Math.abs(r.wi.dT)>=.5?` · ${r.wi.dT>0?"▲":"▼"} ${br(Math.abs(r.wi.dT))}°`:""}`:"sem dado",r.wi&&r.wi.dT!=null?(r.wi.dT<=-1?"dn":r.wi.dT>=.5?"up":""):"")+
+  T("Pressão",p!=null?`${Math.round(p)}`:"–",p!=null?`hPa${d3!=null?` · ${d3<-.5?"▼ caindo":d3>.5?"▲ subindo":"estável"}`:""}`:"sem dado",d3!=null?(d3<=-1?"dn":d3>=1?"up":""):"")+
+  T("Vento",r.eff!=null?`${r.d!=null?arrow(r.d,18):""}${wv(r.eff)}`:"–",r.eff!=null?`${WU()} no ponto${r.d!=null?" · "+dir8(r.d):""}`:"sem dado")+
+  T("Maré",r.rising==null?"–":`<span aria-hidden="true">${r.rising?"▲":"▼"}</span>${r.tide!=null?br(r.tide,2).replace(/^(?!-)/,"+"):""}`,r.rising==null?"sem dado":`${r.rising?"enchendo":"vazando"}${nx?` até ${fmtH.format(nx.t)}`:""}`,r.rising==null?"":r.rising?"up":"dn")}
+function renderGreeting(){renderNow();const el=$("#greet");if(!el||!S.data)return;const sp=spot(),D=S.derived[sp.id],rows=dayRows();if(!rows.length)return;
  const now=Date.now(),today=dayKey(now)===S.day,h=localHour(now),hi=h<5?"Boa noite":h<12?"Bom dia":h<18?"Boa tarde":"Boa noite";
  const ref=today?(D.rows.find(x=>x.t===Math.floor(now/HOUR)*HOUR)||rows[0]):(rows.find(x=>localHour(x.t)===7)||rows[0]);
  const best=rows.filter(r=>!today||r.t>=now-HOUR).reduce((m,r)=>r.score>m.score?r:m,rows.find(r=>!today||r.t>=now-HOUR)||rows[0]);
@@ -2373,6 +2411,20 @@ function renderWeather(){const el=$("#sumWx");if(!el||!S.data)return;const sp=sp
   <div class="small muted">Barras: chuva em mm por hora.</div>
   <div class="wxd">${days.map(d=>`<div><span>${d.k===dayKey(now)?"Hoje":fmtD.format(d.t).slice(0,3)}</span>${wxIcon(d.cl,d.rr>=1?1:0,false,24)}<b class="num">${Math.round(d.tmax)}°</b><span class="num muted">${Math.round(d.tmin)}°</span><span class="num" style="color:var(--accent)">${d.rr>=.1?d.rr.toFixed(0)+" mm":""}</span></div>`).join("")}</div>`}
 /* pressão atmosférica: valor, tendência e o que significa para a pesca */
+function renderWater(){const el=$("#sumWater");if(!el||!S.data)return;const sp=spot(),D=S.derived[sp.id],t=S.data.t,now=Date.now(),today=dayKey(now)===S.day;
+ let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;const r=D.rows[i],wi=r&&r.wi;
+ if(!wi){el.innerHTML=`<div class="sum-h"><h3>Água</h3></div><p class="muted small">Sem dado de temperatura da água para este ponto.</p>`;return}
+ const br=v=>v.toFixed(1).replace(".",","),F=S.fish!=="geral"?FISH[S.fish]:null,fit=F&&F.temp?lerp(F.temp,wi.t):null;
+ const tr=wi.dT==null?"":wi.dT<=-1.5?`▼ esfriou ${br(-wi.dT)} °C em 2 dias`:wi.dT<=-.5?`▼ esfriando (${br(wi.dT)} em 2 dias)`:wi.dT>=1?`▲ esquentando (+${br(wi.dT)} em 2 dias)`:wi.dT>=.5?`▲ subindo um pouco`:"= estável";
+ const fut=D.rows.filter(x=>x.t>t[i]&&x.t<=t[i]+5*864e5&&x.wi).map(x=>x.wi.t),f5=fut.length?fut[fut.length-1]:null;
+ const cur=wi.cv==null?"":wi.cv<.2?"Corrente fraca (água parada)":wi.cv<=1.5?`Corrente moderada para ${dir8(wi.cd)} (${(wi.cv/3.6).toFixed(2).replace(".",",")} m/s): traz alimento`:`Corrente forte para ${dir8(wi.cd)}`;
+ const sig=wi.dT!=null&&wi.dT<=-1.5?"Queda brusca: água fria subindo (nordeste persistente) ou frente. O peixe costuma travar por 1 a 2 dias."
+  :wi.dT!=null&&wi.dT>=1?"Água esquentando depois de dias frios: o peixe tende a voltar a comer."
+  :fit!=null?(fit>=.85?`Temperatura boa para ${F.n.toLowerCase()}.`:fit<.3?`Fria para ${F.n.toLowerCase()}: tende a comer pouco.`:`Aceitável para ${F.n.toLowerCase()}.`):"";
+ el.innerHTML=`<div class="sum-h"><h3>Água</h3><span class="small muted">${today?"agora":"7h"}</span></div>
+  <div class="big num">${br(wi.t)} °C</div><div class="small ${wi.dT!=null&&wi.dT<=-1?"dn":wi.dT!=null&&wi.dT>=.5?"up":""}">${tr}</div>
+  ${f5!=null?`<div class="small muted">Em 5 dias: ${br(f5)} °C</div>`:""}${cur?`<div class="small">${cur}</div>`:""}${sig?`<p class="small" style="margin:6px 0 0">${sig}</p>`:""}
+  <p class="small muted" style="margin:6px 0 0">Modelo oceânico (Open-Meteo), atualizado 3 vezes por semana; dentro das baías é estimada pelo mar mais próximo.</p>`}
 function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,P=o.pres;
  const now=Date.now(),today=dayKey(now)===S.day;let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;
  const p=P[i],d3=P[i-3]!=null?p-P[i-3]:null,d24=P[i-24]!=null?p-P[i-24]:null;
