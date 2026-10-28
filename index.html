@@ -143,6 +143,20 @@ summary{cursor:pointer;font-weight:600}
 .chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px;cursor:pointer}
 .chipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mapbox{position:relative}
+.mapfab{position:absolute;z-index:810;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}
+.mapfab.gps{left:10px;bottom:84px;width:44px;height:44px;background:var(--surface);color:var(--accent)}.mapfab.gps.on{color:#fff;background:#1a73e8}
+.mapfab.add{right:12px;bottom:80px;width:54px;height:54px;background:var(--accent);color:#fff}
+.npsheet{position:absolute;inset:0;z-index:900;background:var(--surface);display:flex;flex-direction:column;overflow:auto;border-radius:inherit}
+.nphead{display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#fff;padding:10px 12px;position:sticky;top:0}
+.nphead b{font-size:17px}.npx,.npok{width:40px;height:40px;border-radius:50%;border:0;font-size:20px;cursor:pointer}.npx{background:rgba(255,255,255,.18);color:#fff}.npok{background:#fff;color:var(--accent);font-weight:800}
+.npbody{padding:12px;display:flex;flex-direction:column;gap:12px}
+.npic{display:flex;gap:6px;flex-wrap:wrap}.npic button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--surface-2);font-size:22px;cursor:pointer}.npic button[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.npco{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;margin:0}.npco legend{font-weight:700;font-size:14px;padding:0 4px}
+.npll{display:grid;grid-template-columns:80px 64px 12px 1fr 12px;align-items:center;gap:4px}.npll span{font-size:13px;color:var(--muted)}.npll input{min-width:0;text-align:right;font-variant-numeric:tabular-nums}.npll i{font-style:normal}
+.mkic{margin-right:3px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:3000;background:#1d2b30;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.35);max-width:calc(100vw - 32px);font-size:14px}
+.toast button{background:none;border:0;color:#7fd3ff;font:inherit;font-weight:700;cursor:pointer}
+@media (min-width:900px){.toast{bottom:24px}}
 .wread{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:800;display:flex;align-items:center;gap:10px;background:rgba(14,40,48,.82);color:#fff;border-radius:10px;padding:6px 6px 6px 12px;box-shadow:0 2px 10px rgba(0,0,0,.25);white-space:nowrap;backdrop-filter:blur(4px)}
 .wread>div{display:flex;flex-direction:column;line-height:1.1}
 .wread .small{color:#cfe3e6;font-size:12px}
@@ -579,6 +593,25 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       </div>
       <div class="mapbox">
         <div id="map" role="application" aria-label="Mapa de pontos de pesca"></div>
+        <button type="button" class="mapfab gps" id="gpsBtn" aria-label="Mostrar minha localização"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+        <button type="button" class="mapfab add" id="npBtn" aria-label="Novo ponto"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <form class="npsheet" id="npSheet" hidden novalidate>
+          <div class="nphead"><button type="button" class="npx" id="npClose" aria-label="Cancelar">✕</button><b>Novo ponto</b><button type="submit" class="npok" aria-label="Salvar">✓</button></div>
+          <div class="npbody">
+            <div class="npic" role="radiogroup" aria-label="Ícone"></div>
+            <label class="inline" for="npName">Nome do ponto<input type="text" id="npName" maxlength="60" placeholder="ex.: Pedra do robalo" autocomplete="off"></label>
+            <fieldset class="npco"><legend>Coordenadas</legend>
+              <div class="npll"><span>Latitude</span><input type="text" inputmode="decimal" id="npLaD" aria-label="Latitude, graus"><i>°</i><input type="text" inputmode="decimal" id="npLaM" aria-label="Latitude, minutos"><i>'</i></div>
+              <div class="npll"><span>Longitude</span><input type="text" inputmode="decimal" id="npLoD" aria-label="Longitude, graus"><i>°</i><input type="text" inputmode="decimal" id="npLoM" aria-label="Longitude, minutos"><i>'</i></div>
+              <label class="inline small" for="npPaste">Ou cole coordenadas ou um link do Google Maps<input type="text" id="npPaste" placeholder="-27.5947, -48.5480" autocomplete="off"></label>
+              <div class="row"><button type="button" class="btn ghost small" id="npCenter">Centro do mapa</button><button type="button" class="btn ghost small" id="npGps">Minha localização (GPS)</button></div>
+            </fieldset>
+            <label class="inline" for="npObs">Nota (opcional)<input type="text" id="npObs" maxlength="200" placeholder="profundidade, tipo de fundo, acesso..."></label>
+            <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="npCap"> Registrar uma captura neste ponto</label>
+            <div class="small" id="npMsg" role="status"></div>
+            <p class="small muted" style="margin:0">O ponto fica só no seu aparelho. Ninguém mais vê.</p>
+          </div>
+        </form>
         <div class="wread" id="wRead" hidden><div><span class="small">Vento · <span id="wModel"></span></span><b id="wVal" class="num">–</b></div><button type="button" class="btn" id="wHere">Previsão aqui</button></div>
         <svg class="wcross" id="wCross" hidden width="34" height="34" viewBox="-17 -17 34 34" aria-hidden="true"><g stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M0 -15V-6M0 6V15M-15 0H-6M6 0H15"/></g><g stroke="#0e2830" stroke-width="1" stroke-linecap="round" opacity=".55"><path d="M0 -15V-6M0 6V15M-15 0H-6M6 0H15"/></g></svg>
       </div>
@@ -2055,7 +2088,7 @@ function initMap(){if(MAP)return;
  MAP.on("click",e=>dropPin(e.latlng.lat,e.latlng.lng));
  updateMarkers()}
 function markerIcon(sp,r){return L.divIcon({className:"mkwrap",iconSize:[0,0],iconAnchor:[0,0],
- html:`<div class="mk${sp.id===S.spot?" sel":""}${sp.temp?" pin":""}" style="${sp.temp?"":pillStyle(r.score)}">${arrow(r.d,11)}${N(r.score)}</div>`})}
+ html:`<div class="mk${sp.id===S.spot?" sel":""}${sp.temp?" pin":""}" style="${sp.temp?"":pillStyle(r.score)}">${sp.ic?`<span class="mkic">${sp.ic}</span>`:""}${arrow(r.d,11)}${N(r.score)}</div>`})}
 /* ================== CAMADAS DO MAPA: vento animado, correntes e temperatura da água ==================
  Grade de pontos sobre a Grande Florianópolis (Open-Meteo: modelo de vento escolhido e modelo marinho).
  Correntes e temperatura da água vêm do modelo oceânico global (~8 km): mostram o mar aberto, não o detalhe dentro das baías. */
@@ -2209,7 +2242,7 @@ function updateMarkers(){if(!MAP||!S.data)return;if(OV.data&&(OV.on.wind||OV.on.
  for(const sp of visSpots()){const D=S.derived[sp.id];if(!D)continue;const r=D.rows[S.when];
   if(!MK[sp.id])MK[sp.id]=L.marker([sp.lat,sp.lon],{title:sp.n}).addTo(MAP).on("click",ev=>{L.DomEvent.stopPropagation(ev);const s2=SPOTS.find(x=>x.id===sp.id);if(!s2)return;selectSpot(s2.id,false);openPopup(s2)});
   // só troca o ícone quando muda (redesenhar a cada toque fazia o toque "vazar" para o mapa no celular)
-  const key=`${sp.id===S.spot}|${sp.temp}|${N(r.score)}|${Math.round(r.d||0)}|${sp.n}`;if(MK[sp.id]._k!==key){MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id]._k=key}
+  const key=`${sp.id===S.spot}|${sp.temp}|${N(r.score)}|${Math.round(r.d||0)}|${sp.n}|${sp.ic||""}`;if(MK[sp.id]._k!==key){MK[sp.id].setIcon(markerIcon(sp,r));MK[sp.id]._k=key}
   MK[sp.id].setZIndexOffset(sp.id===S.spot?1000:0)}}
 function selectSpot(id,scroll=true){S.spot=id;store("pf_spot",S.spot);S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot();renderLog();if(scroll)showView("resumo")}
 function popupHTML(sp){const r=S.derived[sp.id].rows[S.when];const[v,cls]=verdict(r.score);
@@ -2348,13 +2381,53 @@ function savePin(name){const sp=SPOTS.find(s=>s.temp);if(!sp)return;
  sp.id=id;sp.temp=false;sp.r="Meu ponto";if(name.trim())sp.n=name.trim().slice(0,60);saveCustom();
  if(MAP)MAP.closePopup();S.spot=id;store("pf_spot",id);renderAll();setTimeout(()=>openPopup(sp),50)}
 
+/* ===== Novo ponto pelo botão "+" (como no Fishing Points): nome, ícone, coordenadas em graus e minutos,
+   centro do mapa ou GPS. A localização fica só no aparelho. ===== */
+const NP_ICONS=["🎣","🐟","⚓","🪨","🚤","⭐"];let NP_IC="🎣",GPS=null;
+function toast(msg,act,fn){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");
+ t.innerHTML=`<span>${esc(msg)}</span>${act?`<button type="button">${esc(act)}</button>`:""}`;document.body.appendChild(t);if(act)t.querySelector("button").onclick=()=>{t.remove();fn&&fn()};setTimeout(()=>t.remove(),5000)}
+const dm2=(v,neg)=>{const a=Math.abs(v),d=Math.floor(a),m=(a-d)*60;return[(v<0?"-":"")+d,m.toFixed(4).replace(/\.?0+$/,"")]};
+function npSet(lat,lon){const [a,b]=dm2(lat),[c,d]=dm2(lon);$("#npLaD").value=a;$("#npLaM").value=b;$("#npLoD").value=c;$("#npLoM").value=d;$("#npMsg").textContent=""}
+function npRead(){const n=x=>parseFloat(String(x).replace(",","."));const one=(D,M)=>{const d=n(D),m=n(M||0);if(isNaN(d))return NaN;const neg=String(D).trim().startsWith("-")||d<0;const v=Math.abs(d)+(isNaN(m)?0:Math.abs(m)/60);return neg?-v:v};
+ return[one($("#npLaD").value,$("#npLaM").value),one($("#npLoD").value,$("#npLoM").value)]}
+function parseCoords(t){t=String(t||"");let m=t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/[?&](?:q|ll|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||t.match(/(-?\d{1,2}[.,]\d+)\s*[,; ]\s*(-?\d{1,3}[.,]\d+)/);
+ if(m){const a=+m[1].replace(",","."),b=+m[2].replace(",",".");return[a,b]}
+ const g=[...t.matchAll(/(\d{1,3})[°º]\s*(\d{1,2}(?:[.,]\d+)?)['’]?\s*(?:(\d{1,2}(?:[.,]\d+)?)["”]?)?\s*([NSEWLO])/gi)];
+ if(g.length>=2){const v=x=>{let r=+x[1]+(+String(x[2]).replace(",","."))/60+(x[3]?+String(x[3]).replace(",",".")/3600:0);if(/[SWO]/i.test(x[4]))r=-r;return r};return[v(g[0]),v(g[1])]}
+ return null}
+function npOpen(){const sh=$("#npSheet");$("#npName").value="";$("#npObs").value="";$("#npPaste").value="";$("#npCap").checked=false;NP_IC="🎣";
+ $(".npic").innerHTML=NP_ICONS.map(i=>`<button type="button" role="radio" aria-checked="${i===NP_IC}" data-npic="${i}">${i}</button>`).join("");
+ const c=GPS?{lat:GPS.lat,lng:GPS.lon}:MAP.getCenter();npSet(c.lat,c.lng);sh.hidden=false;setTimeout(()=>$("#npName").focus(),50)}
+function gpsLocate(cb){if(!navigator.geolocation){toast("Este aparelho não informa a localização.");return}
+ $("#gpsBtn").classList.add("on");navigator.geolocation.getCurrentPosition(p=>{const la=p.coords.latitude,lo=p.coords.longitude,acc=p.coords.accuracy;GPS={lat:la,lon:lo,acc};
+  if(MAP){if(!GPS.mk){GPS.mk=L.circleMarker([la,lo],{radius:8,color:"#fff",weight:3,fillColor:"#1a73e8",fillOpacity:1,interactive:false}).addTo(MAP);GPS.c=L.circle([la,lo],{radius:acc,color:"#1a73e8",weight:1,fillOpacity:.12,interactive:false}).addTo(MAP)}
+   else{GPS.mk.setLatLng([la,lo]);GPS.c.setLatLng([la,lo]).setRadius(acc)}}
+  cb&&cb(la,lo,acc)},e=>{$("#gpsBtn").classList.remove("on");toast(e.code===1?"Permita a localização para o Maré Boa nas configurações do navegador.":"Não consegui pegar sua localização. Tente de novo.")},{enableHighAccuracy:true,timeout:15000,maximumAge:30000})}
+async function npSave(e){e.preventDefault();const m=$("#npMsg"),name=$("#npName").value.trim(),[lat,lon]=npRead();
+ if(!name){m.textContent="Dê um nome ao ponto.";$("#npName").focus();return}
+ if(!(lat>=-33.8&&lat<=-22&&lon>=-54&&lon<=-43)){m.textContent="Confira as coordenadas: precisam estar no litoral do Sul/Sudeste (latitude e longitude negativas).";return}
+ m.textContent="Buscando a previsão e analisando o relevo em volta…";$(".npok").disabled=true;
+ try{const mc=pinMarineCoord(lat,lon);const [o,ex]=await Promise.all([fetchPoint(lat,lon,mc.m),S.demo?null:terrainExposure(lat,lon).catch(()=>null)]);
+  const sp=makePinSpot(lat,lon,ex,mc);SPOTS=SPOTS.filter(s=>!s.temp);SPOTS.push(sp);S.data.spots[sp.id]=o;computeSpot(sp);applyML();
+  savePin(name);const nsp=SPOTS.find(s=>s.id===S.spot);if(nsp){nsp.ic=NP_IC;const ob=$("#npObs").value.trim();if(ob)nsp.obs=ob.slice(0,200);saveCustom();updateMarkers&&updateMarkers()}
+  $("#npSheet").hidden=true;MAP.setView([lat,lon],Math.max(MAP.getZoom(),13));
+  toast(`Ponto "${name.slice(0,30)}" salvo`,"Ver",()=>{showView("resumo")});
+  if($("#npCap").checked){showView("resumo");setTimeout(()=>{const d=$("#logDet");if(d){d.closest(".view").hidden=false;d.open=true;$("#lgSpot").value=S.spot;d.scrollIntoView({behavior:"smooth",block:"start"})}},200)}}
+ catch(err){console.warn(err);m.textContent="Não consegui buscar a previsão deste ponto: "+err.message}
+ finally{$(".npok").disabled=false}}
+$("#npBtn").addEventListener("click",npOpen);$("#npClose").addEventListener("click",()=>{$("#npSheet").hidden=true});$("#npSheet").addEventListener("submit",npSave);
+$("#npSheet").addEventListener("click",e=>{const b=e.target.closest("[data-npic]");if(!b)return;NP_IC=b.dataset.npic;$(".npic").querySelectorAll("button").forEach(x=>x.setAttribute("aria-checked",x===b))});
+$("#npCenter").addEventListener("click",()=>{const c=MAP.getCenter();npSet(c.lat,c.lng)});
+$("#npGps").addEventListener("click",()=>{$("#npMsg").textContent="Procurando sua localização…";gpsLocate((la,lo,acc)=>{npSet(la,lo);$("#npMsg").textContent=`Localização com precisão de ~${Math.round(acc)} m.`})});
+$("#npPaste").addEventListener("input",e=>{const c=parseCoords(e.target.value);if(c)npSet(c[0],c[1])});
+$("#gpsBtn").addEventListener("click",()=>gpsLocate((la,lo)=>MAP.setView([la,lo],Math.max(MAP.getZoom(),14))));
 /* marégrafo é medido de verdade: atualiza sozinho a cada 10 min com o app aberto */
 async function refreshEpagri(){if(!S.data||S.demo)return;await loadEpagri();rebuild();renderAll()}
 setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.2";
+const APP_VERSION="2026-10-28.3";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
