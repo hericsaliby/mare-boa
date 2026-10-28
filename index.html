@@ -1876,7 +1876,10 @@ function renderWindNow(){const sp=spot(),rows=S.derived[sp.id].rows,nowH=Math.fl
  <div class="wn" style="background:${windColor(r.g)}"><b>${wv(r.g)}</b><span>Rajada ${WU()}</span></div>
  <div class="wn" style="background:${windColor(r.eff)}"><b>${wv(r.eff)}</b><span>No ponto ${r.exp<.3?"(abrigado)":r.exp>.75?"(exposto)":""}</span></div>`}
 function yOf(c,v){const Y=CH.Y[c];return 6+(Y.h-26)*(1-(v-Y.lo)/((Y.hi-Y.lo)||1))}
-function updateHover(ci){const r=CH.rows[ci];if(!r||!CH.x)return;const X=CH.x(ci),hr=`<b class="num">${fmtH.format(r.t)}</b>`;
+// meia hora: média entre a hora cheia e a seguinte (o gráfico pode ser arrastado de 30 em 30 min)
+function rowAt(ci,half){const a=CH.rows[ci],b=CH.rows[ci+1];if(!half||!a||!b)return a;const m=(x,y)=>x!=null&&y!=null?(x+y)/2:null;
+ return{...a,t:a.t+HOUR/2,tide:m(a.tide,b.tide),obs:m(a.obs,b.obs),rate:m(a.rate,b.rate),raw:m(a.raw,b.raw),eff:m(a.eff,b.eff),g:m(a.g,b.g),wave:m(a.wave,b.wave),hs:m(a.hs,b.hs),all:a.all}}
+function updateHover(ci,half){const r=rowAt(ci,half);if(!r||!CH.x)return;const X=CH.x(half&&CH.rows[ci+1]?ci+.5:ci),hr=`<b class="num">${fmtH.format(r.t)}</b>`;
  const set=(id,c,pts,html)=>{const el=$(id);if(!el||!CH.Y[c])return;const g=el.querySelector(".hov"),tip=el.querySelector(".tip"),svg=el.querySelector("svg");if(!g||!tip||!svg)return;
   const ys=pts.filter(p=>p.v!=null).map(p=>({y:yOf(c,p.v),col:p.col}));
   g.innerHTML=ys.map(p=>`<circle cx="${X}" cy="${p.y}" r="4.5" fill="${p.col}" stroke="var(--surface)" stroke-width="2"/>`).join("");
@@ -1890,10 +1893,10 @@ function updateHover(ci){const r=CH.rows[ci];if(!r||!CH.x)return;const X=CH.x(ci
   `${hr} · ${r.d!=null?dir16(r.d)+" ":""}<b>${wv(r.raw)} ${WU()}</b><br>no ponto <b>${wv(r.eff)}</b> · rajada ${wv(r.g)}${r.all.length>1&&wv(Math.min(...r.all))!==wv(Math.max(...r.all))?`<br><span class="muted">modelos: ${wv(Math.min(...r.all))}–${wv(Math.max(...r.all))}</span>`:""}`);
  set("#chWave","wave",[{v:r.wave,col:"var(--accent)"}],
   `${hr} · onda no ponto <b>${r.wave!=null?r.wave.toFixed(1).replace(".",","):"–"} m</b>${r.hs!=null?`<br><span class="muted">mar aberto ${r.hs.toFixed(1).replace(".",",")} m ${dir16(r.wdir)}</span>`:""}`)}
-function updateReadout(ci){const r=CH.rows[ci];if(!r)return;const sp=spot();updateHover(ci);
+function updateReadout(ci,half){const r=CH.rows[ci];if(!r)return;const sp=spot();updateHover(ci,half);
  document.querySelectorAll("#windTab td.sel").forEach(e=>e.classList.remove("sel"));document.querySelectorAll(`#windTab td[data-ci="${ci}"]`).forEach(e=>e.classList.add("sel"));
  $("#readout").innerHTML=`<b class="num">${fmtDH.format(r.t)}</b> · nota <b class="num">${N(r.score)}</b> · vento ${r.d!=null?dir16(r.d):"–"} <span class="num">${r.raw!=null?wv(r.raw):"–"}</span> ${WU()} (no ponto <span class="num">${r.eff!=null?wv(r.eff):"–"}</span>, rajada <span class="num">${r.g!=null?wv(r.g):"–"}</span>) · maré <span class="num">${r.tide!=null?r.tide.toFixed(2):"–"}</span> m ${r.rate!=null?(r.rate>0?"enchendo":"vazando"):""} · onda <span class="num">${r.wave!=null?r.wave.toFixed(1):"–"}</span> m<br><span class="muted">${esc(reasons(r,sp).join(" · "))}</span>`;
- document.querySelectorAll(".chart .xh").forEach(l=>{l.setAttribute("x1",CH.x(ci));l.setAttribute("x2",CH.x(ci))})}
+ const xx=CH.x(half&&CH.rows[ci+1]?ci+.5:ci);document.querySelectorAll(".chart .xh").forEach(l=>{l.setAttribute("x1",xx);l.setAttribute("x2",xx)})}
 function renderWindows(){const sp=spot(),rows=S.derived[sp.id].rows,now=Date.now()-HOUR;const fut=rows.filter(r=>r.t>=now);const wins=[];let cur=null;
  const sc_=fut.map(r=>r.score).sort((a,b)=>a-b),thr=Math.max(6.3,sc_[Math.floor(sc_.length*.75)]||0);
  for(const r of fut){if(r.score>=thr&&!r.danger){if(!cur)cur={a:r,b:r,s:0,n:0};cur.b=r;cur.s+=r.score;cur.n++}else if(cur){wins.push(cur);cur=null}}if(cur)wins.push(cur);
@@ -1995,7 +1998,7 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b
 });
 $("#mapWhen").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot()});
 $("#when").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.data.t[S.when]);renderRank();renderSpot()});
-["#chScore","#chTide","#chWind","#chWave"].forEach(id=>{const el=$(id);const mv=e=>{if(!CH.rows.length)return;const rc=el.getBoundingClientRect();const px=(e.clientX-rc.left)*(CH.W/rc.width);const ci=clamp(Math.round((px-CH.padL)/((CH.W-CH.padL-CH.padR)/(CH.rows.length-1))),0,CH.rows.length-1);updateReadout(ci)};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)});
+["#chScore","#chTide","#chWind","#chWave"].forEach(id=>{const el=$(id);const mv=e=>{if(!CH.rows.length)return;const rc=el.getBoundingClientRect();const px=(e.clientX-rc.left)*(CH.W/rc.width);const f=clamp(Math.round(2*(px-CH.padL)/((CH.W-CH.padL-CH.padR)/(CH.rows.length-1)))/2,0,CH.rows.length-1),ci=Math.floor(f);updateReadout(ci,f-ci>.25)};el.addEventListener("pointermove",mv);el.addEventListener("pointerdown",mv)});
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data){renderCharts();renderTimeline();if(S.view==="lua")renderMoon()}},150)});
 $("#lgQty").addEventListener("input",e=>{if(e.target.value==="0")$("#lgRes").value="0";else if($("#lgRes").value==="0")$("#lgRes").value="2"});
 $("#lgWhen").addEventListener("input",e=>{e.target.dataset.touched="1"});
@@ -2427,7 +2430,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.3";
+const APP_VERSION="2026-10-28.4";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
