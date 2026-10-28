@@ -552,6 +552,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <details class="small" style="margin:6px 0"><summary>Por que a altura é diferente da tábua da EPAGRI?</summary><div class="muted" style="margin-top:4px">
       <p style="margin:4px 0"><b>1. Referência.</b> A tábua mede a partir do "zero hidrográfico" (o nível das marés mais baixas), por isso quase tudo é positivo (ex.: preamar 0,9 m, baixamar 0,2 m). O app, no padrão, mede a partir do nível médio do mar: os mesmos valores viram +0,36 m e −0,34 m em Florianópolis. Toque em <b>Como na tábua</b> para ver na mesma régua da EPAGRI.</p>
       <p style="margin:4px 0"><b>2. Maré meteorológica.</b> A tábua é só a maré astronômica (Lua e Sol). O app usa o marégrafo, que mede a água de verdade: vento sul e pressão baixa empurram a água para cima (às vezes 20 a 50 cm), vento nordeste puxa para baixo. Essa diferença é a "maré meteorológica".</p>
+      <p style="margin:4px 0"><b>O que é medido e o que é previsão.</b> Até a última leitura, a linha laranja é exatamente o que o marégrafo da EPAGRI mediu (a cada 15 min). Depois dela, a linha tracejada é a maré astronômica da própria EPAGRI somada à maré meteorológica prevista, suavizada para não mudar a hora das preamares.</p>
       <p style="margin:4px 0"><b>3. Lugar.</b> A tábua é da estação (ex.: Florianópolis). No seu ponto a maré pode chegar alguns minutos antes ou depois e com amplitude um pouco diferente, e o app ajusta isso.</p></div></details><div class="legend"><span><i style="background:var(--sand)"></i>Medido no marégrafo EPAGRI</span><span><i style="background:none;border-top:2px dashed var(--accent);height:0"></i>Previsão</span></div><div class="chart" id="chTide"></div>
       <div class="tw"><table class="t" id="tideTable"></table></div></article>
     <article class="card"><div class="cols2">
@@ -1243,7 +1244,11 @@ function buildGauge(rows,harm,tab){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm
  // a previsão sai do último valor medido (continuidade), vai para a média da última hora em ~1 h e para o resíduo previsto em ~12 h
  const adj=x=>r0==null||!last?0:(r0-rp0)*Math.exp(-(x-last.t)/(12*HOUR))+(rLast-r0)*Math.exp(-(x-last.t)/HOUR);
  const fut=rows.filter(r=>(!last||r.t>last.t)&&r.ast!=null);
- const rp=r=>r.pres!=null?r.pres:(r.prev!=null?r.prev-r.ast:null);
+ // resíduo previsto (maré meteorológica do MohidSC): média móvel de 25 h. O MohidSC tem a fase da maré
+ // até 1 h adiantada em relação à maré astronômica; sem o filtro esse erro entrava como "resíduo" e mudava a hora da preamar.
+ const rpRaw=r=>r.pres!=null?r.pres:(r.prev!=null&&r.ast!=null?r.prev-r.ast:null),RS=new Map();
+ {const F=rows.filter(r=>(!last||r.t>last.t)&&rpRaw(r)!=null);for(const r of F){let sm=0,n=0;for(const q of F){if(Math.abs(q.t-r.t)<=12.5*HOUR){sm+=rpRaw(q);n++}}RS.set(r.t,sm/n)}}
+ const rp=r=>RS.has(r.t)?RS.get(r.t):null;
  const firstRp=(fut.find(r=>rp(r)!=null)||{});const rp0=firstRp.t?rp(firstRp):0;
  let lastRp=rp0,lastRpT=last?last.t:(fut[0]||{}).t;
  const T=[],V=[];
@@ -1255,13 +1260,15 @@ function buildGauge(rows,harm,tab){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm
  // depois da última maré astronômica publicada: continua com a análise harmônica (se houver histórico)
  // tábua oficial em cm no mesmo zero do marégrafo: desloca pela diferença média com a maré astronômica publicada
  let tabCm=null;if(tab){const d=rows.filter(r=>r.ast!=null).map(r=>{const v=tab.fn(r.t);return v==null?null:r.ast-100*v}).filter(v=>v!=null);
-  const off=d.length>8?d.reduce((s,v)=>s+v,0)/d.length:nmm-100*tab.mean;tabCm=x=>{const v=tab.fn(x);return v==null?null:100*v+off}}
+  var tabOffCm=d.length>8?d.reduce((s,v)=>s+v,0)/d.length:nmm-100*tab.mean;const off=tabOffCm;tabCm=x=>{const v=tab.fn(x);return v==null?null:100*v+off}}
  const ext=tabCm||(harm?harm.fn:null);
  if(ext&&T.length){const tl=T[T.length-1];for(let x=tl+HOUR;x<=tl+9*24*HOUR;x+=HOUR){const a=ext(x);if(a==null)break;let res=lastRp*Math.exp(-(x-lastRpT)/(24*HOUR))+adj(x);T.push(x);V.push((a+res-nmm)/100)}}
  const fn=x=>{if(!T.length||x<T[0]||x>T[T.length-1])return null;let lo=0,hi=T.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(T[m]<=x)lo=m;else hi=m}
   if(T[hi]-T[lo]>2*HOUR)return null;return T[hi]===T[lo]?V[lo]:V[lo]+(V[hi]-V[lo])*(x-T[lo])/(T[hi]-T[lo])};
  const pts=obsRows.map(r=>({t:r.t,h:(r.obs-nmm)/100,r:r.res!=null?r.res/100:undefined}));
- return{rows,nmm,last,r0,fn,pts,tEnd:T[T.length-1],harm:tabCm?null:(harm||null),tab:tabCm?tab:null}}
+ // zero da tábua em relação ao nível médio do marégrafo (m): converte "nível médio" para "como na tábua"
+ const z0=tabCm?(nmm-tabOffCm)/100:null;
+ return{rows,nmm,last,r0,fn,pts,tEnd:T[T.length-1],harm:tabCm?null:(harm||null),tab:tabCm?tab:null,z0}}
 function gaugeFor(sp){if(!S.ep)return null;let k=stationKey(sp);
  if(!S.ep[k]){if(isLegacy(sp)&&S.ep.floripa)k="floripa";else{let bd=1e9,b=null;for(const x in S.ep){const d=distKm(sp,EP_ST[x]);if(d<bd){bd=d;b=x}}if(!b||bd>150)return null;k=b}}
  const g=S.ep[k],st=EP_ST[k],legacy=isLegacy(sp)||(!sp.g&&st.lagRef!=null);
@@ -1271,9 +1278,9 @@ function tideFor(sp){
  const model=!B?(()=>null):!G?B.fn:(x=>{const v=B.fn(x-G.L*60e3);return v==null?null:G.b*v+k*surgeAt(x)});
  const E=S.tideTable&&S.tideTable.length>1?null:gaugeFor(sp);
  if(E){let n=0;const h=t.map(x=>{const v=E.g.fn(x-E.lag*60e3);if(v!=null){n++;return v*E.amp}return model(x)});
-  if(n)return{h,src:E.g.tabOnly?`tábua oficial EPAGRI ${E.st.n}`:E.g.astroOnly?`maré astronômica de ${E.st.n} (sem medição ao vivo)`:E.st.kind==="ioc"?`marégrafo SiMCosta ${E.st.n} (medido + maré harmônica)`:`marégrafo EPAGRI ${E.st.n} (medido + previsão MohidSC${E.g.tab?" + tábua oficial":""})`,ep:E}}
+  if(n)return{h,fn:x=>{const v=E.g.fn(x-E.lag*60e3);return v!=null?v*E.amp:model(x)},src:E.g.tabOnly?`tábua oficial EPAGRI ${E.st.n}`:E.g.astroOnly?`maré astronômica de ${E.st.n} (sem medição ao vivo)`:E.st.kind==="ioc"?`marégrafo SiMCosta ${E.st.n} (medido + maré harmônica)`:`marégrafo EPAGRI ${E.st.n} (medido + previsão MohidSC${E.g.tab?" + tábua oficial":""})`,ep:E}}
  if(!B)return{h:t.map(()=>null),src:"sem dado"};
- return{h:t.map(model),src:B.src+(G?" + marégrafo EPAGRI":"")}}
+ return{h:t.map(model),fn:model,src:B.src+(G?" + marégrafo EPAGRI":"")}}
 /* Marégrafo: ajusta atraso (L), fator de altura (b) e referência (a) da previsão contra o medido.
    O que sobra (resíduo) é a maré meteorológica; no futuro ela decai em ~12 h. */
 function fitGauge(){S.gfit=null;S.gObs=null;if(!S.data)return;
@@ -1578,10 +1585,15 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    if(gc!=null&&gc>60)danger=(danger?danger+" e ":"")+"rajadas fortes";
    if(danger){sc=Math.min(sc,2);adj.push({t:"perigo: "+danger,d:null})}
    rows.push({i,t:t[i],adj,rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],wi,rain:o.rain[i],pres:o.pres[i]})}
-  const ex=tideExtremes(rows);
+  const ex=refineEx(tideExtremes(rows),tide.fn);
   if(S.fish!=="geral")applyFish(sp,rows,ex);
   applyFrontScores(rows);
-  S.derived[sp.id]={rows,tideSrc:tide.src,ep:tide.ep||null,ex}}}
+  S.derived[sp.id]={rows,tideSrc:tide.src,ep:tide.ep||null,ex,tfn:tide.fn||null}}}
+/* acerta hora e altura de cada preamar/baixamar na curva contínua (minuto a minuto), não só nas horas cheias;
+   o medido é suavizado em ±10 min para um pico de leitura não virar extremo */
+function refineEx(ex,fn){if(!fn)return ex;const sm=x=>{const a=fn(x-6e5),b=fn(x),c=fn(x+6e5);return a==null||b==null||c==null?b:(a+b+c)/3};
+ return ex.map(e=>{let bt=null,bh=null;for(let x=e.t-75*60e3;x<=e.t+75*60e3;x+=2*60e3){const v=sm(x);if(v==null)continue;if(bh==null||(e.hi?v>bh:v<bh)){bh=v;bt=x}}
+  return bt==null?e:{...e,t:bt,h:bh}})}
 /* ================== PEIXE ALVO ==================
  Cada perfil muda os pesos da nota. Base científica (robalo): param de comer ~14 °C (NOAA, Flórida);
  adultos mais ativos à noite (Dantas & Barletta 2016); mais densidade perto de estrutura (mesmo estudo);
@@ -1832,7 +1844,7 @@ function renderCharts(){
  if(tv.length){let lo=Math.min(...tv),hi=Math.max(...tv);lo=Math.floor((lo-.05)*10)/10;hi=Math.ceil((hi+.05)*10)/10;const h=130;
   const step=hi-lo>1?.5:.2;const yt=[];for(let v=Math.ceil(lo/step)*step;v<=hi+1e-9;v+=step)yt.push(+v.toFixed(2));
   const area=(()=>{let d="";th.forEach((v,i)=>{if(v==null)return;const y=6+(h-26)*(1-(v-lo)/(hi-lo));d+=(d?"L":"M")+x(i)+" "+y});return d?`<path d="${d}L${x(th.length-1)} ${h-20}L${x(0)} ${h-20}Z" fill="var(--accent)" fill-opacity=".14"/>`:""})();
-  const ex=tideExtremes(rows).map(e=>{const fi=(e.t-rows[0].t)/HOUR;if(fi<0||fi>rows.length-1)return"";const y=6+(h-26)*(1-(e.h-lo)/(hi-lo));return`<circle cx="${x(fi)}" cy="${y}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text x="${x(fi)}" y="${e.hi?y-8:y+16}" text-anchor="middle" style="fill:var(--ink-2)">${fmtH.format(e.t)}</text>`}).join("");
+  const ex=S.derived[spot().id].ex.filter(e=>e.t>=rows[0].t-HOUR/2&&e.t<=rows[rows.length-1].t+HOUR/2).map(e=>{const fi=(e.t-rows[0].t)/HOUR;if(fi<0||fi>rows.length-1)return"";const y=6+(h-26)*(1-(e.h-lo)/(hi-lo));return`<circle cx="${x(fi)}" cy="${y}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text x="${x(fi)}" y="${e.hi?y-8:y+16}" text-anchor="middle" style="fill:var(--ink-2)">${fmtH.format(e.t)}</text>`}).join("");
   CH.Y.tide={lo,hi,h};$("#chTide").innerHTML=`<svg height="${h}" viewBox="0 0 ${W} ${h}">${night(h)}${yax(h,lo,hi,yt,v=>(v+tideOff()).toFixed(1))}${area}${(()=>{const Yv=v=>6+(h-26)*(1-(v-lo)/(hi-lo));
    // previsão (tracejada) só depois da última medição; antes disso vale o medido
    let d="";rows.forEach((r,i)=>{if(r.tide==null||(cut&&r.t<cut))return;d+=(d?"L":"M")+x(i).toFixed(1)+" "+Yv(r.tide).toFixed(1)});
@@ -1864,7 +1876,7 @@ function renderCharts(){
    CH.Y.wave={lo:0,hi,h};$("#chWave").innerHTML=`<svg height="${h}" viewBox="0 0 ${W} ${h}">${yax(h,0,hi,yt,v=>v.toFixed(1))}${line(wv,h,0,hi,"var(--accent)",2)}${xAxis(h)}${cross(h)}<g class="hov"></g></svg><div class="tip" hidden></div>`}
   else $("#chWave").innerHTML=`<p class="small muted">Sem dado de onda.</p>`}
  // tábua do dia + sol/lua
- const ex=tideExtremes(rows),evs=S.events.filter(e=>dayKey(e.t)===S.day);
+ const ex=S.derived[spot().id].ex.filter(e=>dayKey(e.t)===S.day),evs=S.events.filter(e=>dayKey(e.t)===S.day);
  const evName={sunrise:"Nascer do sol",sunset:"Pôr do sol",moonrise:"Nascer da lua",moonset:"Pôr da lua",transit:"Lua no meridiano",under:"Lua no antimeridiano"};
  const items=[...ex.map(e=>({t:e.t,a:e.hi?"Preamar":"Baixamar",b:`${e.h+tideOff()>=0?"+":""}${(e.h+tideOff()).toFixed(2).replace(".",",")} m`})),...evs.map(e=>({t:e.t,a:evName[e.k],b:e.k==="transit"||e.k==="under"?"período forte":e.k.startsWith("moon")?"período médio":""}))].sort((a,b)=>a.t-b.t);
  $("#tideTable").innerHTML=`<thead><tr><th>Hora</th><th>Evento</th><th></th></tr></thead><tbody>${items.map(o=>`<tr><td class="num">${fmtH.format(o.t)}</td><td>${o.a}</td><td class="num muted">${o.b}</td></tr>`).join("")}</tbody>`;
@@ -1873,7 +1885,7 @@ const cm=v=>{const r=Math.round(v*100)/100;return`${r>=0?"+":"−"}${Math.abs(r)
 /* Referência da altura da maré: nível médio (padrão do app) ou o zero da tábua oficial (como a EPAGRI publica).
    A diferença é só a soma do nível médio da estação na tábua (ex.: ~0,54 m em Florianópolis). */
 let TREF=store("pf_tref")||"nmm";
-function tideOff(sp){if(TREF!=="tab")return 0;sp=sp||spot();const k=stationKey(sp),tb=(S.tab&&S.tab[k])||(S.ep&&S.ep[k]&&S.ep[k].tab);return tb&&tb.mean!=null?tb.mean:0}
+function tideOff(sp){if(TREF!=="tab")return 0;sp=sp||spot();const E=gaugeFor(sp);if(E&&E.g&&E.g.z0!=null)return E.g.z0;const k=stationKey(sp),tb=(S.tab&&S.tab[k])||(E&&E.g&&E.g.tab);return tb&&tb.mean!=null?tb.mean:0}
 const cmT=v=>cm(v+tideOff());
 const tideRefName=()=>TREF==="tab"?"zero da tábua EPAGRI":"nível médio";
 const dm=v=>`${Math.abs(v).toFixed(2).replace(".",",")} m`;
@@ -1920,7 +1932,8 @@ function renderWindNow(){const sp=spot(),rows=S.derived[sp.id].rows,nowH=Math.fl
 function yOf(c,v){const Y=CH.Y[c];return 6+(Y.h-26)*(1-(v-Y.lo)/((Y.hi-Y.lo)||1))}
 // de 15 em 15 min: interpola entre a hora cheia e a seguinte (fr = 0, .25, .5 ou .75)
 function rowAt(ci,fr){const a=CH.rows[ci],b=CH.rows[ci+1];if(!fr||!a||!b)return a;const m=(x,y)=>x!=null&&y!=null?x+(y-x)*fr:null;
- return{...a,t:a.t+fr*HOUR,tide:m(a.tide,b.tide),obs:m(a.obs,b.obs),rate:m(a.rate,b.rate),raw:m(a.raw,b.raw),eff:m(a.eff,b.eff),g:m(a.g,b.g),wave:m(a.wave,b.wave),hs:m(a.hs,b.hs),all:a.all}}
+ const D=S.derived[spot().id],f=D&&D.tfn,t=a.t+fr*HOUR,tf=f?f(t):null,ta=f?f(t-9e5):null,tb=f?f(t+9e5):null;
+ return{...a,t,tide:tf!=null?tf:m(a.tide,b.tide),obs:m(a.obs,b.obs),rate:ta!=null&&tb!=null?(tb-ta)*2:m(a.rate,b.rate),raw:m(a.raw,b.raw),eff:m(a.eff,b.eff),g:m(a.g,b.g),wave:m(a.wave,b.wave),hs:m(a.hs,b.hs),all:a.all}}
 function updateHover(ci,fr){const r=rowAt(ci,fr);if(!r||!CH.x)return;const X=CH.x(fr&&CH.rows[ci+1]?ci+fr:ci),hr=`<b class="num">${fmtH.format(r.t)}</b>`;
  const set=(id,c,pts,html)=>{const el=$(id);if(!el||!CH.Y[c])return;const g=el.querySelector(".hov"),tip=el.querySelector(".tip"),svg=el.querySelector("svg");if(!g||!tip||!svg)return;
   const ys=pts.filter(p=>p.v!=null).map(p=>({y:yOf(c,p.v),col:p.col}));
@@ -2472,7 +2485,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.8";
+const APP_VERSION="2026-10-28.10";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
