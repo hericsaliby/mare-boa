@@ -136,6 +136,46 @@ service cloud.firestore {
       allow update: if authed() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time
         && request.time > resource.data.ultimo + duration.value(5, 's');
     }
+    // Feed de pescarias (estilo Strava): sem o ponto, só uma área larga do litoral
+    match /atividades/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == me()
+        && request.resource.data.keys().hasOnly(['uid', 'nome', 'nivel', 't', 'sp', 'qty', 'size', 'res', 'isca', 'area', 'texto', 'cond', 'criadoEm'])
+        && request.resource.data.criadoEm == request.time
+        && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
+        && request.resource.data.nivel is int && request.resource.data.t is int
+        && request.resource.data.sp is string && request.resource.data.sp.size() <= 30
+        && request.resource.data.qty is int && request.resource.data.qty >= 0 && request.resource.data.qty <= 100
+        && request.resource.data.res is int && request.resource.data.res >= 0 && request.resource.data.res <= 3
+        && request.resource.data.area is string && request.resource.data.area.size() <= 50
+        && (!('size' in request.resource.data) || (request.resource.data.size is int && request.resource.data.size <= 300))
+        && (!('isca' in request.resource.data) || (request.resource.data.isca is string && request.resource.data.isca.size() <= 40))
+        && (!('texto' in request.resource.data) || (request.resource.data.texto is string && request.resource.data.texto.size() <= 280))
+        && request.resource.data.cond is map
+        && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']);
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+
+      match /kudos/{uid} {
+        allow read: if signedIn();
+        allow create: if signedIn() && uid == me()
+          && request.resource.data.keys().hasOnly(['nome', 'criadoEm'])
+          && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
+          && request.resource.data.criadoEm == request.time;
+        allow delete: if signedIn() && (uid == me() || isAdmin());
+      }
+
+      match /coment/{cid} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.uid == me()
+          && request.resource.data.keys().hasOnly(['uid', 'nome', 'texto', 'criadoEm'])
+          && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
+          && request.resource.data.texto is string && request.resource.data.texto.size() >= 1 && request.resource.data.texto.size() <= 300
+          && request.resource.data.criadoEm == request.time;
+        allow delete: if signedIn() && (resource.data.uid == me() || isAdmin()
+          || get(/databases/$(database)/documents/atividades/$(id)).data.uid == me());
+      }
+    }
+
     match /capturas/{id} {
       allow read: if authed();
       allow create: if authed() && request.resource.data.uid == request.auth.uid

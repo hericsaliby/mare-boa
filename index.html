@@ -368,6 +368,32 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .lgpd p{margin:0;font-size:14px;line-height:1.4;flex:1}
 @media (min-width:900px){.lgpd{bottom:20px;left:240px}}
 .chatcard{gap:10px}
+.comseg{margin:0 0 12px}.comseg .chipbtn{font-weight:600}
+.acts{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+.act{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.act h4{margin:0;font-size:17px}.acth{display:flex;gap:10px;align-items:center}
+.av{width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}.av.big{width:56px;height:56px;font-size:22px}
+.actstats{display:flex;flex-wrap:wrap;gap:6px 18px}.actstats div{display:flex;flex-direction:column}.actstats span{font-size:12px;color:var(--muted)}.actstats b{font-size:18px}
+.actchips{display:flex;flex-wrap:wrap;gap:6px}.actchips span{font-size:12px;background:var(--accent-soft);border-radius:999px;padding:3px 9px}
+.actfoot{display:flex;gap:14px;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+.kudo{border:1px solid var(--line);background:none;color:inherit;border-radius:999px;padding:6px 14px;font:inherit;font-weight:600;cursor:pointer}
+.kudo.on{background:#fc5200;border-color:#fc5200;color:#fff}.kudo:disabled{opacity:.55;cursor:default}
+.coms{display:flex;flex-direction:column;gap:6px;background:var(--bg);border-radius:10px;padding:8px}.com{font-size:14px}
+.comform,.pendrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.comform input,.pendrow input{flex:1 1 140px;min-width:0}
+.pend{border:1px dashed var(--accent);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.desafios{display:flex;flex-direction:column;gap:10px}.des{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px}
+.des.ok{border-color:var(--good)}.desic{font-size:26px;line-height:1}
+.rank{list-style:none;margin:10px 0 0;padding:0}.rank li{display:flex;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--line)}
+.rank li.me{background:var(--accent-soft);border-radius:8px}.rank .pos{width:30px;text-align:center;font-weight:700}
+.streak{display:flex;flex-direction:column;align-items:center;background:#fff3ec;color:#a33a00;border-radius:12px;padding:6px 10px}.streak b{font-size:20px}.streak span{font-size:11px}
+.vtot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.vtot div{border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column}
+.vtot span{font-size:12px;color:var(--muted)}.vtot b{font-size:24px}.vtot small{font-size:11px;color:var(--muted)}
+.wkbars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:90px;align-items:end}.wkbars div{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.wkbars i{display:block;width:100%;background:#fc5200;border-radius:4px 4px 0 0;min-height:2px}.wkbars span{font-size:10px;color:var(--muted);height:14px}
+.recs{list-style:none;margin:0;padding:0}.recs li{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center}
+.trofs{display:flex;flex-wrap:wrap;gap:6px}.trofs span{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .streak{background:#3a1d0c;color:#ffb38a}}
+:root[data-theme="dark"] .streak{background:#3a1d0c;color:#ffb38a}
 .chatgroups{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chatgroups .chipbtn{flex:0 0 auto}
 .chatgroups .newg{border-style:dashed}
@@ -426,7 +452,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 <div class="shell">
 <nav class="side" aria-label="Seções">
   <div class="brand"><span class="brandrow"><svg class="logo" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><path d="M6 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M16 6v7a3 3 0 0 1-6 0" fill="none" stroke="var(--sand)" stroke-width="2.2" stroke-linecap="round"/></svg>Maré Boa</span><small>Pesca na Grande Florianópolis</small></div>
-  <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Grupos</span></a><a href="#conta" data-view="conta"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Conta</span></a><a href="#admin" data-view="admin" class="adminonly" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Admin</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
+  <a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Comunidade</span></a><a href="#conta" data-view="conta"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Conta</span></a><a href="#admin" data-view="admin" class="adminonly" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Admin</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a>
   <div class="side-foot small muted" id="sideFoot"></div>
 </nav>
 <div class="main">
@@ -484,6 +510,8 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
           <label class="inline" for="lgRes">Resultado<select id="lgRes"><option value="0">Nada</option><option value="1">Fraco</option><option value="2" selected>Bom</option><option value="3">Muito bom</option></select></label>
           <label class="inline" for="lgNote" style="grid-column:1/-1">Observações<input type="text" id="lgNote" placeholder="profundidade, onde bateu, cor da isca, água turva..."></label>
           <label class="small" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="lgShare"> <span>Ajudar a comunidade: enviar <b>anonimamente</b> as condições desta pescaria (maré, vento, pressão, água, peixe, isca e a região de ~10 km). <b>O local do ponto não é enviado.</b></span></label>
+          <label class="small" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="lgPub"> <span><b>Publicar no feed da comunidade</b>: peixe, quantidade, tamanho, isca, condições e só a área do litoral (ex.: Grande Florianópolis). <b>O ponto não aparece.</b></span></label>
+          <label class="inline" for="lgCap" style="grid-column:1/-1" id="lgCapL" hidden>Legenda no feed (opcional)<input type="text" id="lgCap" maxlength="280" placeholder="ex.: Robalo na virada da maré!"></label>
           <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar pescaria</button><span id="lgMsg" class="small muted"></span></div>
           <datalist id="baitList"><option value="Camarão vivo"><option value="Camarão morto"><option value="Artificial de meia-água"><option value="Artificial de superfície"><option value="Jig head + shad"><option value="Sardinha"><option value="Corrupto"><option value="Tatuíra"><option value="Lula"><option value="Filé de peixe"><option value="Siri"><option value="Manjuba"><option value="Minhoca"></datalist>
         </form>
@@ -575,7 +603,13 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
     </article>
   </section>
 
-  <section class="view" id="v-grupos" aria-label="Grupos" hidden>
+  <section class="view" id="v-grupos" aria-label="Comunidade" hidden>
+    <div class="chatgroups comseg" id="comSeg" role="group" aria-label="Comunidade"></div>
+    <article class="card" id="comFeed" hidden></article>
+    <article class="card" id="comDes" hidden></article>
+    <article class="card" id="comRank" hidden></article>
+    <article class="card" id="comVoce" hidden></article>
+    <div id="comChat">
     <article class="card" id="cmGate"><h2>Grupos</h2><p class="small" style="margin:0">Para conversar nos grupos, entre na sua conta. É grátis, com Google ou e-mail.</p><div class="row"><a class="btn" href="#conta" data-view="conta">Entrar na minha conta</a></div></article>
     <article class="card chatcard" id="cmFeed" hidden>
       <div class="chatgroups" id="cmGroups" role="group" aria-label="Grupos"></div>
@@ -594,6 +628,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <div class="small chatinfo"><span id="cmMsg" role="status"></span><span class="muted" id="cmCount">0/500</span></div>
     </article>
     <article class="card" id="cmPartners"><h2>Parceiros locais</h2><div id="cmPartnerList" class="partners"></div><div id="cmPartnerAdmin"></div></article>
+    </div>
   </section>
 
   <section class="view" id="v-conta" aria-label="Conta" hidden>
@@ -699,7 +734,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 </div>
 </div>
 <div class="lgpd" id="lgpdBar" hidden role="region" aria-label="Aviso de privacidade"><p>O Maré Boa guarda seus pontos e seu diário <b>só neste aparelho</b>. A previsão de cada ponto é calculada no próprio celular: a localização deles não sai daqui. <a href="privacidade.html">Saiba mais</a></p><button class="btn" type="button" id="lgpdOk">Entendi</button></div>
-<nav class="tabs" aria-label="Seções"><a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Grupos</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a></nav>
+<nav class="tabs" aria-label="Seções"><a href="#resumo" data-view="resumo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Resumo</span></a><a href="#mare" data-view="mare"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg><span>Maré</span></a><a href="#vento" data-view="vento"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/></svg><span>Vento</span></a><a href="#lua" data-view="lua"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg><span>Lua</span></a><a href="#mapa" data-view="mapa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Mapa</span></a><a href="#grupos" data-view="grupos"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14c2.6.2 4.4 1.8 5 4.5"/></svg><span>Comunidade</span></a><a href="#mais" data-view="mais"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Mais</span></a></nav>
 </div>
 
 <script>
@@ -1400,7 +1435,7 @@ function bellItems(){const out=[],now=Date.now();if(!S.data)return out;
  W.forEach(w=>out.push({id:`sim-${w.sp.id}-${Math.round(w.a/HOUR)}`,ic:"🎣",t:`${fmtD.format(w.a)} ${fmtH.format(w.a)} em ${w.sp.n}: ${Math.round(w.peak*100)}% parecido com ${w.ref.col?"uma saída boa da comunidade":"sua saída de "+fmtDM.format(w.ref.x.t)}`,d:`${w.ref.x.qty?w.ref.x.qty+" ":""}${w.ref.x.sp}${w.ref.x.bait?", "+w.ref.x.bait:""}`,go:`sim|${w.sp.id}|${w.at}`,at:w.a-24*HOUR}));
  const ag=agendaSlots().find(o=>noonOf(o.k)<now+36*HOUR);
  if(ag){const b=ag.best[0];out.push({id:`ag-${ag.k}-${ag.ha}`,ic:"📅",t:`${ag.k===dayKey(now)?"Hoje":fmtD.format(noonOf(ag.k))} (${ag.ha}h–${ag.hb}h): ${b.sp.n} às ${fmtH.format(b.r.t)}`,d:`Nota ${N(b.r.score)} · ${reasons(b.r,b.sp).slice(0,2).join(" · ")}`,go:`sim|${b.sp.id}|${b.r.t}`,at:noonOf(ag.k)-24*HOUR})}
- BELL_CHAT.forEach(c=>out.push(c));
+ BELL_CHAT.forEach(c=>out.push(c));BELL_COM.forEach(c=>out.push(c));
  return out.sort((a,b)=>(b.at||0)-(a.at||0))}
 function renderBell(){const L=bellItems(),seen=new Set(store("pf_bell_seen")||[]),n=L.filter(x=>!seen.has(x.id)).length,b=$("#bellN");if(!b)return;
  b.hidden=!n;b.textContent=n>9?"9+":n;BELL=L}
@@ -1415,7 +1450,8 @@ $("#bellBtn").addEventListener("click",e=>{e.stopPropagation();openBell()});
 document.addEventListener("click",e=>{const p=$("#bellPanel");if(!p)return;const g=e.target.closest("[data-bellgo]");
  if(g){const v=g.dataset.bellgo;p.remove();if(v==="front"){showView("resumo");setTimeout(()=>$("#frontAlert").scrollIntoView({behavior:"smooth",block:"start"}),80)}
   else if(v.startsWith("sim|")){const [,id,t]=v.split("|");showView("resumo");if(S.spot!==id)selectSpot(id,false);const k=S.data.t.findIndex(x=>x===+t);if(k>=0){S.when=k;S.day=dayKey(+t);renderRank();renderSpot()}}
-  else if(v.startsWith("chat|")){const [,gid,pid]=v.split("|");CM.gid=gid;showView("grupos");setTimeout(()=>{const el=document.getElementById("pm_"+pid);if(el)el.scrollIntoView({block:"center"})},700)}return}
+  else if(v==="com"){COM.seg="feed";showView("grupos")}
+  else if(v.startsWith("chat|")){const [,gid,pid]=v.split("|");CM.gid=gid;COM.seg="chat";showView("grupos");setTimeout(()=>{const el=document.getElementById("pm_"+pid);if(el)el.scrollIntoView({block:"center"})},700)}return}
  if(!p.contains(e.target)&&!e.target.closest("#bellBtn"))p.remove()});
 // respostas e menções: acompanha as últimas mensagens dos seus grupos (se você já entrou nos Grupos)
 let BELL_UNSUB=[];
@@ -1880,7 +1916,8 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
-function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true}
+function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true;$("#lgPub").checked=store("pf_pub")!==false;$("#lgPub").onchange=()=>{$("#lgCapL").hidden=!$("#lgPub").checked||!comOn()}}
+ $("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=!comOn()||!$("#lgPub").checked;
  // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
  const lkey=logList.map(s=>s.id+s.n).join("|");
@@ -1927,7 +1964,7 @@ $("#when").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.da
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data){renderCharts();renderTimeline();if(S.view==="lua")renderMoon()}},150)});
 $("#lgQty").addEventListener("input",e=>{if(e.target.value==="0")$("#lgRes").value="0";else if($("#lgRes").value==="0")$("#lgRes").value="2"});
 $("#lgWhen").addEventListener("input",e=>{e.target.dataset.touched="1"});
-$("#logDet").addEventListener("toggle",e=>{if(e.target.open){if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
+$("#logDet").addEventListener("toggle",e=>{if(e.target.open){$("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=!comOn()||!$("#lgPub").checked;if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
 $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgMsg");
  try{
  const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
@@ -1938,6 +1975,7 @@ $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgM
   qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
   c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,v:r&&!S.demo?condVec(SPOTS.find(x=>x.id===sp),r):null,model:S.model};
  S.log.push(item);store("pf_log",S.log);
+ if(comOn()){const pb=$("#lgPub").checked;store("pf_pub",pb);if(pb)publishCatch(item,$("#lgCap").value).then(()=>{$("#lgCap").value="";const m=$("#lgMsg");m.textContent=(m.textContent?m.textContent+" ":"")+"Publicado no feed."}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui publicar no feed agora (dá para publicar depois em Comunidade)."})}
  {const sh=$("#lgShare").checked;store("pf_share",sh);if(sh&&item.v)shareCatch(item).then(ok=>{if(ok)$("#lgMsg").textContent="Compartilhado anonimamente. Obrigado!"}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui compartilhar agora."})}
  $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
  // mostra o histórico do ponto onde a pescaria foi registrada
@@ -2314,7 +2352,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-27.17";
+const APP_VERSION="2026-10-28.1";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2322,6 +2360,7 @@ function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body
  if(!S.data)return;
  if(v==="mare"||v==="vento"||v==="mais")renderCharts();
  if(v==="resumo")renderSummary();
+ if(v==="grupos")comShow();
  if(v==="lua")renderMoon();
  if(v==="grupos"||v==="conta")cmStart();if(v==="admin")adminLoad();
  if(v!=="mapa")cancelAnimationFrame(OV.raf);
@@ -2652,7 +2691,18 @@ async function fbInit(){if(CM.fb)return CM.fb;
   async capAdd(uid,data){const b=F.writeBatch(db),ref=F.doc(F.collection(db,"capturas"));b.set(ref,{...data,uid,criadoEm:F.serverTimestamp()});b.set(d("limitesCap/"+uid),{ultimo:F.serverTimestamp()});await b.commit();return ref.id},
   async capList(reg){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("reg","==",reg),F.limit(800)));return r.docs.map(x=>x.data())},
   async capDelMine(uid){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("uid","==",uid)));for(const x of r.docs)await F.deleteDoc(x.ref);return r.size},
-  async setCode(uid,nome,code){const b=F.writeBatch(db);b.set(d("codigos/"+code),{uid,nome});b.update(d("users/"+uid),{codigo:code});await b.commit()}};
+  async setCode(uid,nome,code){const b=F.writeBatch(db);b.set(d("codigos/"+code),{uid,nome});b.update(d("users/"+uid),{codigo:code});await b.commit()},
+  async feedAdd(uid,data){const ref=F.doc(F.collection(db,"atividades"));await F.setDoc(ref,{...data,uid,criadoEm:F.serverTimestamp()});return ref.id},
+  async feedList(n){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.orderBy("criadoEm","desc"),F.limit(n)));return r.docs.map(x=>({id:x.id,...x.data()}))},
+  async feedSince(ms){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("criadoEm",">=",F.Timestamp.fromMillis(ms)),F.orderBy("criadoEm","desc"),F.limit(1000)));return r.docs.map(x=>({id:x.id,...x.data()}))},
+  async feedMine(uid){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("uid","==",uid)));return r.docs.map(x=>x.id)},
+  feedDel:id=>F.deleteDoc(d("atividades/"+id)),
+  kudo:(id,uid,nome,on)=>on?F.setDoc(d(`atividades/${id}/kudos/${uid}`),{nome,criadoEm:F.serverTimestamp()}):F.deleteDoc(d(`atividades/${id}/kudos/${uid}`)),
+  async kudoList(id){const r=await F.getDocs(F.collection(db,"atividades",id,"kudos"));return r.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>tsMs(a.criadoEm)-tsMs(b.criadoEm))},
+  async comList(id){const r=await F.getDocs(F.query(F.collection(db,"atividades",id,"coment"),F.orderBy("criadoEm"),F.limit(100)));return r.docs.map(x=>({id:x.id,...x.data()}))},
+  async comCount(id){return(await F.getCountFromServer(F.collection(db,"atividades",id,"coment"))).data().count},
+  async comAdd(id,uid,nome,texto){const ref=F.doc(F.collection(db,"atividades",id,"coment"));await F.setDoc(ref,{uid,nome,texto,criadoEm:F.serverTimestamp()});return ref.id},
+  comDel:(id,cid)=>F.deleteDoc(d(`atividades/${id}/coment/${cid}`))};
  return CM.fb}
 const GROUPS_DEFAULT=[{id:"geral",nome:"Geral",ordem:1,tipo:"publico"},{id:"vendas",nome:"Vendas e trocas",ordem:2,tipo:"publico"}];
 const rndCode=n=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r=crypto.getRandomValues(new Uint8Array(n));return[...r].map(x=>a[x%a.length]).join("")};
@@ -2686,11 +2736,11 @@ const SELOS=[
  ["robalo","Mestre do robalo","🎯","Somar 10 robalos",g=>g.robalos>=10],
  ["trofeu","Troféu","🏆","Registrar um peixe de 70 cm ou mais",g=>g.maior>=70],
  ["constante","Constante","📅","Pescar em 4 semanas diferentes",g=>g.semanas>=4],
- ["colaborador","Colaborador","🤝","Compartilhar 10 pescarias com a comunidade",g=>g.compart>=10],
+ ["colaborador","Colaborador","🤝","Compartilhar ou publicar 10 pescarias",g=>g.compart>=10],
  ["falador","Boa prosa","💬","Mandar 20 mensagens nos grupos",g=>g.msgs>=20]];
 function gameStats(){const L=S.log,ok=L.filter(x=>(x.qty||0)>0||x.res>=1),sp=new Set(ok.map(x=>x.sp)),pt=new Set(ok.map(x=>x.spot)),wk=new Set(L.map(x=>Math.floor(x.t/(7*864e5))));
  const h=x=>localHour(x.t),g={comPeixe:ok.length,esp:sp.size,pontos:pt.size,madrugada:ok.some(x=>h(x)<6&&h(x)>=3),noite:ok.some(x=>h(x)>=21),frente:ok.some(x=>x.c&&/véspera/.test(x.c.frente||"")),
-  robalos:ok.filter(x=>x.sp==="Robalo").reduce((a,x)=>a+(x.qty||0),0),maior:Math.max(0,...L.map(x=>x.size||0)),semanas:wk.size,compart:L.filter(x=>x.shared).length,msgs:store("pf_nposts")||0};
+  robalos:ok.filter(x=>x.sp==="Robalo").reduce((a,x)=>a+(x.qty||0),0),maior:Math.max(0,...L.map(x=>x.size||0)),semanas:wk.size,compart:L.filter(x=>x.shared||x.pub).length,msgs:store("pf_nposts")||0};
  g.pts=10*L.length+30*sp.size+15*pt.size+5*L.filter(x=>x.res>=2).length+5*g.compart+2*g.msgs;
  g.selos=SELOS.filter(x=>x[4](g)).map(x=>x[0]);g.pts+=40*g.selos.length;let nv=0;NIVEIS.forEach((n,i)=>{if(g.pts>=n.p)nv=i});g.nivel=nv;return g}
 const myLevel=()=>gameStats().nivel;
@@ -2703,19 +2753,154 @@ function gameHTML(){const g=gameStats(),N0=NIVEIS[g.nivel],N1=NIVEIS[g.nivel+1],
 function gameSync(){const g=gameStats(),old=store("pf_selos")||[],novos=g.selos.filter(x=>!old.includes(x));store("pf_selos",g.selos);
  if(CM.user&&CM.profile&&CM.fb)CM.fb.saveStats(CM.user.uid,{pontos:g.pts,nivel:g.nivel,selos:g.selos,especies:g.esp,capturas:g.comPeixe}).catch(e=>console.warn("pontos",e));
  return novos.map(id=>SELOS.find(x=>x[0]===id))}
+/* ================== COMUNIDADE NO ESTILO STRAVA ==================
+ Feed de pescarias com "Boa!" e comentários, desafios do mês, ranking do mês e o seu perfil (sequência, recordes, troféus).
+ No feed vai só peixe, quantidade, maior tamanho, isca, condições e uma área larga do litoral: o ponto nunca sai do aparelho. */
+const AREAS=[[-26.45,"Litoral Norte (Itapoá a São Francisco)"],[-27.16,"Itajaí a Bombinhas"],[-27.95,"Grande Florianópolis"],[-28.62,"Garopaba a Laguna"],[-90,"Sul de SC"]];
+function areaOf(sp){const r=regionOf(sp.lat,sp.lon);if(r==="pr")return"Paraná";if(r==="sp")return"São Paulo";return AREAS.find(a=>sp.lat>a[0])[1]}
+const COM={seg:store("pf_comseg")||"feed",feed:null,at:0,month:null,rk:"peixes",ra:"",open:new Set()};
+const COM_SEGS=[["feed","Feed"],["desafios","Desafios"],["ranking","Ranking"],["voce","Você"],["chat","Chat"]];
+const periodo=t=>{const h=localHour(t);return h<5?"Pescaria de madrugada":h<12?"Pescaria da manhã":h<18?"Pescaria da tarde":"Pescaria da noite"};
+const monthKey=t=>fmtKey.format(t).slice(0,7);
+const monthStart=()=>Date.parse(monthKey(Date.now())+"-01T00:00:00-03:00");
+const comOn=()=>!!(CM.user&&CM.user.emailVerified&&CM.profile&&CM.fb);
+function feedPayload(x,txt){const sp=SPOTS.find(s=>s.id===x.spot),c=x.c||{},cond={};
+ if(c.mare)cond.mare=c.mare;if(c.eff!=null)cond.vento=Math.round(c.eff);if(c.dir!=null)cond.dir=Math.round(c.dir);if(c.lua)cond.lua=String(c.lua).slice(0,20);
+ if(c.sst!=null)cond.agua=+c.sst;if(c.nota!=null)cond.nota=Math.round(c.nota);if(/véspera/.test(c.frente||""))cond.frente=true;
+ const d={nome:CM.profile.nome,nivel:myLevel(),t:Math.floor(x.t/HOUR)*HOUR,sp:String(x.sp).slice(0,30),qty:Math.min(100,Math.max(0,x.qty|0)),res:x.res|0,area:sp?areaOf(sp):"Santa Catarina",cond};
+ if(x.size)d.size=Math.min(300,Math.max(0,x.size|0));if(x.bait)d.isca=x.bait.trim().slice(0,40);txt=(txt||"").trim();if(txt)d.texto=txt.slice(0,280);return d}
+async function publishCatch(x,txt){if(!comOn())return false;const id=await CM.fb.feedAdd(CM.user.uid,feedPayload(x,txt));x.pub=id;store("pf_log",S.log);COM.at=0;COM.month=null;gameSync();return true}
+
+function comSegHTML(){return COM_SEGS.map(([k,n])=>`<button type="button" class="chipbtn" data-com="${k}" aria-pressed="${COM.seg===k}">${n}</button>`).join("")}
+function comShow(){const seg=$("#comSeg");if(!seg)return;seg.innerHTML=comSegHTML();const on=comOn();
+ const box={feed:"#comFeed",desafios:"#comDes",ranking:"#comRank",voce:"#comVoce"};
+ for(const k in box)$(box[k]).hidden=!(on&&COM.seg===k);$("#comChat").hidden=on&&COM.seg!=="chat";
+ if(!on)return;if(COM.seg==="feed")renderComFeed();else if(COM.seg==="desafios")renderDesafios();else if(COM.seg==="ranking")renderRanking();else if(COM.seg==="voce")renderVoce()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-com]");if(!b)return;COM.seg=b.dataset.com;store("pf_comseg",COM.seg);comShow()});
+
+/* ---------- feed ---------- */
+async function comLoadFeed(force){if(COM.feed&&!force&&Date.now()-COM.at<60e3)return;
+ const L=await CM.fb.feedList(30);
+ await Promise.all(L.map(async a=>{a.kudos=await CM.fb.kudoList(a.id).catch(()=>[]);a.ncom=await CM.fb.comCount(a.id).catch(()=>0)}));
+ COM.feed=L;COM.at=Date.now();bellCom()}
+function actCard(a){const uid=CM.user.uid,me=a.uid===uid,c=a.cond||{},K=a.kudos||[],mine=K.some(k=>k.id===uid),N0=NIVEIS[a.nivel]||NIVEIS[0];
+ const chips=[c.mare?`🌊 maré ${c.mare}`:"",c.vento!=null?`💨 vento ${wv(c.vento)} ${WU()}${c.dir!=null?" "+dir8(c.dir):""}`:"",c.lua?`🌙 ${String(c.lua).toLowerCase()}`:"",
+  c.agua!=null?`🌡 água ${String(c.agua).replace(".",",")} °C`:"",c.frente?"🌧 véspera de frente fria":"",c.nota!=null?`⭐ nota ${c.nota}`:""].filter(Boolean);
+ const kn=K.slice(0,2).map(k=>esc(k.nome)).join(", ");
+ return`<li class="act" data-act="${a.id}"><div class="acth"><span class="av" aria-hidden="true">${esc((a.nome||"?").slice(0,1).toUpperCase())}</span><div class="grow"><b>${esc(a.nome)}</b> <span title="${esc(N0.n)}">${N0.ic}</span><div class="small muted">${fmtDH.format(a.t)} · ${esc(a.area||"")}</div></div>${me||CM.admin?`<button class="linkbtn small" data-actdel="${a.id}" type="button">excluir</button>`:""}</div>
+  <h4>${esc(a.texto||periodo(a.t))}</h4>
+  <div class="actstats"><div><span>Peixes</span><b class="num">${a.qty}</b></div><div><span>Espécie</span><b>${esc(a.sp)}</b></div>${a.size?`<div><span>Maior</span><b class="num">${a.size} cm</b></div>`:""}${a.isca?`<div><span>Isca</span><b>${esc(a.isca)}</b></div>`:""}</div>
+  ${chips.length?`<div class="actchips">${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
+  <div class="actfoot"><button type="button" class="kudo${mine?" on":""}" data-kudo="${a.id}" aria-pressed="${mine}"${me?" disabled":""}>🤙 Boa!${K.length?` <b>${K.length}</b>`:""}</button><button type="button" class="linkbtn" data-coms="${a.id}">💬 ${a.ncom?a.ncom+(a.ncom>1?" comentários":" comentário"):"Comentar"}</button></div>
+  ${K.length?`<div class="small muted">${kn}${K.length>2?` e mais ${K.length-2}`:""} ${K.length>1?"deram":"deu"} Boa!</div>`:""}
+  <div class="coms" id="coms_${a.id}"${COM.open.has(a.id)?"":" hidden"}></div></li>`}
+function pendCatches(){const lim=Date.now()-14*864e5;return S.log.filter(x=>!x.pub&&x.t>=lim).sort((a,b)=>b.t-a.t).slice(0,3)}
+function pendHTML(){const P=pendCatches();if(!P.length)return"";
+ return`<div class="pend"><b class="small">Suas pescarias que ainda não estão no feed</b>${P.map(x=>`<div class="pendrow"><span class="small"><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty?` · ${x.qty} peixe${x.qty>1?"s":""}`:""}${x.size?` · ${x.size} cm`:""}</span>
+  <input type="text" maxlength="280" placeholder="Legenda (opcional)" data-pubcap="${x.id}"><button type="button" class="btn small" data-pub="${x.id}">Publicar</button></div>`).join("")}
+  <div class="small muted">Vai para o feed: peixe, quantidade, tamanho, isca, condições e a área (${esc(areaOf(spot()))}, por exemplo). O ponto não aparece.</div></div>`}
+async function renderComFeed(force){const el=$("#comFeed");
+ el.innerHTML=`<div class="sum-h"><h3>Pescarias da galera</h3><button class="linkbtn small" id="feedRef" type="button">atualizar</button></div>${pendHTML()}<ul class="acts" id="actList"><li class="small muted">Carregando…</li></ul>`;
+ $("#feedRef").onclick=()=>renderComFeed(true);
+ try{await comLoadFeed(force)}catch(e){console.warn("feed",e);$("#actList").innerHTML=`<li class="small" style="color:var(--bad)">Não consegui carregar o feed (${esc(String(e.code||e.message||e).slice(0,60))}).</li>`;return}
+ const L=COM.feed;$("#actList").innerHTML=L.length?L.map(actCard).join(""):`<li class="small muted">Ainda não tem pescaria no feed. Registre a sua em "+ Registrar pescaria" e marque "Publicar no feed".</li>`;
+ for(const id of COM.open)loadComs(id)}
+async function loadComs(id){const box=$("#coms_"+id);if(!box)return;box.hidden=false;box.innerHTML=`<span class="small muted">Carregando…</span>`;
+ let L=[];try{L=await CM.fb.comList(id)}catch(e){box.innerHTML=`<span class="small" style="color:var(--bad)">Não consegui carregar.</span>`;return}
+ const a=(COM.feed||[]).find(x=>x.id===id),uid=CM.user.uid;if(a)a.ncom=L.length;
+ box.innerHTML=L.map(c=>`<div class="com"><b>${esc(c.nome)}</b> ${esc(c.texto)} <span class="muted small">${ago(tsMs(c.criadoEm))}</span>${c.uid===uid||CM.admin||(a&&a.uid===uid)?` <button type="button" class="linkbtn small" data-comdel="${id}|${c.id}">apagar</button>`:""}</div>`).join("")
+  +`<form class="comform" data-comform="${id}"><input type="text" maxlength="300" placeholder="Escreva um comentário" aria-label="Comentário"><button class="btn small" type="submit">Enviar</button></form>`}
+document.addEventListener("click",async e=>{const t=e.target;
+ const kb=t.closest("[data-kudo]");if(kb){const id=kb.dataset.kudo,a=(COM.feed||[]).find(x=>x.id===id);if(!a||kb.disabled)return;const uid=CM.user.uid,on=!(a.kudos||[]).some(k=>k.id===uid);kb.disabled=true;
+  try{await CM.fb.kudo(id,uid,CM.profile.nome,on);a.kudos=on?[...(a.kudos||[]),{id:uid,nome:CM.profile.nome}]:(a.kudos||[]).filter(k=>k.id!==uid);const li=kb.closest(".act");li.outerHTML=actCard(a);if(COM.open.has(id))loadComs(id)}catch(err){console.warn(err);kb.disabled=false}return}
+ const cb=t.closest("[data-coms]");if(cb){const id=cb.dataset.coms;if(COM.open.has(id)){COM.open.delete(id);$("#coms_"+id).hidden=true}else{COM.open.add(id);loadComs(id)}return}
+ const cd=t.closest("[data-comdel]");if(cd){const [id,cid]=cd.dataset.comdel.split("|");try{await CM.fb.comDel(id,cid);loadComs(id)}catch(err){console.warn(err)}return}
+ const ad=t.closest("[data-actdel]");if(ad){if(ad.dataset.armed!=="1"){ad.dataset.armed="1";ad.textContent="toque de novo para excluir";return}
+  const id=ad.dataset.actdel;try{await CM.fb.feedDel(id);const x=S.log.find(x=>x.pub===id);if(x){delete x.pub;store("pf_log",S.log)}COM.feed=(COM.feed||[]).filter(a=>a.id!==id);COM.month=null;renderComFeed()}catch(err){console.warn(err);ad.textContent="não consegui excluir"}return}
+ const pb=t.closest("[data-pub]");if(pb){const x=S.log.find(y=>y.id===pb.dataset.pub);if(!x)return;pb.disabled=true;pb.textContent="Publicando…";
+  const cap=document.querySelector(`[data-pubcap="${x.id}"]`);try{await publishCatch(x,cap?cap.value:"");renderComFeed(true)}catch(err){console.warn(err);pb.disabled=false;pb.textContent="Tentar de novo"}return}});
+document.addEventListener("submit",async e=>{const f=e.target.closest("[data-comform]");if(!f)return;e.preventDefault();const id=f.dataset.comform,inp=f.querySelector("input"),tx=inp.value.trim();if(!tx)return;
+ f.querySelector("button").disabled=true;try{await CM.fb.comAdd(id,CM.user.uid,CM.profile.nome,tx.slice(0,300));await loadComs(id);const a=(COM.feed||[]).find(x=>x.id===id),lk=document.querySelector(`[data-coms="${id}"]`);if(a&&lk)lk.textContent=`💬 ${a.ncom} comentário${a.ncom>1?"s":""}`}catch(err){console.warn(err);f.querySelector("button").disabled=false}});
+// sininho: "Boa!" e comentários novos nas suas pescarias
+let BELL_COM=[];
+function bellCom(){if(!COM.feed||!CM.user)return;const uid=CM.user.uid,seen=store("pf_comseen")||{},out=[];
+ for(const a of COM.feed){if(a.uid!==uid)continue;const K=(a.kudos||[]).filter(k=>k.id!==uid),n=K.length,c=a.ncom||0,s=seen[a.id]||{k:0,c:0};
+  if(n>s.k)out.push({id:`kudo-${a.id}-${n}`,ic:"🤙",t:`${K[n-1].nome}${n-s.k>1?` e mais ${n-s.k-1}`:""} deu Boa! na sua pescaria`,d:`${a.sp} · ${fmtDM.format(a.t)}`,go:"com",at:Date.now()});
+  if(c>s.c)out.push({id:`com-${a.id}-${c}`,ic:"💬",t:`${c-s.c} comentário${c-s.c>1?"s":""} novo${c-s.c>1?"s":""} na sua pescaria`,d:`${a.sp} · ${fmtDM.format(a.t)}`,go:"com",at:Date.now()});
+  seen[a.id]={k:n,c}}
+ store("pf_comseen",seen);if(out.length){BELL_COM=[...out,...BELL_COM].slice(0,10);renderBell()}}
+
+/* ---------- desafios do mês ---------- */
+function desafios(){const mk=monthKey(Date.now()),L=S.log.filter(x=>monthKey(x.t)===mk),ok=L.filter(x=>(x.qty||0)>0||x.res>=1),h=x=>localHour(x.t);
+ return[{id:"saidas",ic:"🗓",n:"4 saídas no mês",d:"Registre 4 pescarias",v:L.length,meta:4},
+  {id:"especies",ic:"🐠",n:"Variedade",d:"Pegue 3 espécies diferentes",v:new Set(ok.map(x=>x.sp)).size,meta:3},
+  {id:"madrugada",ic:"🌅",n:"Madrugador do mês",d:"Pegue peixe entre 3h e 6h",v:ok.some(x=>h(x)>=3&&h(x)<6)?1:0,meta:1},
+  {id:"frente",ic:"🌧",n:"Antes da frente",d:"Pegue peixe na véspera de uma frente fria",v:ok.some(x=>/véspera/.test((x.c||{}).frente||""))?1:0,meta:1},
+  {id:"tamanho",ic:"📏",n:"Peixe de respeito",d:"Registre um peixe de 50 cm ou mais",v:L.some(x=>(x.size||0)>=50)?1:0,meta:1},
+  {id:"feed",ic:"📣",n:"Conte para a galera",d:"Publique 3 pescarias no feed",v:L.filter(x=>x.pub).length,meta:3}]}
+function trofeus(){const T=store("pf_trofeus")||{},mk=monthKey(Date.now());let novo=false;for(const d of desafios())if(d.v>=d.meta&&!T[mk+":"+d.id]){T[mk+":"+d.id]=d.ic+" "+d.n;novo=true}if(novo)store("pf_trofeus",T);return T}
+async function renderDesafios(){const el=$("#comDes"),D=desafios(),T=trofeus(),now=Date.now(),mk=monthKey(now);
+ const fim=Date.parse(new Date(monthStart()+40*864e5).toISOString().slice(0,7)+"-01T00:00:00-03:00"),dias=Math.max(1,Math.ceil((fim-now)/864e5));
+ const nome=new Intl.DateTimeFormat("pt-BR",{timeZone:TZ,month:"long"}).format(now),done=D.filter(d=>d.v>=d.meta).length;
+ el.innerHTML=`<div class="sum-h"><h3>Desafios de ${nome}</h3><span class="small muted">faltam ${dias} dia${dias>1?"s":""}</span></div>
+  <p class="small" style="margin:4px 0 10px">${done} de ${D.length} concluídos.<span id="desAtivos"></span> Cada desafio concluído vira um troféu no seu perfil.</p>
+  <div class="desafios">${D.map(d=>{const p=Math.min(100,Math.round(100*d.v/d.meta)),ok=d.v>=d.meta;return`<div class="des${ok?" ok":""}"><span class="desic" aria-hidden="true">${d.ic}</span><div class="grow"><b>${esc(d.n)}</b>${ok?' <span class="tag good">concluído</span>':""}<div class="small muted">${esc(d.d)}</div>
+   <div class="bar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="width:${p}%"></i></div><span class="small num">${Math.min(d.v,d.meta)} / ${d.meta}</span></div></div>`}).join("")}</div>
+  <p class="small muted" style="margin:8px 0 0">Contam as pescarias registradas no seu diário neste mês. Todo dia 1º começam desafios novos.</p>`;
+ try{await comLoadMonth();const n=new Set(COM.month.L.map(a=>a.uid)).size;if(n)$("#desAtivos").textContent=` ${n} pescador${n>1?"es":""} já publicaram pescarias este mês.`}catch(e){}}
+
+/* ---------- ranking do mês ---------- */
+async function comLoadMonth(force){if(COM.month&&!force&&Date.now()-COM.month.at<120e3)return;COM.month={at:Date.now(),L:await CM.fb.feedSince(monthStart())}}
+const RK=[["peixes","Peixes"],["saidas","Saídas"],["maior","Maior peixe"],["especies","Espécies"]];
+async function renderRanking(force){const el=$("#comRank");el.innerHTML=`<div class="sum-h"><h3>Ranking do mês</h3></div><p class="small muted">Carregando…</p>`;
+ try{await comLoadMonth(force)}catch(e){console.warn(e);el.innerHTML=`<div class="sum-h"><h3>Ranking do mês</h3></div><p class="small" style="color:var(--bad)">Não consegui carregar o ranking.</p>`;return}
+ const all=COM.month.L,areas=[...new Set(all.map(a=>a.area).filter(Boolean))].sort(),L=all.filter(a=>!COM.ra||a.area===COM.ra),by=new Map();
+ for(const a of L){const o=by.get(a.uid)||{uid:a.uid,nome:a.nome,nivel:a.nivel,peixes:0,saidas:0,maior:0,esp:new Set()};o.nome=a.nome;o.peixes+=a.qty||0;o.saidas++;o.maior=Math.max(o.maior,a.size||0);if(a.qty>0)o.esp.add(a.sp);by.set(a.uid,o)}
+ const val=o=>COM.rk==="especies"?o.esp.size:o[COM.rk],R=[...by.values()].filter(o=>val(o)>0).sort((a,b)=>val(b)-val(a)||b.saidas-a.saidas),uid=CM.user.uid,mi=R.findIndex(o=>o.uid===uid);
+ const unit=COM.rk==="maior"?" cm":"",med=i=>i===0?"👑":i===1?"🥈":i===2?"🥉":`${i+1}º`;
+ el.innerHTML=`<div class="sum-h"><h3>Ranking do mês</h3><button class="linkbtn small" id="rkRef" type="button">atualizar</button></div>
+  <div class="chatgroups" role="group" aria-label="Medida">${RK.map(([k,n])=>`<button type="button" class="chipbtn" data-rk="${k}" aria-pressed="${COM.rk===k}">${n}</button>`).join("")}</div>
+  ${areas.length>1?`<label class="inline small" for="rkArea" style="margin-top:8px">Área<select id="rkArea"><option value="">Todo o litoral</option>${areas.map(a=>`<option${a===COM.ra?" selected":""}>${esc(a)}</option>`).join("")}</select></label>`:""}
+  ${R.length?`<ol class="rank">${R.slice(0,20).map((o,i)=>`<li class="${o.uid===uid?"me":""}"><span class="pos">${med(i)}</span><span class="grow"><b>${esc(o.nome)}</b> ${(NIVEIS[o.nivel]||NIVEIS[0]).ic}<span class="small muted"> · ${o.saidas} saída${o.saidas>1?"s":""}</span></span><b class="num">${val(o)}${unit}</b></li>`).join("")}</ol>
+   ${mi>=20?`<p class="small">Você está em <b>${mi+1}º</b> com ${val(R[mi])}${unit}.</p>`:mi<0?`<p class="small muted">Publique suas pescarias no feed para entrar no ranking.</p>`:""}`
+   :`<p class="small muted" style="margin-top:10px">Ninguém pontuou ainda este mês. Publique uma pescaria no feed e saia na frente!</p>`}
+  <p class="small muted" style="margin:8px 0 0">Conta só o que foi publicado no feed neste mês. O primeiro lugar leva a coroa 👑 do mês.</p>`;
+ $("#rkRef").onclick=()=>renderRanking(true);el.querySelectorAll("[data-rk]").forEach(b=>b.onclick=()=>{COM.rk=b.dataset.rk;renderRanking()});
+ const sa=$("#rkArea");if(sa)sa.onchange=()=>{COM.ra=sa.value;renderRanking()}}
+
+/* ---------- seu perfil ---------- */
+function weekIdx(t){return Math.floor((t+3*HOUR+3*864e5)/(7*864e5))} // semanas começando na segunda, no horário de Brasília
+function streakWeeks(){const W=new Set(S.log.map(x=>weekIdx(x.t))),cur=weekIdx(Date.now());let w=W.has(cur)?cur:cur-1,n=0;while(W.has(w)){n++;w--}return n}
+function renderVoce(){const el=$("#comVoce"),g=gameStats(),N0=NIVEIS[g.nivel],now=Date.now(),L=S.log,cw=weekIdx(now),mk=monthKey(now),yk=mk.slice(0,4);
+ const tot=F=>{const X=L.filter(F);return{s:X.length,p:X.reduce((a,x)=>a+(x.qty||0),0),e:new Set(X.filter(x=>(x.qty||0)>0||x.res>=1).map(x=>x.sp)).size}};
+ const P=[["Esta semana",tot(x=>weekIdx(x.t)===cw)],["Este mês",tot(x=>monthKey(x.t)===mk)],["Este ano",tot(x=>monthKey(x.t).startsWith(yk))]];
+ const wk=[...Array(12)].map((_,i)=>{const w=cw-11+i;return L.filter(x=>weekIdx(x.t)===w).length}),mx=Math.max(1,...wk),st=streakWeeks();
+ const rec=new Map();for(const x of L){if(!x.size)continue;const o=rec.get(x.sp);if(!o||x.size>o.size)rec.set(x.sp,x)}
+ const big=L.reduce((m,x)=>(x.qty||0)>(m?m.qty||0:0)?x:m,null),T=trofeus(),tk=Object.keys(T).sort().reverse();
+ el.innerHTML=`<div class="acth"><span class="av big" aria-hidden="true">${esc(CM.profile.nome.slice(0,1).toUpperCase())}</span><div class="grow"><b style="font-size:18px">${esc(CM.profile.nome)}</b><div class="small muted">${N0.ic} ${N0.n} · ${g.pts} pontos</div></div>
+   <div class="streak" title="semanas seguidas com pescaria"><b>🔥 ${st}</b><span>semana${st===1?"":"s"} seguida${st===1?"":"s"}</span></div></div>
+  <div class="vtot">${P.map(([n,o])=>`<div><span>${n}</span><b class="num">${o.s}</b><small>saída${o.s===1?"":"s"} · ${o.p} peixe${o.p===1?"":"s"}${o.e?` · ${o.e} espécie${o.e>1?"s":""}`:""}</small></div>`).join("")}</div>
+  <h4 style="margin:14px 0 6px">Saídas nas últimas 12 semanas</h4>
+  <div class="wkbars" aria-label="Saídas por semana">${wk.map((n,i)=>`<div title="${n} saída${n===1?"":"s"}"><i style="height:${Math.round(100*n/mx)}%"></i><span>${i===11?"esta":i%3===2?"-"+(11-i):""}</span></div>`).join("")}</div>
+  <h4 style="margin:14px 0 6px">Recordes pessoais</h4>
+  ${rec.size||big?`<ul class="recs">${[...rec.values()].sort((a,b)=>b.size-a.size).slice(0,8).map(x=>`<li><span>🏅 Maior ${esc(x.sp.toLowerCase())}</span><b class="num">${x.size} cm</b><small class="muted">${fmtDM.format(x.t)}</small></li>`).join("")}${big&&big.qty>1?`<li><span>🎣 Mais peixes numa saída</span><b class="num">${big.qty}</b><small class="muted">${fmtDM.format(big.t)}</small></li>`:""}</ul>`:`<p class="small muted">Registre o tamanho do maior peixe de cada saída para ver seus recordes aqui.</p>`}
+  <h4 style="margin:14px 0 6px">Troféus dos desafios</h4>
+  ${tk.length?`<div class="trofs">${tk.slice(0,24).map(k=>`<span title="${esc(k.slice(0,7))}">${esc(T[k])} <small class="muted">${esc(k.slice(5,7)+"/"+k.slice(2,4))}</small></span>`).join("")}</div>`:`<p class="small muted">Conclua os desafios do mês para ganhar troféus.</p>`}
+  <h4 style="margin:14px 0 0">Nível e selos</h4>${gameHTML()}
+  <p class="small muted" style="margin:8px 0 0">Seus números vêm do diário deste aparelho; só o que você publica vai para o feed.</p>`}
 /* ================== PAINEL DO ADMINISTRADOR ================== */
 let ADM=null;
 async function adminLoad(force){const el=$("#admStats");if(!CM.fb||!CM.admin){el.innerHTML=`<p class="small muted">Só para administradores. Entre na Conta.</p>`;return}
  if(ADM&&!force&&Date.now()-ADM.at<60000)return adminRender();el.innerHTML=`<p class="small muted">Carregando…</p>`;const fb=CM.fb,c=(p,w)=>fb.count(p,w).catch(()=>null);
- try{const [users,groups,caps,push]=await Promise.all([fb.adminUsers(),fb.adminGroups().catch(()=>[]),c("capturas"),c("push")]);
+ try{const [users,groups,caps,push,ativ]=await Promise.all([fb.adminUsers(),fb.adminGroups().catch(()=>[]),c("capturas"),c("push"),c("atividades")]);
   const pub=groups.filter(g=>g.tipo==="publico"),msgs=await Promise.all(pub.map(g=>c(`groups/${g.id}/posts`)));
-  ADM={at:Date.now(),users,groups,caps,push,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender()}
+  ADM={at:Date.now(),users,groups,caps,push,ativ,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender()}
  catch(e){console.warn(e);el.innerHTML=`<p class="small" style="color:var(--bad)">Não consegui ler os dados (${esc(String(e.message||e).slice(0,90))}). Confira se as regras novas do Firestore foram publicadas.</p>`}}
 function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs(x.ultimoAcesso||0),cr=x=>tsMs(x.criadoEm||0);
  const online=U.filter(x=>t(x)>now-5*60e3).length,hoje=U.filter(x=>dayKey(t(x)||0)===dayKey(now)).length,sem=U.filter(x=>t(x)>now-7*864e5).length,novos=U.filter(x=>cr(x)>now-7*864e5).length;
  const box=(v,n)=>`<div><b>${v==null?"–":v}</b><span>${n}</span></div>`;
  $("#admStats").innerHTML=box(U.length,"cadastrados")+box(novos,"novos em 7 dias")+box(online,"conectados agora")+box(hoje,"acessaram hoje")+box(sem,"acessaram em 7 dias")+box(U.reduce((a,x)=>a+(x.acessos||0),0),"acessos no total")
-  +ADM.msgs.map(m=>box(m.c,"mensagens em "+esc(m.n))).join("")+box(ADM.groups.filter(g=>g.tipo==="privado").length,"grupos privados")+box(ADM.caps,"capturas compartilhadas")+box(ADM.push,"aparelhos com aviso")+box("—","fotos (recurso ainda não lançado)");
+  +ADM.msgs.map(m=>box(m.c,"mensagens em "+esc(m.n))).join("")+box(ADM.groups.filter(g=>g.tipo==="privado").length,"grupos privados")+box(ADM.ativ,"pescarias no feed")+box(ADM.caps,"capturas compartilhadas")+box(ADM.push,"aparelhos com aviso")+box("—","fotos (recurso ainda não lançado)");
  const q=($("#admQ").value||"").toLowerCase(),L=U.filter(x=>!q||String(x.nome||"").toLowerCase().includes(q)||String(x.regiao||"").includes(q)).sort((a,b)=>t(b)-t(a));
  $("#admUsers").innerHTML=`<thead><tr><th>Nome</th><th>Região</th><th>Cadastro</th><th>Último acesso</th><th>Acessos</th><th>Nível</th></tr></thead><tbody>${L.map(x=>`<tr><td>${t(x)>now-5*60e3?'<span class="online" title="conectado"></span>':""}${esc(x.nome||"")}</td><td class="num">${esc(x.regiao||"")}</td><td class="num">${cr(x)?fmtDM.format(cr(x)):"–"}</td><td>${t(x)?ago(t(x)):"–"}</td><td class="num">${x.acessos||0}</td><td>${x.nivel!=null?esc(NIVEIS[x.nivel]?NIVEIS[x.nivel].n:""):"–"}</td></tr>`).join("")}</tbody>`}
 $("#admRefresh").addEventListener("click",()=>adminLoad(true));$("#admQ").addEventListener("input",adminRender);
@@ -2754,11 +2939,11 @@ function cmRender(){const box=$("#cmAuth"),u=CM.user;{const ok=!!(u&&u.emailVeri
   <div class="grow"><b>${esc(CM.profile.nome)}</b>${CM.admin?' <span class="tag good">administrador</span>':""}<div class="small muted">Região do CEP ${esc(CM.profile.regiao)}-xxx</div></div>
   <button class="btn ghost" type="button" id="cmOut">Sair</button></div>
   ${gameHTML()}
-  <div class="row"><a class="btn" href="#grupos" data-view="grupos">Ir para os grupos</a>${CM.admin?`<a class="btn ghost" href="#admin" data-view="admin">Painel do administrador</a>`:""}</div>
+  <div class="row"><a class="btn" href="#grupos" data-view="grupos">Ir para a comunidade</a>${CM.admin?`<a class="btn ghost" href="#admin" data-view="admin">Painel do administrador</a>`:""}</div>
   <details><summary class="small">Minha conta</summary><div class="small" style="margin-top:6px">Seu código de amigo: <b class="num" style="font-size:16px;letter-spacing:.08em">${esc(CM.profile.codigo||"…")}</b>. Passe para quem quiser te adicionar num grupo.</div><div class="small" style="margin-top:6px">Seu ID: <code>${esc(CM.user.uid)}</code> (para virar administrador, crie no Firestore o documento <code>admins/${esc(CM.user.uid)}</code>).</div>
    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="cmDel" style="color:var(--bad);border-color:var(--bad)">Apagar minha conta e minhas postagens</button></div><div class="small" id="cmDelMsg"></div></details>`;
  $("#cmOut").onclick=()=>CM.fb.signOut();$("#cmDel").onclick=cmDeleteAccount;
- $("#cmFeed").hidden=false;cmGroups();cmPartners()}
+ $("#cmFeed").hidden=false;cmGroups();cmPartners();if(S.view==="grupos")comShow()}
 async function cmSaveProfile(e){e.preventDefault();const m=$("#cmProfMsg"),nome=$("#cmNome").value.trim().replace(/\s+/g," "),cep=$("#cmCep").value.replace(/\D/g,"");
  if(nome.length<2){m.textContent="Escreva seu nome.";return}if(cep.length!==8){m.textContent="O CEP tem 8 números.";return}if(!$("#cmOk").checked){m.textContent="Para participar é preciso aceitar a política.";return}
  const prof={nome,regiao:cep.slice(0,5),criadoEm:CM.fb.now(),consent:{versao:CONSENT_VER,em:CM.fb.now()}};
@@ -2858,10 +3043,11 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-gid]
  else if(b.dataset.cmdel){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="toque de novo para apagar";return}await CM.fb.del(`groups/${CM.gid}/posts/${b.dataset.cmdel}`).catch(()=>{});CM.fb.del(`users/${CM.user.uid}/meusPosts/${b.dataset.cmdel}`).catch(()=>{})}
  else if(b.dataset.cmrep){await CM.fb.add("reports",{uid:CM.user.uid,gid:CM.gid,pid:b.dataset.cmrep,motivo:"denúncia pelo app"}).catch(()=>{});b.textContent="denunciado, obrigado";b.disabled=true}
  else if(b.dataset.pdel){await CM.fb.del("partners/"+b.dataset.pdel).catch(()=>{});cmPartners()}});
-async function cmDeleteAccount(e){const b=e.currentTarget,m=$("#cmDelMsg");if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Toque de novo: apagar tudo, sem volta";m.textContent="Apaga seu perfil, suas postagens e seu login. Pontos e diário deste aparelho não são afetados.";return}
+async function cmDeleteAccount(e){const b=e.currentTarget,m=$("#cmDelMsg");if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Toque de novo: apagar tudo, sem volta";m.textContent="Apaga seu perfil, suas postagens, suas pescarias do feed e seu login. Pontos e diário deste aparelho não são afetados.";return}
  b.disabled=true;m.textContent="Apagando…";const uid=CM.user.uid;
  try{const mine=await CM.fb.list(`users/${uid}/meusPosts`);for(const x of mine){await CM.fb.del(`groups/${x.gid}/posts/${x.id}`).catch(()=>{});await CM.fb.del(`users/${uid}/meusPosts/${x.id}`).catch(()=>{})}
   for(const g of CM.groups.filter(x=>x.tipo==="privado")){if(g.dono===uid)await CM.fb.del("groups/"+g.id).catch(()=>{});else await CM.fb.removeMember(g.id,uid).catch(()=>{})}
+  for(const id of await CM.fb.feedMine(uid).catch(()=>[]))await CM.fb.feedDel(id).catch(()=>{});
   if(CM.profile&&CM.profile.codigo)await CM.fb.del("codigos/"+CM.profile.codigo).catch(()=>{});
   await CM.fb.del("limits/"+uid).catch(()=>{});await CM.fb.del("users/"+uid);await CM.fb.deleteUser();m.textContent="Conta apagada."}
  catch(err){console.warn(err);m.textContent=/recent-login/.test(err.code||"")?"Por segurança, saia, entre de novo e repita.":"Não consegui apagar tudo agora. Tente de novo.";b.disabled=false}}
