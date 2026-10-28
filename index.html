@@ -1009,7 +1009,31 @@ async function load(){
   else{S.data=demoData();S.demo=true;S.ep=null;showBanner("Não consegui buscar a previsão (sem internet ou serviço fora do ar). Mostrando DADOS DE EXEMPLO, que não são previsão real.",true,true)}
  }
  afterLoad()}
-function afterLoad(){
+/* Pescarias antigas (fora dos 7 dias que o app guarda): recupera as condições daquela hora.
+   Maré: tábua oficial da EPAGRI da estação do ponto. Vento, rajada e pressão: histórico da Open-Meteo; água: modelo marinho.
+   Para não expor o ponto, a consulta usa a posição arredondada (~10 km). */
+const condVazia=x=>!x.c||(x.c.mare==null&&x.c.eff==null&&x.c.sst==null);
+async function histCond(x){const sp=SPOTS.find(s=>s.id===x.spot);if(!sp)return null;const t=x.t,c={};
+ const E=gaugeFor(sp),k=stationKey(sp),tb=(E&&E.g&&E.g.tab)||(S.tab&&S.tab[k]);
+ if(tb){const lag=E?E.lag*60e3:0,amp=E?E.amp:1,f=y=>{const v=tb.fn(y-lag);return v==null?null:(v-tb.mean)*amp};const h=f(t),a=f(t-15*60e3),b=f(t+15*60e3);
+  if(h!=null&&a!=null&&b!=null){c.mare=b>a?"enchendo":"vazando";c.nivel=+h.toFixed(2);const prev=[...tb.ex].reverse().find(e=>e.t+lag<=t);if(prev)c.since=+((t-prev.t-lag)/HOUR).toFixed(1)}}
+ const la=(Math.round(sp.lat*10)/10).toFixed(1),lo=(Math.round(sp.lon*10)/10).toFixed(1),d0=fmtKey.format(t-864e5),d1=fmtKey.format(t+864e5);
+ const q=`latitude=${la}&longitude=${lo}&start_date=${d0}&end_date=${d1}&timeformat=unixtime&timezone=America%2FSao_Paulo`,old=Date.now()-t>80*864e5;
+ const near=(T,A)=>{if(!T||!A)return null;let bi=-1,bd=1e18;T.forEach((x,i)=>{const d=Math.abs(x*1000-t);if(d<bd&&A[i]!=null){bd=d;bi=i}});return bi<0||bd>2*HOUR?null:bi};
+ const [w,m]=await Promise.all([fetchJSON(`https://${old?"archive-api":"api"}.open-meteo.com/v1/${old?"archive":"forecast"}?${q}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl&wind_speed_unit=kmh`).catch(()=>null),
+  old?null:fetchJSON(`https://marine-api.open-meteo.com/v1/marine?${q}&hourly=sea_surface_temperature&cell_selection=sea`).catch(()=>null)]);
+ if(w&&w.hourly){const H=w.hourly,i=near(H.time,H.wind_speed_10m);if(i!=null){const raw=H.wind_speed_10m[i],d=H.wind_direction_10m[i];c.raw=Math.round(raw);c.dir=Math.round(d);c.g=H.wind_gusts_10m[i]!=null?Math.round(H.wind_gusts_10m[i]):null;
+   c.eff=Math.round(raw*(.3+.7*sect(sp.wx,d)));const p=H.pressure_msl;if(p[i]!=null){c.pres=Math.round(p[i]);if(p[i-3]!=null)c.dp=+(p[i]-p[i-3]).toFixed(1)}}}
+ if(m&&m.hourly){const i=near(m.hourly.time,m.hourly.sea_surface_temperature);if(i!=null)c.sst=+m.hourly.sea_surface_temperature[i].toFixed(1)}
+ return Object.keys(c).length?c:null}
+let BF_RUN=false;
+async function backfillLog(){if(BF_RUN||S.demo)return;BF_RUN=true;let mud=false;
+ try{const L=S.log.filter(x=>condVazia(x)&&!(x.bfTry&&Date.now()-x.bfTry<864e5)&&Date.now()-x.t<3*365*864e5).slice(0,8);
+  for(const x of L){x.bfTry=Date.now();const c=await histCond(x).catch(e=>{console.warn("histórico",e);return null});
+   if(c){x.c=Object.assign(x.c||{},c,{hist:true});mud=true;if(x.pub&&comOn())CM.fb.feedCond(x.pub,feedPayload(x).cond).then(()=>{COM.at=0}).catch(e=>console.warn("feed cond",e))}}
+  store("pf_log",S.log);if(mud){renderHistory();if(S.view==="grupos")comShow()}}
+ finally{BF_RUN=false}}
+function afterLoad(){setTimeout(backfillLog,1500);
  const t=S.data.t;S.events=astroEvents(t[0]-12*HOUR,t[t.length-1]+12*HOUR);
  rebuild();initMap();
  const now=Date.now();{const k=S.data.t.findIndex(x=>x>now-HOUR);S.when=k<0?S.data.t.length-1:k}
@@ -1157,7 +1181,7 @@ function stationKey(sp){if(sp.g&&EP_ST[sp.g])return sp.g;if(isLegacy(sp))return 
  let best="floripa",bd=1e9;for(const k in EP_ST){const d=distKm(sp,EP_ST[k]);if(d<bd){bd=d;best=k}}return best}
 /* Tábua oficial anual da EPAGRI (preamares e baixamares, 2026–2030), curva cosseno entre os extremos */
 async function fetchText(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return new TextDecoder("latin1").decode(await r.arrayBuffer())}
-function parseTabua(txt){const a=Date.now()-12*864e5,b=Date.now()+30*864e5,ex=[];
+function parseTabua(txt){const a=Date.now()-120*864e5,b=Date.now()+30*864e5,ex=[];
  for(const l of txt.split(/\r?\n/)){const m=l.match(/(\d{2})\/(\d{2})\/(\d{4});(\d{1,2}):(\d{2});(-?\d+(?:[.,]\d+)?)/);if(!m)continue;
   const t=Date.UTC(+m[3],m[2]-1,+m[1],+m[4]+3,+m[5]);if(t<a||t>b)continue;ex.push({t,h:parseFloat(m[6].replace(",","."))})}
  ex.sort((x,y)=>x.t-y.t);if(ex.length<4)return null;
@@ -1958,7 +1982,7 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
  const RES=["Nada","Fraco","Bom","Muito bom"],RCL=["bad","warn","good","good"];
  h+=`<b class="small">Últimas saídas</b><ul class="hlist">${L.slice(0,8).map(x=>{const c=x.c||{};
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
-  return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
+  return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.c&&x.c.hist&&cond?" (histórico daquele dia)":""}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
 function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true;$("#lgPub").checked=store("pf_pub")!==false;$("#lgPub").onchange=()=>{$("#lgCapL").hidden=!$("#lgPub").checked||!comOn()}}
  $("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=!comOn()||!$("#lgPub").checked;
@@ -2436,7 +2460,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.6";
+const APP_VERSION="2026-10-28.7";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2781,6 +2805,7 @@ async function fbInit(){if(CM.fb)return CM.fb;
   async feedSince(ms){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("criadoEm",">=",F.Timestamp.fromMillis(ms)),F.orderBy("criadoEm","desc"),F.limit(1000)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedMine(uid){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("uid","==",uid)));return r.docs.map(x=>x.id)},
   feedDel:id=>F.deleteDoc(d("atividades/"+id)),
+  feedCond:(id,cond)=>F.updateDoc(d("atividades/"+id),{cond}),
   kudo:(id,uid,nome,on)=>on?F.setDoc(d(`atividades/${id}/kudos/${uid}`),{nome,criadoEm:F.serverTimestamp()}):F.deleteDoc(d(`atividades/${id}/kudos/${uid}`)),
   async kudoList(id){const r=await F.getDocs(F.collection(db,"atividades",id,"kudos"));return r.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>tsMs(a.criadoEm)-tsMs(b.criadoEm))},
   async comList(id){const r=await F.getDocs(F.query(F.collection(db,"atividades",id,"coment"),F.orderBy("criadoEm"),F.limit(100)));return r.docs.map(x=>({id:x.id,...x.data()}))},
@@ -2853,7 +2878,7 @@ function feedPayload(x,txt){const sp=SPOTS.find(s=>s.id===x.spot),c=x.c||{},cond
  if(c.sst!=null)cond.agua=+c.sst;if(c.nota!=null)cond.nota=Math.round(c.nota);if(/véspera/.test(c.frente||""))cond.frente=true;
  const d={nome:CM.profile.nome,nivel:myLevel(),t:Math.floor(x.t/HOUR)*HOUR,sp:String(x.sp).slice(0,30),qty:Math.min(100,Math.max(0,x.qty|0)),res:x.res|0,area:sp?areaOf(sp):"Santa Catarina",cond};
  if(x.size)d.size=Math.min(300,Math.max(0,x.size|0));if(x.bait)d.isca=x.bait.trim().slice(0,40);txt=(txt||"").trim();if(txt)d.texto=txt.slice(0,280);return d}
-async function publishCatch(x,txt){if(!comOn())return false;const id=await CM.fb.feedAdd(CM.user.uid,feedPayload(x,txt));x.pub=id;store("pf_log",S.log);COM.at=0;COM.month=null;gameSync();return true}
+async function publishCatch(x,txt){if(!comOn())return false;if(condVazia(x)){const c=await histCond(x).catch(()=>null);if(c){x.c=Object.assign(x.c||{},c,{hist:true});store("pf_log",S.log)}}const id=await CM.fb.feedAdd(CM.user.uid,feedPayload(x,txt));x.pub=id;store("pf_log",S.log);COM.at=0;COM.month=null;gameSync();return true}
 
 function comSegHTML(){return COM_SEGS.map(([k,n])=>`<button type="button" class="chipbtn" data-com="${k}" aria-pressed="${COM.seg===k}">${n}</button>`).join("")}
 function comShow(){const seg=$("#comSeg");if(!seg)return;seg.innerHTML=comSegHTML();const on=comOn();

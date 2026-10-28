@@ -153,6 +153,11 @@ service cloud.firestore {
         && (!('texto' in request.resource.data) || (request.resource.data.texto is string && request.resource.data.texto.size() <= 280))
         && request.resource.data.cond is map
         && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']);
+      // o autor pode completar as condições (pescaria antiga: o app busca o histórico depois)
+      allow update: if signedIn() && resource.data.uid == me()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cond'])
+        && request.resource.data.cond is map
+        && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']);
       allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
 
       match /kudos/{uid} {
