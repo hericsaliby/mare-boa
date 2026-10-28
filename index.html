@@ -144,6 +144,7 @@ summary{cursor:pointer;font-weight:600}
 .chipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mapbox{position:relative}
 .admrow{cursor:pointer}.admrow:hover,.admrow.open{background:var(--accent-soft)}.admdet td{background:var(--surface-2)}
+#admPostsCard .admposts li{border-bottom:1px solid var(--line);padding:6px 0}
 .admposts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;white-space:normal}.admposts li{font-size:13px;line-height:1.4}
 .mapfab{position:absolute;z-index:810;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}
 .mapfab.gps{left:10px;bottom:84px;width:44px;height:44px;background:var(--surface);color:var(--accent)}.mapfab.gps.on{color:#fff;background:#1a73e8}
@@ -680,8 +681,11 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 
   <section class="view" id="v-admin" aria-label="Administração" hidden>
     <article class="card"><div class="row"><h2 class="grow">Painel do administrador</h2><button class="btn ghost" type="button" id="admRefresh">Atualizar</button></div>
-      <div class="admstats" id="admStats"><p class="small muted">Carregando…</p></div></article>
-    <article class="card"><div class="row"><h3 class="grow">Cadastrados <span class="small muted" style="font-weight:400">· toque num nome para ver as postagens</span></h3><input type="search" id="admQ" placeholder="Buscar nome ou região" style="max-width:220px"></div>
+      <div class="chatgroups" id="admSeg" role="group" aria-label="Seções do painel" style="margin-top:8px"><button type="button" class="chipbtn" data-adms="resumo" aria-pressed="true">Resumo</button><button type="button" class="chipbtn" data-adms="usuarios" aria-pressed="false">Cadastrados</button><button type="button" class="chipbtn" data-adms="posts" aria-pressed="false">Postagens</button></div></article>
+    <article class="card" id="admA" data-adm="resumo"><h3>Números</h3><div class="admstats" id="admStats"><p class="small muted">Carregando…</p></div></article>
+    <article class="card" id="admPostsCard" data-adm="posts" hidden><div class="row"><h3 class="grow">Postagens</h3><select id="admPU" aria-label="Pessoa"><option value="">Todas as pessoas</option></select><select id="admPT" aria-label="Tipo"><option value="">Mensagens e pescarias</option><option value="msg">Só mensagens</option><option value="feed">Só pescarias do feed</option></select><input type="search" id="admPQ" placeholder="Buscar texto" style="max-width:180px"></div>
+      <div id="admPostList"><p class="small muted">Carregando…</p></div></article>
+    <article class="card" data-adm="usuarios" hidden><div class="row"><h3 class="grow">Cadastrados <span class="small muted" style="font-weight:400">· toque num nome para ver as postagens</span></h3><input type="search" id="admQ" placeholder="Buscar nome ou região" style="max-width:220px"></div>
       <div class="tw"><table class="t" id="admUsers"></table></div></article>
   </section>
 
@@ -2432,7 +2436,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.5";
+const APP_VERSION="2026-10-28.6";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2977,7 +2981,7 @@ async function adminLoad(force){const el=$("#admStats");if(!CM.fb||!CM.admin){el
   // postagens de cada pessoa: mensagens nos grupos públicos e pescarias no feed (grupos privados continuam privados)
   const posts=(await Promise.all(pub.map(g=>fb.list(`groups/${g.id}/posts`).then(L=>L.map(x=>({...x,grupo:g.nome}))).catch(()=>[])))).flat();
   const feed=await fb.feedList(1000).catch(()=>[]);
-  ADM={at:Date.now(),users,groups,caps,push,ativ,posts,feed,open:ADM&&ADM.open||null,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender()}
+  ADM={at:Date.now(),users,groups,caps,push,ativ,posts,feed,open:ADM&&ADM.open||null,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender();admSeg()}
  catch(e){console.warn(e);el.innerHTML=`<p class="small" style="color:var(--bad)">Não consegui ler os dados (${esc(String(e.message||e).slice(0,90))}). Confira se as regras novas do Firestore foram publicadas.</p>`}}
 function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs(x.ultimoAcesso||0),cr=x=>tsMs(x.criadoEm||0);
  const online=U.filter(x=>t(x)>now-5*60e3).length,hoje=U.filter(x=>dayKey(t(x)||0)===dayKey(now)).length,sem=U.filter(x=>t(x)>now-7*864e5).length,novos=U.filter(x=>cr(x)>now-7*864e5).length;
@@ -2987,6 +2991,19 @@ function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs
  const q=($("#admQ").value||"").toLowerCase(),L=U.filter(x=>!q||String(x.nome||"").toLowerCase().includes(q)||String(x.regiao||"").includes(q)).sort((a,b)=>t(b)-t(a));
  $("#admUsers").innerHTML=`<thead><tr><th>Nome</th><th>Região</th><th>Cadastro</th><th>Último acesso</th><th>Acessos</th><th>Nível</th><th>Mensagens</th><th>Pescarias</th></tr></thead><tbody>${L.map(x=>{const P=(ADM.posts||[]).filter(y=>y.uid===x.id),A=(ADM.feed||[]).filter(y=>y.uid===x.id),op=ADM.open===x.id;
   return`<tr class="admrow${op?" open":""}" data-admu="${esc(x.id)}" tabindex="0" title="Ver postagens"><td>${t(x)>now-5*60e3?'<span class="online" title="conectado"></span>':""}${esc(x.nome||"")}</td><td class="num">${esc(x.regiao||"")}</td><td class="num">${cr(x)?fmtDM.format(cr(x)):"–"}</td><td>${t(x)?ago(t(x)):"–"}</td><td class="num">${x.acessos||0}</td><td>${x.nivel!=null?esc(NIVEIS[x.nivel]?NIVEIS[x.nivel].n:""):"–"}</td><td class="num">${P.length}</td><td class="num">${A.length}</td></tr>${op?`<tr class="admdet"><td colspan="8">${admPostsHTML(P,A)}</td></tr>`:""}`}).join("")}</tbody>`}
+let ADM_SEG="resumo";
+function admSeg(){document.querySelectorAll("[data-adms]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.adms===ADM_SEG));document.querySelectorAll("#v-admin [data-adm]").forEach(a=>a.hidden=a.dataset.adm!==ADM_SEG);if(ADM_SEG==="posts")admPostsRender()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-adms]");if(!b)return;ADM_SEG=b.dataset.adms;admSeg()});
+function admPostsRender(){if(!ADM)return;const su=$("#admPU"),cur=su.value,names=new Map();
+ for(const u of ADM.users)names.set(u.id,u.nome||"(sem nome)");for(const y of[...(ADM.posts||[]),...(ADM.feed||[])])if(!names.has(y.uid))names.set(y.uid,y.nome||"(sem nome)");
+ const cnt=new Map();for(const y of[...(ADM.posts||[]),...(ADM.feed||[])])cnt.set(y.uid,(cnt.get(y.uid)||0)+1);
+ su.innerHTML=`<option value="">Todas as pessoas</option>`+[...cnt.keys()].sort((a,b)=>cnt.get(b)-cnt.get(a)).map(id=>`<option value="${esc(id)}">${esc(names.get(id))} (${cnt.get(id)})</option>`).join("");su.value=cnt.has(cur)?cur:"";
+ const tp=$("#admPT").value,q=($("#admPQ").value||"").toLowerCase(),u=su.value;
+ const items=[...(tp==="feed"?[]:(ADM.posts||[]).map(y=>({uid:y.uid,t:tsMs(y.criadoEm),tx:`${y.texto||""} ${y.peixe||""}`,h:`💬 <b>${esc(y.grupo)}</b>: ${esc(y.texto||"")}${y.peixe?` <span class="muted">(${esc(y.peixe)})</span>`:""}`}))),
+  ...(tp==="msg"?[]:(ADM.feed||[]).map(y=>({uid:y.uid,t:tsMs(y.criadoEm),tx:`${y.sp} ${y.texto||""} ${y.isca||""}`,h:`🎣 <b>Feed</b>: ${esc(y.sp)} · ${y.qty} peixe${y.qty===1?"":"s"}${y.size?` · ${y.size} cm`:""}${y.isca?` · isca ${esc(y.isca)}`:""}${y.texto?` · "${esc(y.texto)}"`:""} <span class="muted">(${esc(y.area||"")})</span>`})))]
+  .filter(i=>(!u||i.uid===u)&&(!q||i.tx.toLowerCase().includes(q))).sort((a,b)=>b.t-a.t);
+ $("#admPostList").innerHTML=items.length?`<p class="small muted">${items.length} postage${items.length===1?"m":"ns"}${items.length>200?" · mostrando as 200 mais recentes":""}</p><ul class="admposts">${items.slice(0,200).map(i=>`<li><b>${esc(names.get(i.uid)||"?")}</b> <span class="muted small num">${fmtDH.format(i.t)}</span><br>${i.h}</li>`).join("")}</ul>`:`<p class="small muted">Nenhuma postagem${u||q||tp?" com esse filtro":""}.</p>`}
+["#admPU","#admPT"].forEach(id=>$(id).addEventListener("change",admPostsRender));$("#admPQ").addEventListener("input",admPostsRender);
 function admPostsHTML(P,A){const items=[...P.map(y=>({t:tsMs(y.criadoEm),h:`💬 <b>${esc(y.grupo)}</b>: ${esc(y.texto||"")}${y.peixe?` <span class="muted">(${esc(y.peixe)})</span>`:""}`})),
   ...A.map(y=>({t:tsMs(y.criadoEm),h:`🎣 <b>Feed</b>: ${esc(y.sp)} · ${y.qty} peixe${y.qty===1?"":"s"}${y.size?` · ${y.size} cm`:""}${y.texto?` · "${esc(y.texto)}"`:""} <span class="muted">(${esc(y.area||"")})</span>`}))].sort((a,b)=>b.t-a.t);
  return items.length?`<ul class="admposts">${items.slice(0,50).map(i=>`<li><span class="muted small num">${fmtDH.format(i.t)}</span> ${i.h}</li>`).join("")}</ul>${items.length>50?`<p class="small muted">Mostrando as 50 mais recentes de ${items.length}.</p>`:""}`:`<p class="small muted">Nenhuma postagem nos grupos públicos nem no feed.</p>`}
