@@ -143,6 +143,8 @@ summary{cursor:pointer;font-weight:600}
 .chipbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px;cursor:pointer}
 .chipbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mapbox{position:relative}
+.admrow{cursor:pointer}.admrow:hover,.admrow.open{background:var(--accent-soft)}.admdet td{background:var(--surface-2)}
+.admposts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;white-space:normal}.admposts li{font-size:13px;line-height:1.4}
 .mapfab{position:absolute;z-index:810;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}
 .mapfab.gps{left:10px;bottom:84px;width:44px;height:44px;background:var(--surface);color:var(--accent)}.mapfab.gps.on{color:#fff;background:#1a73e8}
 .mapfab.add{right:12px;bottom:80px;width:54px;height:54px;background:var(--accent);color:#fff}
@@ -679,7 +681,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
   <section class="view" id="v-admin" aria-label="Administração" hidden>
     <article class="card"><div class="row"><h2 class="grow">Painel do administrador</h2><button class="btn ghost" type="button" id="admRefresh">Atualizar</button></div>
       <div class="admstats" id="admStats"><p class="small muted">Carregando…</p></div></article>
-    <article class="card"><div class="row"><h3 class="grow">Cadastrados</h3><input type="search" id="admQ" placeholder="Buscar nome ou região" style="max-width:220px"></div>
+    <article class="card"><div class="row"><h3 class="grow">Cadastrados <span class="small muted" style="font-weight:400">· toque num nome para ver as postagens</span></h3><input type="search" id="admQ" placeholder="Buscar nome ou região" style="max-width:220px"></div>
       <div class="tw"><table class="t" id="admUsers"></table></div></article>
   </section>
 
@@ -2430,7 +2432,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.4";
+const APP_VERSION="2026-10-28.5";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2972,7 +2974,10 @@ async function adminLoad(force){const el=$("#admStats");if(!CM.fb||!CM.admin){el
  if(ADM&&!force&&Date.now()-ADM.at<60000)return adminRender();el.innerHTML=`<p class="small muted">Carregando…</p>`;const fb=CM.fb,c=(p,w)=>fb.count(p,w).catch(()=>null);
  try{const [users,groups,caps,push,ativ]=await Promise.all([fb.adminUsers(),fb.adminGroups().catch(()=>[]),c("capturas"),c("push"),c("atividades")]);
   const pub=groups.filter(g=>g.tipo==="publico"),msgs=await Promise.all(pub.map(g=>c(`groups/${g.id}/posts`)));
-  ADM={at:Date.now(),users,groups,caps,push,ativ,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender()}
+  // postagens de cada pessoa: mensagens nos grupos públicos e pescarias no feed (grupos privados continuam privados)
+  const posts=(await Promise.all(pub.map(g=>fb.list(`groups/${g.id}/posts`).then(L=>L.map(x=>({...x,grupo:g.nome}))).catch(()=>[])))).flat();
+  const feed=await fb.feedList(1000).catch(()=>[]);
+  ADM={at:Date.now(),users,groups,caps,push,ativ,posts,feed,open:ADM&&ADM.open||null,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender()}
  catch(e){console.warn(e);el.innerHTML=`<p class="small" style="color:var(--bad)">Não consegui ler os dados (${esc(String(e.message||e).slice(0,90))}). Confira se as regras novas do Firestore foram publicadas.</p>`}}
 function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs(x.ultimoAcesso||0),cr=x=>tsMs(x.criadoEm||0);
  const online=U.filter(x=>t(x)>now-5*60e3).length,hoje=U.filter(x=>dayKey(t(x)||0)===dayKey(now)).length,sem=U.filter(x=>t(x)>now-7*864e5).length,novos=U.filter(x=>cr(x)>now-7*864e5).length;
@@ -2980,7 +2985,12 @@ function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs
  $("#admStats").innerHTML=box(U.length,"cadastrados")+box(novos,"novos em 7 dias")+box(online,"conectados agora")+box(hoje,"acessaram hoje")+box(sem,"acessaram em 7 dias")+box(U.reduce((a,x)=>a+(x.acessos||0),0),"acessos no total")
   +ADM.msgs.map(m=>box(m.c,"mensagens em "+esc(m.n))).join("")+box(ADM.groups.filter(g=>g.tipo==="privado").length,"grupos privados")+box(ADM.ativ,"pescarias no feed")+box(ADM.caps,"capturas compartilhadas")+box(ADM.push,"aparelhos com aviso")+box("—","fotos (recurso ainda não lançado)");
  const q=($("#admQ").value||"").toLowerCase(),L=U.filter(x=>!q||String(x.nome||"").toLowerCase().includes(q)||String(x.regiao||"").includes(q)).sort((a,b)=>t(b)-t(a));
- $("#admUsers").innerHTML=`<thead><tr><th>Nome</th><th>Região</th><th>Cadastro</th><th>Último acesso</th><th>Acessos</th><th>Nível</th></tr></thead><tbody>${L.map(x=>`<tr><td>${t(x)>now-5*60e3?'<span class="online" title="conectado"></span>':""}${esc(x.nome||"")}</td><td class="num">${esc(x.regiao||"")}</td><td class="num">${cr(x)?fmtDM.format(cr(x)):"–"}</td><td>${t(x)?ago(t(x)):"–"}</td><td class="num">${x.acessos||0}</td><td>${x.nivel!=null?esc(NIVEIS[x.nivel]?NIVEIS[x.nivel].n:""):"–"}</td></tr>`).join("")}</tbody>`}
+ $("#admUsers").innerHTML=`<thead><tr><th>Nome</th><th>Região</th><th>Cadastro</th><th>Último acesso</th><th>Acessos</th><th>Nível</th><th>Mensagens</th><th>Pescarias</th></tr></thead><tbody>${L.map(x=>{const P=(ADM.posts||[]).filter(y=>y.uid===x.id),A=(ADM.feed||[]).filter(y=>y.uid===x.id),op=ADM.open===x.id;
+  return`<tr class="admrow${op?" open":""}" data-admu="${esc(x.id)}" tabindex="0" title="Ver postagens"><td>${t(x)>now-5*60e3?'<span class="online" title="conectado"></span>':""}${esc(x.nome||"")}</td><td class="num">${esc(x.regiao||"")}</td><td class="num">${cr(x)?fmtDM.format(cr(x)):"–"}</td><td>${t(x)?ago(t(x)):"–"}</td><td class="num">${x.acessos||0}</td><td>${x.nivel!=null?esc(NIVEIS[x.nivel]?NIVEIS[x.nivel].n:""):"–"}</td><td class="num">${P.length}</td><td class="num">${A.length}</td></tr>${op?`<tr class="admdet"><td colspan="8">${admPostsHTML(P,A)}</td></tr>`:""}`}).join("")}</tbody>`}
+function admPostsHTML(P,A){const items=[...P.map(y=>({t:tsMs(y.criadoEm),h:`💬 <b>${esc(y.grupo)}</b>: ${esc(y.texto||"")}${y.peixe?` <span class="muted">(${esc(y.peixe)})</span>`:""}`})),
+  ...A.map(y=>({t:tsMs(y.criadoEm),h:`🎣 <b>Feed</b>: ${esc(y.sp)} · ${y.qty} peixe${y.qty===1?"":"s"}${y.size?` · ${y.size} cm`:""}${y.texto?` · "${esc(y.texto)}"`:""} <span class="muted">(${esc(y.area||"")})</span>`}))].sort((a,b)=>b.t-a.t);
+ return items.length?`<ul class="admposts">${items.slice(0,50).map(i=>`<li><span class="muted small num">${fmtDH.format(i.t)}</span> ${i.h}</li>`).join("")}</ul>${items.length>50?`<p class="small muted">Mostrando as 50 mais recentes de ${items.length}.</p>`:""}`:`<p class="small muted">Nenhuma postagem nos grupos públicos nem no feed.</p>`}
+document.addEventListener("click",e=>{const r=e.target.closest("[data-admu]");if(!r||!ADM)return;ADM.open=ADM.open===r.dataset.admu?null:r.dataset.admu;adminRender()});
 $("#admRefresh").addEventListener("click",()=>adminLoad(true));$("#admQ").addEventListener("input",adminRender);
 function presence(){if(!CM.user||!CM.profile||!CM.fb)return;const first=!PING;CM.fb.touch(CM.user.uid,first).catch(e=>console.warn("acesso",e));
  if(first)PING=setInterval(()=>{if(!document.hidden&&CM.user&&CM.profile)CM.fb.touch(CM.user.uid,false).catch(()=>{})},120000)}
