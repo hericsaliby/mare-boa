@@ -150,6 +150,9 @@ summary{cursor:pointer;font-weight:600}
 .d3>div.cur{border-color:var(--accent);background:var(--accent-soft)}.d3 b{font-size:13px;margin-bottom:4px}.d3 span{font-size:11px;color:var(--muted);margin-top:4px}.d3 strong{font-size:16px}.d3 small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 #sum3d p.good{color:var(--good)}#sum3d p.bad{color:var(--bad)}
 .tcalform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.tcalform select,.tcalform input{flex:1 1 160px;min-width:0}.tcl{margin:6px 0 0;padding-left:18px}
+.actimg{border:0;padding:0;background:none;cursor:zoom-in;border-radius:12px;overflow:hidden;max-width:100%;align-self:flex-start}.actimg img{display:block;max-width:100%;max-height:320px;border-radius:12px}
+.fotobox{max-width:96vw;max-height:90vh;display:flex;align-items:center;justify-content:center;color:#fff}.fotobox img{max-width:96vw;max-height:88vh;border-radius:10px}
+.fotobtn{position:relative;overflow:hidden}.fotoin input[type=file]{font-size:14px}
 .tour{position:fixed;inset:0;z-index:4000;background:rgba(6,24,30,.72);display:flex;align-items:center;justify-content:center;padding:16px}
 .tourcard{background:var(--surface);color:var(--ink);border-radius:20px;max-width:420px;width:100%;padding:22px 20px 16px;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:10px}
 .tourcard .tic{font-size:54px;line-height:1;text-align:center}.tourcard h2{margin:0;text-align:center;font-size:22px}.tourcard p{margin:0;font-size:15px;line-height:1.45}
@@ -542,6 +545,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
           <label class="small" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="lgShare"> <span>Ajudar a comunidade: enviar <b>anonimamente</b> as condições desta pescaria (maré, vento, pressão, água, peixe, isca e a região de ~10 km). <b>O local do ponto não é enviado.</b></span></label>
           <label class="small" style="grid-column:1/-1;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="lgPub"> <span><b>Publicar no feed da comunidade</b>: peixe, quantidade, tamanho, isca, condições e só a área do litoral (ex.: Grande Florianópolis). <b>O ponto não aparece.</b></span></label>
           <label class="inline" for="lgCap" style="grid-column:1/-1" id="lgCapL" hidden>Legenda no feed (opcional)<input type="text" id="lgCap" maxlength="280" placeholder="ex.: Robalo na virada da maré!"></label>
+          <label class="inline fotoin" for="lgFoto" style="grid-column:1/-1" id="lgFotoL" hidden>Foto no feed (opcional)<input type="file" id="lgFoto" accept="image/*"><span class="small muted">A foto é reduzida e a localização gravada nela pelo celular é apagada antes de enviar.</span></label>
           <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Salvar pescaria</button><span id="lgMsg" class="small muted"></span></div>
           <datalist id="baitList"><option value="Camarão vivo"><option value="Camarão morto"><option value="Artificial de meia-água"><option value="Artificial de superfície"><option value="Jig head + shad"><option value="Sardinha"><option value="Corrupto"><option value="Tatuíra"><option value="Lula"><option value="Filé de peixe"><option value="Siri"><option value="Manjuba"><option value="Minhoca"></datalist>
         </form>
@@ -2035,8 +2039,8 @@ function renderHistory(){const el=$("#histBody");if(!el||!S.data)return;const sp
   const cond=[c.mare?`maré ${c.mare}${c.since!=null?` (${dur(c.since*HOUR)} após virada)`:""}`:"",c.eff!=null?`vento ${wv(c.eff)} ${WU()}${c.dir!=null?" "+dir16(c.dir):""}`:"",c.lua?c.lua.toLowerCase():"",c.sst!=null?`água ${c.sst} °C`:""].filter(Boolean).join(" · ");
   return`<li><span class="tag ${RCL[x.res]} res">${RES[x.res]}</span><span><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty!=null?` · ${x.qty} peixe${x.qty!==1?"s":""}`:""}${x.size?` · maior ${x.size} cm`:""}${x.bait?` · <b>${esc(x.bait)}</b>`:""}<br><span class="small muted">${esc(cond)}${x.c&&x.c.hist&&cond?" (histórico daquele dia)":""}${x.note?`<br>${esc(x.note)}`:""}</span>${x.c&&x.c.mare?` <button type="button" class="linkbtn small" data-rep="${x.id}">relatório</button><div class="repbox" id="rep_${x.id}" hidden></div>`:""}</span><button class="btn ghost small" data-del="${x.id}" type="button" aria-label="Apagar registro">Apagar</button></li>`}).join("")}</ul>`;
  el.innerHTML=h}
-function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true;$("#lgPub").checked=store("pf_pub")!==false;$("#lgPub").onchange=()=>{$("#lgCapL").hidden=!$("#lgPub").checked||!comOn()}}
- $("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=!comOn()||!$("#lgPub").checked;
+function renderLog(){renderHistory();renderSimilar();renderAgenda();renderBell();if($("#lgShare")&&!$("#lgShare").dataset.k){$("#lgShare").dataset.k=1;$("#lgShare").checked=store("pf_share")===true;$("#lgPub").checked=store("pf_pub")!==false;$("#lgPub").onchange=()=>{$("#lgCapL").hidden=$("#lgFotoL").hidden=!$("#lgPub").checked||!comOn()}}
+ $("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=$("#lgFotoL").hidden=!comOn()||!$("#lgPub").checked;
  // no registro de pescaria só os pontos do usuário (pelo nome); um ponto padrão só entra se for o selecionado agora
  const mine=SPOTS.filter(s=>s.custom&&!s.temp),cur=spot(),home=SPOTS.find(s=>s.id===HOME_SPOT),logList=cur.temp?(mine.length?mine:[home]):mine.some(s=>s.id===cur.id)?mine:[cur,...mine];
  const lkey=logList.map(s=>s.id+s.n).join("|");
@@ -2083,7 +2087,7 @@ $("#when").addEventListener("input",e=>{S.when=+e.target.value;S.day=dayKey(S.da
 let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(S.data){renderCharts();renderTimeline();if(S.view==="lua")renderMoon()}},150)});
 $("#lgQty").addEventListener("input",e=>{if(e.target.value==="0")$("#lgRes").value="0";else if($("#lgRes").value==="0")$("#lgRes").value="2"});
 $("#lgWhen").addEventListener("input",e=>{e.target.dataset.touched="1"});
-$("#logDet").addEventListener("toggle",e=>{if(e.target.open){$("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=!comOn()||!$("#lgPub").checked;if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
+$("#logDet").addEventListener("toggle",e=>{if(e.target.open){$("#lgPub").closest("label").hidden=!comOn();$("#lgCapL").hidden=$("#lgFotoL").hidden=!comOn()||!$("#lgPub").checked;if(!$("#lgWhen").dataset.touched)$("#lgWhen").value=localInput(Date.now());$("#lgSpot").value=spot().id;if(S.fish!=="geral"){const n=FISH[S.fish].n;const o=[...$("#lgSp").options].find(x=>x.text.startsWith(n));if(o)$("#lgSp").value=o.value}}});
 $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgMsg");
  try{
  const t=parseLocal($("#lgWhen").value),sp=$("#lgSpot").value;
@@ -2094,7 +2098,7 @@ $("#logForm").addEventListener("submit",e=>{e.preventDefault();const msg=$("#lgM
   qty:$("#lgQty").value===""?null:+$("#lgQty").value,size:$("#lgSize").value===""?null:+$("#lgSize").value,bait:$("#lgBait").value.trim(),
   c:D?condSnap(sp,t,r&&!S.demo?r:null):{hora:localHour(t)},f:r&&!S.demo?featOf(r):null,v:r&&!S.demo?condVec(SPOTS.find(x=>x.id===sp),r):null,model:S.model};
  S.log.push(item);store("pf_log",S.log);
- if(comOn()){const pb=$("#lgPub").checked;store("pf_pub",pb);if(pb)publishCatch(item,$("#lgCap").value).then(()=>{$("#lgCap").value="";const m=$("#lgMsg");m.textContent=(m.textContent?m.textContent+" ":"")+"Publicado no feed."}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui publicar no feed agora (dá para publicar depois em Comunidade)."})}
+ if(comOn()){const pb=$("#lgPub").checked;store("pf_pub",pb);if(pb)publishCatch(item,$("#lgCap").value,$("#lgFoto").files[0]).then(()=>{$("#lgCap").value="";$("#lgFoto").value="";const m=$("#lgMsg");m.textContent=(m.textContent?m.textContent+" ":"")+"Publicado no feed."}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui publicar no feed agora (dá para publicar depois em Comunidade)."})}
  {const sh=$("#lgShare").checked;store("pf_share",sh);if(sh&&item.v)shareCatch(item).then(ok=>{if(ok)$("#lgMsg").textContent="Compartilhado anonimamente. Obrigado!"}).catch(err=>{console.warn(err);$("#lgMsg").textContent="Salvo no aparelho. Não consegui compartilhar agora."})}
  $("#lgQty").value=1;$("#lgSize").value="";$("#lgNote").value="";delete $("#lgWhen").dataset.touched;
  // mostra o histórico do ponto onde a pescaria foi registrada
@@ -2568,7 +2572,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.5";
+const APP_VERSION="2026-10-30.6";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2943,7 +2947,8 @@ async function fbInit(){if(CM.fb)return CM.fb;
   async feedList(n){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.orderBy("criadoEm","desc"),F.limit(n)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedSince(ms){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("criadoEm",">=",F.Timestamp.fromMillis(ms)),F.orderBy("criadoEm","desc"),F.limit(1000)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedMine(uid){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("uid","==",uid)));return r.docs.map(x=>x.id)},
-  feedDel:id=>F.deleteDoc(d("atividades/"+id)),
+  async feedDel(id){await F.deleteDoc(d("fotos/"+id)).catch(()=>{});await F.deleteDoc(d("atividades/"+id))},
+  fotoSet:(id,uid,img)=>F.setDoc(d("fotos/"+id),{uid,img,criadoEm:F.serverTimestamp()}),
   listenDoc:(path,cb)=>F.onSnapshot(d(path),x=>{if(!x.metadata.hasPendingWrites)cb(x.exists()?x.data():null)},e=>console.warn("escuta",e)),
   feedCond:(id,cond)=>F.updateDoc(d("atividades/"+id),{cond}),
   kudo:(id,uid,nome,on)=>F.updateDoc(d("atividades/"+id),new F.FieldPath("kd",uid),on?nome:F.deleteField()),
@@ -3058,7 +3063,20 @@ function feedPayload(x,txt){const sp=SPOTS.find(s=>s.id===x.spot),c=x.c||{},cond
  if(c.sst!=null)cond.agua=+c.sst;if(c.nota!=null)cond.nota=Math.round(c.nota);if(/véspera/.test(c.frente||""))cond.frente=true;
  const d={nome:CM.profile.nome,nivel:myLevel(),t:Math.floor(x.t/HOUR)*HOUR,sp:String(x.sp).slice(0,30),qty:Math.min(100,Math.max(0,x.qty|0)),res:x.res|0,area:sp?areaOf(sp):"Santa Catarina",cond};
  if(x.size)d.size=Math.min(300,Math.max(0,x.size|0));if(x.bait)d.isca=x.bait.trim().slice(0,40);txt=(txt||"").trim();if(txt)d.texto=txt.slice(0,280);return d}
-async function publishCatch(x,txt){if(!comOn())return false;if(condVazia(x)){const c=await histCond(x).catch(()=>null);if(c){x.c=Object.assign(x.c||{},c,{hist:true});store("pf_log",S.log)}}const id=await CM.fb.feedAdd(CM.user.uid,feedPayload(x,txt));x.pub=id;store("pf_log",S.log);COM.at=0;COM.month=null;gameSync();return true}
+/* Foto: reduzida no aparelho (sem custo de armazenamento extra). Miniatura (~15 KB) vai na postagem; a foto maior
+   (~150 KB) fica num documento à parte e só é baixada quando alguém toca. Redesenhar no canvas apaga o GPS e os
+   outros dados que o celular grava dentro da foto, então o ponto não vaza pela imagem. */
+const FOTO_OK=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/; // só mostra se for exatamente uma imagem JPEG (nada de código escondido)
+async function fotoRed(file,max,q,lim){const url=URL.createObjectURL(file);try{const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url});
+ let w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,max/Math.max(w,h));let out="";
+ for(let t=0;t<6;t++){const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+  out=c.toDataURL("image/jpeg",q);if(out.length<=lim)return out;q=Math.max(.4,q-.1);k*=.85}return out.length<=lim?out:null}finally{URL.revokeObjectURL(url)}}
+async function fotoPrep(file){if(!file||!/^image\//.test(file.type))return null;const ft=await fotoRed(file,360,.6,40000),img=await fotoRed(file,1280,.75,600000);return ft&&img?{ft,img}:null}
+function fotoOpen(id){const box=document.createElement("div");box.className="tour";box.innerHTML=`<div class="fotobox"><span class="small muted">Carregando a foto…</span></div>`;document.body.appendChild(box);
+ box.onclick=()=>box.remove();CM.fb.get("fotos/"+id).then(d=>{box.querySelector(".fotobox").innerHTML=d&&d.img&&FOTO_OK.test(d.img)?`<img src="${d.img}" alt="Foto da pescaria">`:`<span class="small">Foto não encontrada.</span>`}).catch(()=>{box.querySelector(".fotobox").innerHTML=`<span class="small">Não consegui abrir a foto.</span>`})}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-foto]");if(b)fotoOpen(b.dataset.foto)});
+async function publishCatch(x,txt,foto){if(!comOn())return false;if(condVazia(x)){const c=await histCond(x).catch(()=>null);if(c){x.c=Object.assign(x.c||{},c,{hist:true});store("pf_log",S.log)}}let ph=null;if(foto){try{ph=await fotoPrep(foto)}catch(e){console.warn("foto",e)}}
+ const pl=feedPayload(x,txt);if(ph)pl.ft=ph.ft;const id=await CM.fb.feedAdd(CM.user.uid,pl);if(ph)await CM.fb.fotoSet(id,CM.user.uid,ph.img).catch(e=>console.warn("foto grande",e));x.pub=id;store("pf_log",S.log);COM.at=0;COM.month=null;gameSync();return true}
 
 function comSegHTML(){return COM_SEGS.map(([k,n])=>`<button type="button" class="chipbtn" data-com="${k}" aria-pressed="${COM.seg===k}">${n}</button>`).join("")}
 function comShow(){const seg=$("#comSeg");if(!seg)return;seg.innerHTML=comSegHTML();const on=comOn();
@@ -3078,6 +3096,7 @@ function actCard(a){const uid=CM.user.uid,me=a.uid===uid,c=a.cond||{},K=a.kudos|
  const kn=K.slice(0,2).map(k=>esc(k.nome)).join(", ");
  return`<li class="act" data-act="${a.id}"><div class="acth"><span class="av" aria-hidden="true">${esc((a.nome||"?").slice(0,1).toUpperCase())}</span><div class="grow"><b>${esc(a.nome)}</b> <span title="${esc(N0.n)}">${N0.ic}</span><div class="small muted">${fmtDH.format(a.t)} · ${esc(a.area||"")}</div></div>${me||CM.admin?`<button class="linkbtn small" data-actdel="${a.id}" type="button">excluir</button>`:""}</div>
   <h4>${esc(a.texto||periodo(a.t))}</h4>
+  ${a.ft&&FOTO_OK.test(a.ft)?`<button type="button" class="actimg" data-foto="${a.id}" aria-label="Ver a foto maior"><img src="${a.ft}" alt="Foto da pescaria" loading="lazy"></button>`:""}
   <div class="actstats"><div><span>Peixes</span><b class="num">${a.qty}</b></div><div><span>Espécie</span><b>${esc(a.sp)}</b></div>${a.size?`<div><span>Maior</span><b class="num">${a.size} cm</b></div>`:""}${a.isca?`<div><span>Isca</span><b>${esc(a.isca)}</b></div>`:""}</div>
   ${chips.length?`<div class="actchips">${chips.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
   <div class="actfoot"><button type="button" class="kudo${mine?" on":""}" data-kudo="${a.id}" aria-pressed="${mine}"${me?" disabled":""}>🤙 Boa!${K.length?` <b>${K.length}</b>`:""}</button><button type="button" class="linkbtn" data-coms="${a.id}">💬 ${a.ncom?a.ncom+(a.ncom>1?" comentários":" comentário"):"Comentar"}</button></div>
@@ -3086,7 +3105,7 @@ function actCard(a){const uid=CM.user.uid,me=a.uid===uid,c=a.cond||{},K=a.kudos|
 function pendCatches(){const lim=Date.now()-14*864e5;return S.log.filter(x=>!x.pub&&x.t>=lim).sort((a,b)=>b.t-a.t).slice(0,3)}
 function pendHTML(){const P=pendCatches();if(!P.length)return"";
  return`<div class="pend"><b class="small">Suas pescarias que ainda não estão no feed</b>${P.map(x=>`<div class="pendrow"><span class="small"><b>${fmtDM.format(x.t)}</b> · ${esc(x.sp)}${x.qty?` · ${x.qty} peixe${x.qty>1?"s":""}`:""}${x.size?` · ${x.size} cm`:""}</span>
-  <input type="text" maxlength="280" placeholder="Legenda (opcional)" data-pubcap="${x.id}"><button type="button" class="btn small" data-pub="${x.id}">Publicar</button></div>`).join("")}
+  <input type="text" maxlength="280" placeholder="Legenda (opcional)" data-pubcap="${x.id}"><label class="btn ghost small fotobtn" title="Adicionar foto">📷<input type="file" accept="image/*" data-pubfoto="${x.id}" hidden></label><button type="button" class="btn small" data-pub="${x.id}">Publicar</button></div>`).join("")}
   <div class="small muted">Vai para o feed: peixe, quantidade, tamanho, isca, condições e a área (${esc(areaOf(spot()))}, por exemplo). O ponto não aparece.</div></div>`}
 async function renderComFeed(force){const el=$("#comFeed");
  el.innerHTML=`<div class="sum-h"><h3>Pescarias da galera</h3><button class="linkbtn small" id="feedRef" type="button">atualizar</button></div>${pendHTML()}<ul class="acts" id="actList"><li class="small muted">Carregando…</li></ul>`;
@@ -3107,7 +3126,8 @@ document.addEventListener("click",async e=>{const t=e.target;
  const ad=t.closest("[data-actdel]");if(ad){if(ad.dataset.armed!=="1"){ad.dataset.armed="1";ad.textContent="toque de novo para excluir";return}
   const id=ad.dataset.actdel;try{await CM.fb.feedDel(id);const x=S.log.find(x=>x.pub===id);if(x){delete x.pub;store("pf_log",S.log)}COM.feed=(COM.feed||[]).filter(a=>a.id!==id);COM.month=null;renderComFeed()}catch(err){console.warn(err);ad.textContent="não consegui excluir"}return}
  const pb=t.closest("[data-pub]");if(pb){const x=S.log.find(y=>y.id===pb.dataset.pub);if(!x)return;pb.disabled=true;pb.textContent="Publicando…";
-  const cap=document.querySelector(`[data-pubcap="${x.id}"]`);try{await publishCatch(x,cap?cap.value:"");renderComFeed(true)}catch(err){console.warn(err);pb.disabled=false;pb.textContent="Tentar de novo"}return}});
+  const cap=document.querySelector(`[data-pubcap="${x.id}"]`),fi=document.querySelector(`[data-pubfoto="${x.id}"]`);try{await publishCatch(x,cap?cap.value:"",fi&&fi.files[0]);renderComFeed(true)}catch(err){console.warn(err);pb.disabled=false;pb.textContent="Tentar de novo"}return}});
+document.addEventListener("change",e=>{const f=e.target.closest("[data-pubfoto]");if(f&&f.files[0])f.parentElement.textContent="📷 ✓";},true);
 document.addEventListener("submit",async e=>{const f=e.target.closest("[data-comform]");if(!f)return;e.preventDefault();const id=f.dataset.comform,inp=f.querySelector("input"),tx=inp.value.trim();if(!tx)return;
  f.querySelector("button").disabled=true;try{await CM.fb.comAdd(id,CM.user.uid,CM.profile.nome,tx.slice(0,300));await loadComs(id);const a=(COM.feed||[]).find(x=>x.id===id),lk=document.querySelector(`[data-coms="${id}"]`);if(a&&lk)lk.textContent=`💬 ${a.ncom} comentário${a.ncom>1?"s":""}`}catch(err){console.warn(err);f.querySelector("button").disabled=false}});
 // sininho: "Boa!" e comentários novos nas suas pescarias
@@ -3181,18 +3201,18 @@ function renderVoce(){const el=$("#comVoce"),g=gameStats(),N0=NIVEIS[g.nivel],no
 let ADM=null;
 async function adminLoad(force){const el=$("#admStats");if(!CM.fb||!CM.admin){el.innerHTML=`<p class="small muted">Só para administradores. Entre na Conta.</p>`;return}
  if(ADM&&!force&&Date.now()-ADM.at<60000)return adminRender();el.innerHTML=`<p class="small muted">Carregando…</p>`;const fb=CM.fb,c=(p,w)=>fb.count(p,w).catch(()=>null);
- try{const [users,groups,caps,push,ativ]=await Promise.all([fb.adminUsers(),fb.adminGroups().catch(()=>[]),c("capturas"),c("push"),c("atividades")]);
+ try{const [users,groups,caps,push,ativ,fotos]=await Promise.all([fb.adminUsers(),fb.adminGroups().catch(()=>[]),c("capturas"),c("push"),c("atividades"),c("fotos")]);
   const pub=groups.filter(g=>g.tipo==="publico"),msgs=await Promise.all(pub.map(g=>c(`groups/${g.id}/posts`)));
   // postagens de cada pessoa: mensagens nos grupos públicos e pescarias no feed (grupos privados continuam privados)
   const posts=(await Promise.all(pub.map(g=>fb.list(`groups/${g.id}/posts`).then(L=>L.map(x=>({...x,grupo:g.nome}))).catch(()=>[])))).flat();
   const feed=await fb.feedList(1000).catch(()=>[]);
-  ADM={at:Date.now(),users,groups,caps,push,ativ,posts,feed,open:ADM&&ADM.open||null,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender();admSeg()}
+  ADM={at:Date.now(),users,groups,caps,push,ativ,fotos,posts,feed,open:ADM&&ADM.open||null,msgs:pub.map((g,i)=>({n:g.nome,c:msgs[i]}))};adminRender();admSeg()}
  catch(e){console.warn(e);el.innerHTML=`<p class="small" style="color:var(--bad)">Não consegui ler os dados (${esc(String(e.message||e).slice(0,90))}). Confira se as regras novas do Firestore foram publicadas.</p>`}}
 function adminRender(){if(!ADM)return;const now=Date.now(),U=ADM.users,t=x=>tsMs(x.ultimoAcesso||0),cr=x=>tsMs(x.criadoEm||0);
  const online=U.filter(x=>t(x)>now-5*60e3).length,hoje=U.filter(x=>dayKey(t(x)||0)===dayKey(now)).length,sem=U.filter(x=>t(x)>now-7*864e5).length,novos=U.filter(x=>cr(x)>now-7*864e5).length;
  const box=(v,n)=>`<div><b>${v==null?"–":v}</b><span>${n}</span></div>`;
  $("#admStats").innerHTML=box(U.length,"cadastrados")+box(novos,"novos em 7 dias")+box(online,"conectados agora")+box(hoje,"acessaram hoje")+box(sem,"acessaram em 7 dias")+box(U.reduce((a,x)=>a+(x.acessos||0),0),"acessos no total")
-  +ADM.msgs.map(m=>box(m.c,"mensagens em "+esc(m.n))).join("")+box(ADM.groups.filter(g=>g.tipo==="privado").length,"grupos privados")+box(ADM.ativ,"pescarias no feed")+box(ADM.caps,"capturas compartilhadas")+box(ADM.push,"aparelhos com aviso")+box("—","fotos (recurso ainda não lançado)");
+  +ADM.msgs.map(m=>box(m.c,"mensagens em "+esc(m.n))).join("")+box(ADM.groups.filter(g=>g.tipo==="privado").length,"grupos privados")+box(ADM.ativ,"pescarias no feed")+box(ADM.caps,"capturas compartilhadas")+box(ADM.push,"aparelhos com aviso")+box(ADM.fotos,"fotos publicadas");
  const q=($("#admQ").value||"").toLowerCase(),L=U.filter(x=>!q||String(x.nome||"").toLowerCase().includes(q)||String(x.regiao||"").includes(q)).sort((a,b)=>t(b)-t(a));
  $("#admUsers").innerHTML=`<thead><tr><th>Nome</th><th>Região</th><th>Cadastro</th><th>Último acesso</th><th>Acessos</th><th>Nível</th><th>Mensagens</th><th>Pescarias</th></tr></thead><tbody>${L.map(x=>{const P=(ADM.posts||[]).filter(y=>y.uid===x.id),A=(ADM.feed||[]).filter(y=>y.uid===x.id),op=ADM.open===x.id;
   return`<tr class="admrow${op?" open":""}" data-admu="${esc(x.id)}" tabindex="0" title="Ver postagens"><td>${t(x)>now-5*60e3?'<span class="online" title="conectado"></span>':""}${esc(x.nome||"")}</td><td class="num">${esc(x.regiao||"")}</td><td class="num">${cr(x)?fmtDM.format(cr(x)):"–"}</td><td>${t(x)?ago(t(x)):"–"}</td><td class="num">${x.acessos||0}</td><td>${x.nivel!=null?esc(NIVEIS[x.nivel]?NIVEIS[x.nivel].n:""):"–"}</td><td class="num">${P.length}</td><td class="num">${A.length}</td></tr>${op?`<tr class="admdet"><td colspan="8">${admPostsHTML(P,A)}</td></tr>`:""}`}).join("")}</tbody>`}

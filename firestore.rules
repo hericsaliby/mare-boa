@@ -145,11 +145,23 @@ service cloud.firestore {
         && request.resource.data.pdel is string && request.resource.data.ldel is string && request.resource.data.agenda is string;
     }
 
+    // Foto maior de uma pescaria do feed (a miniatura fica na própria postagem)
+    match /fotos/{id} {
+      allow read: if signedIn();
+      allow create: if hasProfile() && request.resource.data.uid == me()
+        && get(/databases/$(database)/documents/atividades/$(id)).data.uid == me()
+        && request.resource.data.keys().hasOnly(['uid', 'img', 'criadoEm'])
+        && request.resource.data.img is string && request.resource.data.img.size() <= 650000
+        && request.resource.data.img.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
+      allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
+    }
+
     // Feed de pescarias (estilo Strava): sem o ponto, só uma área larga do litoral
     match /atividades/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'nome', 'nivel', 't', 'sp', 'qty', 'size', 'res', 'isca', 'area', 'texto', 'cond', 'kd', 'nc', 'criadoEm'])
+        && request.resource.data.keys().hasOnly(['uid', 'nome', 'nivel', 't', 'sp', 'qty', 'size', 'res', 'isca', 'area', 'texto', 'cond', 'kd', 'nc', 'ft', 'criadoEm'])
+        && (!('ft' in request.resource.data) || (request.resource.data.ft is string && request.resource.data.ft.size() <= 45000 && request.resource.data.ft.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$')))
         && (!('kd' in request.resource.data) || request.resource.data.kd.size() == 0)
         && (!('nc' in request.resource.data) || request.resource.data.nc == 0)
         && request.resource.data.criadoEm == request.time
