@@ -149,7 +149,9 @@ service cloud.firestore {
     match /atividades/{id} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'nome', 'nivel', 't', 'sp', 'qty', 'size', 'res', 'isca', 'area', 'texto', 'cond', 'criadoEm'])
+        && request.resource.data.keys().hasOnly(['uid', 'nome', 'nivel', 't', 'sp', 'qty', 'size', 'res', 'isca', 'area', 'texto', 'cond', 'kd', 'nc', 'criadoEm'])
+        && (!('kd' in request.resource.data) || request.resource.data.kd.size() == 0)
+        && (!('nc' in request.resource.data) || request.resource.data.nc == 0)
         && request.resource.data.criadoEm == request.time
         && request.resource.data.nome is string && request.resource.data.nome.size() <= 40
         && request.resource.data.nivel is int && request.resource.data.t is int
@@ -163,10 +165,22 @@ service cloud.firestore {
         && request.resource.data.cond is map
         && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']);
       // o autor pode completar as condições (pescaria antiga: o app busca o histórico depois)
-      allow update: if signedIn() && resource.data.uid == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cond'])
-        && request.resource.data.cond is map
-        && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']);
+      allow update: if signedIn() && (
+        (resource.data.uid == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cond'])
+          && request.resource.data.cond is map
+          && request.resource.data.cond.keys().hasOnly(['mare', 'vento', 'dir', 'lua', 'agua', 'nota', 'frente']))
+        // "Boa!": cada pessoa só põe ou tira o próprio nome (não na própria pescaria)
+        || (hasProfile() && resource.data.uid != me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kd'])
+          && request.resource.data.kd is map && request.resource.data.kd.size() <= 500
+          && request.resource.data.kd.diff(resource.data.get('kd', {})).affectedKeys().hasOnly([me()])
+          && (!(me() in request.resource.data.kd) || (request.resource.data.kd[me()] is string && request.resource.data.kd[me()].size() <= 40)))
+        // contador de comentários: sobe ou desce de 1 em 1
+        || (hasProfile()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nc'])
+          && request.resource.data.nc is int && request.resource.data.nc >= 0
+          && (request.resource.data.nc == resource.data.get('nc', 0) + 1 || request.resource.data.nc == resource.data.get('nc', 0) - 1)));
       allow delete: if signedIn() && (resource.data.uid == me() || isAdmin());
 
       match /kudos/{uid} {

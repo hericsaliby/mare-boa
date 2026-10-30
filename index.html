@@ -2568,7 +2568,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.4";
+const APP_VERSION="2026-10-30.5";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2939,19 +2939,19 @@ async function fbInit(){if(CM.fb)return CM.fb;
   async capList(reg){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("reg","==",reg),F.limit(800)));return r.docs.map(x=>x.data())},
   async capDelMine(uid){const r=await F.getDocs(F.query(F.collection(db,"capturas"),F.where("uid","==",uid)));for(const x of r.docs)await F.deleteDoc(x.ref);return r.size},
   async setCode(uid,nome,code){const b=F.writeBatch(db);b.set(d("codigos/"+code),{uid,nome});b.update(d("users/"+uid),{codigo:code});await b.commit()},
-  async feedAdd(uid,data){const ref=F.doc(F.collection(db,"atividades"));await F.setDoc(ref,{...data,uid,criadoEm:F.serverTimestamp()});return ref.id},
+  async feedAdd(uid,data){const ref=F.doc(F.collection(db,"atividades"));await F.setDoc(ref,{...data,uid,kd:{},nc:0,criadoEm:F.serverTimestamp()});return ref.id},
   async feedList(n){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.orderBy("criadoEm","desc"),F.limit(n)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedSince(ms){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("criadoEm",">=",F.Timestamp.fromMillis(ms)),F.orderBy("criadoEm","desc"),F.limit(1000)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedMine(uid){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("uid","==",uid)));return r.docs.map(x=>x.id)},
   feedDel:id=>F.deleteDoc(d("atividades/"+id)),
   listenDoc:(path,cb)=>F.onSnapshot(d(path),x=>{if(!x.metadata.hasPendingWrites)cb(x.exists()?x.data():null)},e=>console.warn("escuta",e)),
   feedCond:(id,cond)=>F.updateDoc(d("atividades/"+id),{cond}),
-  kudo:(id,uid,nome,on)=>on?F.setDoc(d(`atividades/${id}/kudos/${uid}`),{nome,criadoEm:F.serverTimestamp()}):F.deleteDoc(d(`atividades/${id}/kudos/${uid}`)),
+  kudo:(id,uid,nome,on)=>F.updateDoc(d("atividades/"+id),new F.FieldPath("kd",uid),on?nome:F.deleteField()),
   async kudoList(id){const r=await F.getDocs(F.collection(db,"atividades",id,"kudos"));return r.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>tsMs(a.criadoEm)-tsMs(b.criadoEm))},
   async comList(id){const r=await F.getDocs(F.query(F.collection(db,"atividades",id,"coment"),F.orderBy("criadoEm"),F.limit(100)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async comCount(id){return(await F.getCountFromServer(F.collection(db,"atividades",id,"coment"))).data().count},
-  async comAdd(id,uid,nome,texto){const ref=F.doc(F.collection(db,"atividades",id,"coment"));await F.setDoc(ref,{uid,nome,texto,criadoEm:F.serverTimestamp()});return ref.id},
-  comDel:(id,cid)=>F.deleteDoc(d(`atividades/${id}/coment/${cid}`))};
+  async comAdd(id,uid,nome,texto){const b=F.writeBatch(db),ref=F.doc(F.collection(db,"atividades",id,"coment"));b.set(ref,{uid,nome,texto,criadoEm:F.serverTimestamp()});b.update(d("atividades/"+id),{nc:F.increment(1)});await b.commit();return ref.id},
+  async comDel(id,cid){const b=F.writeBatch(db);b.delete(d(`atividades/${id}/coment/${cid}`));b.update(d("atividades/"+id),{nc:F.increment(-1)});await b.commit()}};
  return CM.fb}
 const GROUPS_DEFAULT=[{id:"geral",nome:"Geral",ordem:1,tipo:"publico"},{id:"vendas",nome:"Vendas e trocas",ordem:2,tipo:"publico"}];
 const rndCode=n=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r=crypto.getRandomValues(new Uint8Array(n));return[...r].map(x=>a[x%a.length]).join("")};
@@ -3070,7 +3070,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-com]");if(
 /* ---------- feed ---------- */
 async function comLoadFeed(force){if(COM.feed&&!force&&Date.now()-COM.at<60e3)return;
  const L=await CM.fb.feedList(30);
- await Promise.all(L.map(async a=>{a.kudos=await CM.fb.kudoList(a.id).catch(()=>[]);a.ncom=await CM.fb.comCount(a.id).catch(()=>0)}));
+ await Promise.all(L.map(async a=>{a.kudos=a.kd?Object.entries(a.kd).map(([id,nome])=>({id,nome})):await CM.fb.kudoList(a.id).catch(()=>[]);a.ncom=a.nc!=null?Math.max(0,a.nc):await CM.fb.comCount(a.id).catch(()=>0)}));
  COM.feed=L;COM.at=Date.now();bellCom()}
 function actCard(a){const uid=CM.user.uid,me=a.uid===uid,c=a.cond||{},K=a.kudos||[],mine=K.some(k=>k.id===uid),N0=NIVEIS[a.nivel]||NIVEIS[0];
  const chips=[c.mare?`🌊 maré ${c.mare}`:"",c.vento!=null?`💨 vento ${wv(c.vento)} ${WU()}${c.dir!=null?" "+dir8(c.dir):""}`:"",c.lua?`🌙 ${String(c.lua).toLowerCase()}`:"",
