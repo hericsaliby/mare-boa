@@ -149,6 +149,11 @@ summary{cursor:pointer;font-weight:600}
 .d3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}.d3>div{border:1px solid var(--line);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:1px;min-width:0}
 .d3>div.cur{border-color:var(--accent);background:var(--accent-soft)}.d3 b{font-size:13px;margin-bottom:4px}.d3 span{font-size:11px;color:var(--muted);margin-top:4px}.d3 strong{font-size:16px}.d3 small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 #sum3d p.good{color:var(--good)}#sum3d p.bad{color:var(--bad)}
+.tour{position:fixed;inset:0;z-index:4000;background:rgba(6,24,30,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.tourcard{background:var(--surface);color:var(--ink);border-radius:20px;max-width:420px;width:100%;padding:22px 20px 16px;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:10px}
+.tourcard .tic{font-size:54px;line-height:1;text-align:center}.tourcard h2{margin:0;text-align:center;font-size:22px}.tourcard p{margin:0;font-size:15px;line-height:1.45}
+.tourcard ul{margin:0;padding-left:18px;font-size:14px;line-height:1.5}.tourdots{display:flex;gap:6px;justify-content:center}.tourdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.tourdots i.on{background:var(--accent);width:20px;border-radius:4px}
+.tournav{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .syncbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px;margin:8px 0}
 .mapfab{position:absolute;z-index:810;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}
 .mapfab.gps{left:10px;bottom:84px;width:44px;height:44px;background:var(--surface);color:var(--accent)}.mapfab.gps.on{color:#fff;background:#1a73e8}
@@ -702,6 +707,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
 
   <section class="view" id="v-mais" aria-label="Mais" hidden>
     <article class="card"><h2>Preferências</h2>
+      <div class="row"><button type="button" class="btn ghost small" id="tourAgain">Ver o tutorial de novo</button></div>
       <div class="row"><span class="small muted" style="min-width:110px">Região</span><div class="seg" id="regSeg" role="group" aria-label="Região"></div></div>
       <div class="row"><label class="small muted" style="min-width:110px" for="fishSel">Peixe alvo</label><select id="fishSel" aria-label="Peixe alvo"></select></div>
       <div class="row"><span class="small muted" style="min-width:110px">Modelo do vento</span><div class="seg" id="modelSeg" role="group" aria-label="Modelo de previsão"></div></div>
@@ -1044,7 +1050,7 @@ async function backfillLog(){if(BF_RUN||S.demo)return;BF_RUN=true;let mud=false;
    if(c){x.c=Object.assign(x.c||{},c,{hist:true});mud=true;if(x.pub&&comOn())CM.fb.feedCond(x.pub,feedPayload(x).cond).then(()=>{COM.at=0}).catch(e=>console.warn("feed cond",e))}}
   store("pf_log",S.log);if(mud){renderHistory();if(S.view==="grupos")comShow()}}
  finally{BF_RUN=false}}
-function afterLoad(){setTimeout(backfillLog,1500);
+function afterLoad(){setTimeout(backfillLog,1500);setTimeout(tourMaybe,1200);
  const t=S.data.t;S.events=astroEvents(t[0]-12*HOUR,t[t.length-1]+12*HOUR);
  rebuild();initMap();
  const now=Date.now();{const k=S.data.t.findIndex(x=>x>now-HOUR);S.when=k<0?S.data.t.length-1:k}
@@ -2547,7 +2553,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.2";
+const APP_VERSION="2026-10-30.3";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2939,7 +2945,21 @@ const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?
 /* Login obrigatório: quem ainda não entrou vê só a tela da Conta. Sem Firebase (fora do ar/sem internet) não bloqueia. */
 const LOGIN_OBRIGATORIO=true;let GATE_NEXT="resumo";
 function gateLock(){if(!LOGIN_OBRIGATORIO||window.__NO_GATE)return;document.body.classList.add("locked");if(S.view!=="conta"){GATE_NEXT=S.view||"resumo";showView("conta")}}
-function gateUnlock(){if(!document.body.classList.contains("locked"))return;document.body.classList.remove("locked");showView(GATE_NEXT&&GATE_NEXT!=="conta"?GATE_NEXT:"resumo")}
+/* Tutorial curto no primeiro acesso (dá para rever em Mais) */
+const TOUR=[
+ {ic:"🎣",h:"Bem-vindo ao Maré Boa",p:"Tudo o que importa para a pesca num lugar só: maré medida, vento no ponto, água, lua, pressão e frente fria.",l:["No topo, escolha o <b>ponto</b> e o <b>dia</b>.","Cada hora ganha uma <b>nota de 0 a 100</b>: quanto maior, melhor para pescar."]},
+ {ic:"🌊",h:"Maré de verdade",p:"A maré vem dos marégrafos da EPAGRI, medida a cada 15 minutos, não só da tábua.",l:["Na aba <b>Maré</b>, arraste o dedo no gráfico para ver cada 15 min.","Linha laranja = medido; tracejada = previsão.","\"Como na tábua\" mostra na mesma régua da EPAGRI."]},
+ {ic:"📍",h:"Seus pontos, só seus",p:"No <b>Mapa</b>, toque no botão <b>+</b> (ou em qualquer lugar do mar) para criar um ponto.",l:["Dá para colar coordenadas ou um link do Google Maps, ou usar o GPS.","Seus pontos ficam na sua conta e aparecem no celular e no PC. Ninguém mais vê."]},
+ {ic:"📝",h:"Registre e aprenda",p:"Depois de pescar, toque em <b>+ Registrar pescaria</b> no Resumo. O app guarda a maré, o vento e a água daquela hora.",l:["Com o tempo ele aprende o que funciona no <b>seu</b> ponto.","Na <b>Comunidade</b>: feed, desafios do mês e ranking. O ponto nunca aparece."]}];
+function tourShow(i=0){document.querySelectorAll(".tour").forEach(x=>x.remove());const t=TOUR[i],d=document.createElement("div");d.className="tour";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-label","Tutorial");
+ d.innerHTML=`<div class="tourcard"><div class="tic" aria-hidden="true">${t.ic}</div><h2>${t.h}</h2><p>${t.p}</p><ul>${t.l.map(x=>`<li>${x}</li>`).join("")}</ul>
+  <div class="tourdots" aria-hidden="true">${TOUR.map((_,k)=>`<i class="${k===i?"on":""}"></i>`).join("")}</div>
+  <div class="tournav"><button type="button" class="linkbtn" data-tour="skip">${i<TOUR.length-1?"Pular":""}</button><button type="button" class="btn" data-tour="next">${i<TOUR.length-1?"Próximo":"Começar a usar"}</button></div></div>`;
+ document.body.appendChild(d);d.querySelector('[data-tour="next"]').focus();
+ d.addEventListener("click",e=>{const b=e.target.closest("[data-tour]");if(!b)return;if(b.dataset.tour==="next"&&i<TOUR.length-1)tourShow(i+1);else{d.remove();store("pf_tour",2)}})}
+function tourMaybe(){if(store("pf_tour")||window.__NO_TOUR||document.body.classList.contains("locked"))return;setTimeout(()=>{if(!store("pf_tour")&&!document.querySelector(".tour"))tourShow(0)},800)}
+$("#tourAgain").addEventListener("click",()=>tourShow(0));
+function gateUnlock(){setTimeout(tourMaybe,300);if(!document.body.classList.contains("locked"))return;document.body.classList.remove("locked");showView(GATE_NEXT&&GATE_NEXT!=="conta"?GATE_NEXT:"resumo")}
 if(LOGIN_OBRIGATORIO&&!window.__NO_GATE&&(FB_CONFIG||window.__FAKE_FB)&&store("pf_logado")!==true)document.body.classList.add("locked");
 async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
  if(!fb){gateUnlock();box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. Para entrar, basta a conta Google ou um e-mail.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
