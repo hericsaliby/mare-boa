@@ -140,7 +140,7 @@ service cloud.firestore {
     match /privado/{uid} {
       allow read, delete: if signedIn() && me() == uid;
       allow create, update: if signedIn() && me() == uid
-        && request.resource.data.keys().hasOnly(['pontos', 'pdel', 'diario', 'ldel', 'agenda', 'atualizado'])
+        && request.resource.data.keys().hasOnly(['pontos', 'pdel', 'diario', 'ldel', 'agenda', 'tcal', 'atualizado'])
         && request.resource.data.pontos is string && request.resource.data.diario is string
         && request.resource.data.pdel is string && request.resource.data.ldel is string && request.resource.data.agenda is string;
     }

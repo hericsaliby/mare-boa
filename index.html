@@ -149,6 +149,7 @@ summary{cursor:pointer;font-weight:600}
 .d3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}.d3>div{border:1px solid var(--line);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:1px;min-width:0}
 .d3>div.cur{border-color:var(--accent);background:var(--accent-soft)}.d3 b{font-size:13px;margin-bottom:4px}.d3 span{font-size:11px;color:var(--muted);margin-top:4px}.d3 strong{font-size:16px}.d3 small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 #sum3d p.good{color:var(--good)}#sum3d p.bad{color:var(--bad)}
+.tcalform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.tcalform select,.tcalform input{flex:1 1 160px;min-width:0}.tcl{margin:6px 0 0;padding-left:18px}
 .tour{position:fixed;inset:0;z-index:4000;background:rgba(6,24,30,.72);display:flex;align-items:center;justify-content:center;padding:16px}
 .tourcard{background:var(--surface);color:var(--ink);border-radius:20px;max-width:420px;width:100%;padding:22px 20px 16px;box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:10px}
 .tourcard .tic{font-size:54px;line-height:1;text-align:center}.tourcard h2{margin:0;text-align:center;font-size:22px}.tourcard p{margin:0;font-size:15px;line-height:1.45}
@@ -557,6 +558,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         
       </div>
       </article>
+    <article class="card" id="tcalCard"></article>
     <article class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3 id="tideTitle" style="margin:0">Maré (m, nível médio)</h3>
       <div class="chatgroups" role="group" aria-label="Referência da altura"><button type="button" class="chipbtn" data-tref="nmm" aria-pressed="true">Nível médio</button><button type="button" class="chipbtn" data-tref="tab" aria-pressed="false">Como na tábua</button></div></div>
       <details class="small" style="margin:6px 0"><summary>Por que a altura é diferente da tábua da EPAGRI?</summary><div class="muted" style="margin-top:4px">
@@ -1280,7 +1282,8 @@ function buildGauge(rows,harm,tab){const nmm=(rows.find(r=>r.nmm!=null)||{}).nmm
  // zero da tábua em relação ao nível médio do marégrafo (m): converte "nível médio" para "como na tábua"
  const z0=tabCm?(nmm-tabOffCm)/100:null;
  return{rows,nmm,last,r0,fn,pts,tEnd:T[T.length-1],harm:tabCm?null:(harm||null),tab:tabCm?tab:null,z0}}
-function gaugeFor(sp){if(!S.ep)return null;let k=stationKey(sp);
+function gaugeFor(sp){const E=gaugeBase(sp);if(!E)return null;const c=tcalLag(sp,E.lag);if(c!=null)E.lag=c;return E}
+function gaugeBase(sp){if(!S.ep)return null;let k=stationKey(sp);
  if(!S.ep[k]){if(isLegacy(sp)&&S.ep.floripa)k="floripa";else{let bd=1e9,b=null;for(const x in S.ep){const d=distKm(sp,EP_ST[x]);if(d<bd){bd=d;b=x}}if(!b||bd>150)return null;k=b}}
  const g=S.ep[k],st=EP_ST[k],legacy=isLegacy(sp)||(!sp.g&&st.lagRef!=null);
  return{g,st,lag:legacy?sp.lag-(st.lagRef||0):(sp.lag||0),amp:legacy?sp.amp/(st.ampRef||1):(sp.amp||1)}}
@@ -1606,8 +1609,16 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
 /* acerta hora e altura de cada preamar/baixamar na curva contínua (minuto a minuto), não só nas horas cheias;
    o medido é suavizado em ±10 min para um pico de leitura não virar extremo */
 function refineEx(ex,fn){if(!fn)return ex;const sm=x=>{const a=fn(x-6e5),b=fn(x),c=fn(x+6e5);return a==null||b==null||c==null?b:(a+b+c)/3};
- return ex.map(e=>{let bt=null,bh=null;for(let x=e.t-75*60e3;x<=e.t+75*60e3;x+=2*60e3){const v=sm(x);if(v==null)continue;if(bh==null||(e.hi?v>bh:v<bh)){bh=v;bt=x}}
-  return bt==null?e:{...e,t:bt,h:bh}})}
+ const X=ex.map(e=>{let bt=null,bh=null;for(let x=e.t-75*60e3;x<=e.t+75*60e3;x+=2*60e3){const v=sm(x);if(v==null)continue;if(bh==null||(e.hi?v>bh:v<bh)){bh=v;bt=x}}
+  return bt==null?e:{...e,t:bt,h:bh}});const R=X.sort((a,b)=>a.t-b.t).reduce((o,e)=>{const l=o[o.length-1];
+  // no estofo a curva medida pode ter dois picos colados: fica o mais alto (ou mais baixo)
+  if(l&&l.hi===e.hi&&e.t-l.t<2.5*HOUR){if(e.hi?e.h>l.h:e.h<l.h)o[o.length-1]=e;return o}o.push(e);return o},[]);return pruneAll(R)}
+// em maré morta a curva tem ondulações de 1 ou 2 cm: não contam como virada.
+// Tira, uma de cada vez, a dupla vizinha (preamar/baixamar) com a menor diferença, enquanto ela for menor que 3 cm.
+function pruneAll(L){L=L.slice();for(;;){let bi=-1,bd=.03;for(let i=1;i<L.length;i++){if(L[i].hi===L[i-1].hi)continue;const d=Math.abs(L[i].h-L[i-1].h);if(d<bd&&i>1&&i<L.length-1){bd=d;bi=i}}
+  if(bi<0)break;L.splice(bi-1,2);
+  for(let i=1;i<L.length;i++)if(L[i].hi===L[i-1].hi){const keep=L[i].hi?(L[i].h>=L[i-1].h?i:i-1):(L[i].h<=L[i-1].h?i:i-1);L.splice(keep===i?i-1:i,1);i--}}
+ return L}
 /* ================== PEIXE ALVO ==================
  Cada perfil muda os pesos da nota. Base científica (robalo): param de comer ~14 °C (NOAA, Flórida);
  adultos mais ativos à noite (Dantas & Barletta 2016); mais densidade perto de estrutura (mesmo estudo);
@@ -1906,7 +1917,7 @@ const tideRefName=()=>TREF==="tab"?"zero da tábua EPAGRI":"nível médio";
 const dm=v=>`${Math.abs(v).toFixed(2).replace(".",",")} m`;
 const dur=ms=>{const m=Math.round(ms/60e3);return`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`};
 document.addEventListener("click",e=>{const b=e.target.closest("[data-tref]");if(!b)return;TREF=b.dataset.tref;store("pf_tref",TREF);renderAll();if(S.view==="mare")renderCharts()});
-function renderTide(sp,D,r){{const t=$("#tideTitle");if(t)t.textContent=`Maré (m, ${tideRefName()})`;document.querySelectorAll("[data-tref]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tref===TREF))}
+function renderTide(sp,D,r){renderTcal();{const t=$("#tideTitle");if(t)t.textContent=`Maré (m, ${tideRefName()})`;document.querySelectorAll("[data-tref]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tref===TREF))}
  $("#tideSrc").textContent="Fonte: "+D.tideSrc;
  const ex=D.ex,next=ex.find(e=>e.t>r.t),prev=[...ex].reverse().find(e=>e.t<=r.t);
  if(r.tide==null||!next){$("#tideNow").innerHTML=`<span class="muted">Sem previsão de maré para este ponto. Cole uma tábua na seção Dados.</span>`;$("#tideNext").innerHTML="";$("#tide7").innerHTML="";return}
@@ -2383,7 +2394,7 @@ function saveCustom(){store("pf_custom",SPOTS.filter(s=>s.custom&&!s.temp))}
  que só você lê: nem o painel do administrador acessa. Assim celular e PC mostram o mesmo.
  Cada item guarda a hora em que mudou; na junção vale o mais novo, e o que foi apagado num aparelho some no outro. */
 var SY=null;
-const SY_KEYS=new Set(["pf_custom","pf_log","pf_agenda"]);
+const SY_KEYS=new Set(["pf_custom","pf_log","pf_agenda","pf_tcal"]);
 function syncSoon(){if(!SY||!SY.on||SY.applying)return;clearTimeout(SY.tm);SY.tm=setTimeout(()=>syncNow().catch(e=>console.warn("sync",e)),1500)}
 const syHash=o=>{const s=JSON.stringify(o);let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h.toString(36)+"."+s.length};
 function syRaw(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
@@ -2406,18 +2417,22 @@ async function syncNow(remote){if(!SY||!SY.on)return;if(SY.busy){SY.again=remote
   // agenda: vale a mais nova
   const locA=store("pf_agenda"),am=syRaw("pf_sy_a")||{};const ha=locA?syHash(locA):"";if(ha&&am.h!==ha){am.h=ha;am.u=Date.now();syRaw("pf_sy_a",am)}
   const rA=J(remote.agenda,null);let ag=locA?{v:locA,u:am.u||0}:null;if(rA&&rA.v&&(!ag||rA.u>ag.u)){ag=rA;syRaw("pf_sy_a",{h:syHash(rA.v),u:rA.u})}
+  // calibração da maré: junta as marcações dos dois lados (por ponto e hora)
+  const locT=store("pf_tcal")||{},rT=J(remote.tcal,{}),tc={};for(const src of[locT,rT])for(const id in src)for(const o of src[id]||[]){(tc[id]=tc[id]||new Map()).set(o.t,o)}
+  const tcal={};for(const id in tc)tcal[id]=[...tc[id].values()].sort((a,b)=>a.t-b.t).slice(-12);
   // aplica no aparelho o que veio do outro
   SY.applying=true;let reload=false;
   try{const mp=P.res.map(x=>x.o);if(syIds(mp)!==syIds(locP)){SPOTS=[...SPOTS.filter(s=>!s.custom||s.temp),...mp];store("pf_custom",mp);
      if(!SPOTS.some(s=>s.id===S.spot)){S.spot=HOME_SPOT;store("pf_spot",S.spot)}reload=true}
    const ml=Lg.res.map(x=>x.o).sort((a,b)=>a.t-b.t);if(syIds(ml)!==syIds(locL)){S.log=ml;store("pf_log",S.log);if(!reload&&S.data){trainML();applyML();renderAll()}}
-   if(ag&&ag.v&&syHash(ag.v)!==ha){store("pf_agenda",ag.v);if(!reload&&S.data)renderAll()}}
+   if(ag&&ag.v&&syHash(ag.v)!==ha){store("pf_agenda",ag.v);if(!reload&&S.data)renderAll()}
+   if(JSON.stringify(tcal)!==JSON.stringify(locT)){store("pf_tcal",tcal);if(!reload&&S.data){rebuild();renderAll()}}}
   finally{SY.applying=false}
   // grava na conta se algo mudou
-  const out={pontos:JSON.stringify(P.res),pdel:JSON.stringify(P.del),diario:JSON.stringify(Lg.res),ldel:JSON.stringify(Lg.del),agenda:ag?JSON.stringify(ag):""};
+  const out={pontos:JSON.stringify(P.res),pdel:JSON.stringify(P.del),diario:JSON.stringify(Lg.res),ldel:JSON.stringify(Lg.del),agenda:ag?JSON.stringify(ag):"",tcal:JSON.stringify(tcal)};
   const size=Object.values(out).reduce((a,v)=>a+v.length,0);
   if(size>900000){out.diario=JSON.stringify(Lg.res.map(x=>{const o={...x.o};delete o.v;delete o.f;return{o,u:x.u}}))}
-  if(["pontos","pdel","diario","ldel","agenda"].some(k=>(remote[k]||"")!==out[k])){await fb.set(path,{...out,atualizado:fb.now()});SY.last=Date.now()}
+  if(["pontos","pdel","diario","ldel","agenda","tcal"].some(k=>(remote[k]||"")!==out[k])){await fb.set(path,{...out,atualizado:fb.now()});SY.last=Date.now()}
   SY.ok=Date.now();syncStatus();
   if(reload)load()}
  catch(e){console.warn("sincronização",e);SY.err=String(e.code||e.message||e);syncStatus()}
@@ -2553,7 +2568,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.3";
+const APP_VERSION="2026-10-30.4";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2945,6 +2960,32 @@ const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?
 /* Login obrigatório: quem ainda não entrou vê só a tela da Conta. Sem Firebase (fora do ar/sem internet) não bloqueia. */
 const LOGIN_OBRIGATORIO=true;let GATE_NEXT="resumo";
 function gateLock(){if(!LOGIN_OBRIGATORIO||window.__NO_GATE)return;document.body.classList.add("locked");if(S.view!=="conta"){GATE_NEXT=S.view||"resumo";showView("conta")}}
+/* ===== Calibrar a hora da maré no seu ponto =====
+ Você marca quando a maré virou de verdade no ponto (parou de subir ou de descer). O app compara com a virada no marégrafo
+ e aprende o atraso daquele lugar. Com 1 marcação ele anda metade do caminho; com mais, vale a média das marcações. */
+function tcalAll(){return store("pf_tcal")||{}}
+function tcalLag(sp,def){const L=(tcalAll()[sp.id]||[]).filter(o=>o.off!=null);if(!L.length)return null;return Math.round((def+L.reduce((a,o)=>a+o.off,0))/(1+L.length))}
+function stationTurn(sp,t,hi){const E=gaugeBase(sp);if(!E||!E.g||!E.g.fn)return null;const f=E.g.fn,sm=x=>{const a=f(x-6e5),b=f(x),c=f(x+6e5);return a==null||b==null||c==null?null:(a+b+c)/3};
+ const c0=t-E.lag*60e3;let best=null;
+ for(let x=c0-5*HOUR;x<=c0+5*HOUR;x+=2*60e3){const v=sm(x),a=sm(x-40*60e3),b=sm(x+40*60e3);if(v==null||a==null||b==null)continue;
+  const ok=hi?v>=a&&v>=b:v<=a&&v<=b;if(ok&&(!best||Math.abs(x-c0)<Math.abs(best-c0)))best=x}
+ return best==null?null:{t:best,st:E.st.n,def:E.lag}}
+function renderTcal(){const el=$("#tcalCard");if(!el||!S.data)return;const sp=spot(),L=tcalAll()[sp.id]||[],E=gaugeBase(sp);
+ if(!E){el.innerHTML=`<h3>Acertar a hora da maré neste ponto</h3><p class="small muted">Sem marégrafo perto deste ponto.</p>`;return}
+ const cal=tcalLag(sp,E.lag),fmtLag=m=>m===0?"na mesma hora que o":`${Math.abs(m)} min ${m>0?"depois":"antes"} d`;
+ el.innerHTML=`<h3>Acertar a hora da maré neste ponto</h3>
+  <p class="small" style="margin:4px 0">${cal!=null?`Calibrado com <b>${L.length}</b> marcaç${L.length>1?"ões":"ão"} sua${L.length>1?"s":""}: aqui a maré vira <b>${fmtLag(cal)}${cal===0?"":"o"}</b> marégrafo de ${esc(E.st.n)} (antes era ${fmtLag(E.lag)}${E.lag===0?"":"o"} marégrafo).`:`Hoje o app estima que aqui a maré vira <b>${fmtLag(E.lag)}${E.lag===0?"":"o"}</b> marégrafo de ${esc(E.st.n)}. Se você estiver no ponto, marque quando a maré virar de verdade: o app aprende o atraso exato deste lugar.`}</p>
+  <form class="tcalform" id="tcalForm"><select id="tcHi" aria-label="O que você viu"><option value="1">A água parou de subir (preamar)</option><option value="0">A água parou de descer (baixamar)</option></select>
+   <input type="datetime-local" id="tcWhen" aria-label="Quando" value="${localInput(Date.now())}"><button class="btn small" type="submit">Marcar virada</button></form><div class="small" id="tcMsg" role="status"></div>
+  ${L.length?`<ul class="tcl">${L.slice().sort((a,b)=>b.t-a.t).map(o=>`<li><span class="small">${fmtDM.format(o.t)} · ${o.hi?"preamar":"baixamar"} · ${o.off!=null?`${Math.abs(o.off)} min ${o.off>=0?"depois":"antes"} do marégrafo`:"sem comparação"}</span> <button type="button" class="linkbtn small" data-tcdel="${o.t}">apagar</button></li>`).join("")}</ul>`:""}
+  <p class="small muted" style="margin:6px 0 0">Dica: a virada é quando a água fica parada (estofo) e começa a correr para o outro lado. Marque o meio do estofo. Vale para as próximas previsões deste ponto.</p>`;
+ $("#tcalForm").onsubmit=e=>{e.preventDefault();const t=parseLocal($("#tcWhen").value),hi=$("#tcHi").value==="1",m=$("#tcMsg");
+  if(isNaN(t)||t>Date.now()+10*60e3){m.textContent="Confira a hora: precisa ser agora ou antes.";return}
+  const st=stationTurn(sp,t,hi);if(!st){m.textContent="Não achei essa virada no marégrafo (ele guarda só os últimos dias). Marque logo depois de ver a virada.";return}
+  const off=Math.round((t-st.t)/60e3);if(off<-180||off>300){m.textContent=`Ficou ${off} min de diferença do marégrafo: muito longe, confira se escolheu preamar ou baixamar certo.`;return}
+  const A=tcalAll();A[sp.id]=[...(A[sp.id]||[]),{t,hi,off}].slice(-12);store("pf_tcal",A);rebuild();renderAll();
+  toast(`Virada marcada: ${Math.abs(off)} min ${off>=0?"depois":"antes"} do marégrafo de ${st.st}`)};
+ el.querySelectorAll("[data-tcdel]").forEach(b=>b.onclick=()=>{const A=tcalAll();A[sp.id]=(A[sp.id]||[]).filter(o=>String(o.t)!==b.dataset.tcdel);if(!A[sp.id].length)delete A[sp.id];store("pf_tcal",A);rebuild();renderAll()})}
 /* Tutorial curto no primeiro acesso (dá para rever em Mais) */
 const TOUR=[
  {ic:"🎣",h:"Bem-vindo ao Maré Boa",p:"Tudo o que importa para a pesca num lugar só: maré medida, vento no ponto, água, lua, pressão e frente fria.",l:["No topo, escolha o <b>ponto</b> e o <b>dia</b>.","Cada hora ganha uma <b>nota de 0 a 100</b>: quanto maior, melhor para pescar."]},
