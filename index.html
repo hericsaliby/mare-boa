@@ -2419,6 +2419,8 @@ async function syncNow(remote){if(!SY||!SY.on)return;if(SY.busy){SY.again=remote
 function syncStart(){if(!CM.fb||!CM.user||!CM.profile||store("pf_sync")===false)return;if(SY&&SY.on&&SY.uid===CM.user.uid)return;syncStop();
  SY={on:true,uid:CM.user.uid};syncNow().then(()=>{if(SY&&SY.on&&CM.fb.listenDoc)SY.unsub=CM.fb.listenDoc("privado/"+SY.uid,d=>{if(d&&SY&&SY.on&&!SY.busy)syncNow(d)})})}
 function syncStop(){if(SY){SY.on=false;clearTimeout(SY.tm);if(SY.unsub)SY.unsub()}SY=null}
+// registra o "trabalhador" que guarda o app para abrir sem internet (o mesmo dos avisos no celular)
+if("serviceWorker" in navigator&&window.isSecureContext&&location.protocol!=="file:")addEventListener("load",()=>navigator.serviceWorker.register("firebase-messaging-sw.js").catch(e=>console.warn("sw",e)));
 function syncStatus(){const el=$("#syncInfo");if(!el)return;if(!SY||!SY.on){el.textContent=store("pf_sync")===false?"Desligada: pontos, diário e agenda ficam só neste aparelho.":"";return}
  el.textContent=SY.err&&(!SY.ok||SY.ok<Date.now()-60e3)?`Não consegui sincronizar agora (${SY.err.slice(0,40)}). Tento de novo sozinho.`:SY.ok?`Sincronizado ${ago(SY.ok)}. ${SPOTS.filter(s=>s.custom&&!s.temp).length} pontos, ${S.log.length} pescarias.`:"Sincronizando…"}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&SY&&SY.on)syncNow().catch(()=>{})});
@@ -2545,7 +2547,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.1";
+const APP_VERSION="2026-10-30.2";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
