@@ -146,6 +146,10 @@ summary{cursor:pointer;font-weight:600}
 .admrow{cursor:pointer}.admrow:hover,.admrow.open{background:var(--accent-soft)}.admdet td{background:var(--surface-2)}
 #admPostsCard .admposts li{border-bottom:1px solid var(--line);padding:6px 0}
 .admposts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;white-space:normal}.admposts li{font-size:13px;line-height:1.4}
+.d3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}.d3>div{border:1px solid var(--line);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.d3>div.cur{border-color:var(--accent);background:var(--accent-soft)}.d3 b{font-size:13px;margin-bottom:4px}.d3 span{font-size:11px;color:var(--muted);margin-top:4px}.d3 strong{font-size:16px}.d3 small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+#sum3d p.good{color:var(--good)}#sum3d p.bad{color:var(--bad)}
+.syncbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px;margin:8px 0}
 .mapfab{position:absolute;z-index:810;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}
 .mapfab.gps{left:10px;bottom:84px;width:44px;height:44px;background:var(--surface);color:var(--accent)}.mapfab.gps.on{color:#fff;background:#1a73e8}
 .mapfab.add{right:12px;bottom:80px;width:54px;height:54px;background:var(--accent);color:#fff}
@@ -512,6 +516,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
       <article class="card sum" id="sumPres" aria-label="Pressão"></article>
       <article class="card sum" id="sumWater" aria-label="Água"></article>
     </div>
+    <article class="card" id="sum3d" aria-label="Últimos 3 dias e hoje"></article>
     <article class="card" id="agCard"><div class="row"><h3 class="grow">Sua agenda de pesca</h3><span class="small muted" id="agInfo"></span></div><div id="agBody"></div>
       <details id="agEdit"><summary class="small">Editar dias, horários e tipos de lugar</summary><div id="agForm" class="agform"></div></details></article>
     <article class="card simcard" id="simCard"><div class="row"><h3 class="grow">Parecido com suas pescarias boas</h3><span class="small muted" id="simInfo"></span></div><div id="simBody"></div></article>
@@ -934,7 +939,7 @@ const dir8=d=>DIR8[Math.round(((d%360)+360)%360/45)%8];
 function sect(arr,d){const x=(((d%360)+360)%360)/45,i=Math.floor(x)%8,j=(i+1)%8,f=x-Math.floor(x);return arr[i]*(1-f)+arr[j]*f}
 // pequenos dados (pontos, diário, preferências) no localStorage; se falhar ao gravar algo importante, avisa
 const STORE_CRIT=new Set(["pf_custom","pf_log","pf_agenda"]);
-function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));return true}
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));if(SY&&SY_KEYS.has(k))syncSoon();return true}
  catch(e){if(v!==undefined&&STORE_CRIT.has(k)){console.error("não gravou",k,e);try{showBanner("Não consegui gravar no aparelho: a memória do navegador está cheia. Tente de novo; se continuar, use Mais → Baixar todos os meus dados e me avise.",true,true)}catch(_){}}return v===undefined?null:false}}
 // cópias grandes (previsão, relevo) no IndexedDB, que tem muito mais espaço e não disputa com os seus pontos
 const IDB={p:null,db(){return this.p||(this.p=new Promise((ok,no)=>{try{const r=indexedDB.open("mareboa",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}}))},
@@ -1347,6 +1352,8 @@ function seaScore(type,w){if(w==null)return .6;
  if(type==="praia")return w<.2?.55:w<.5?.8:w<=1.4?1:w>=2.6?0:1-(w-1.4)/1.2;
  return w<=.3?1:w>=1?0:1-(w-.3)/.7}
 function windScore(eff){return eff<=11?1:eff>=40?0:1-(eff-11)/29} // km/h
+// pressão estável nos últimos 3 dias: variação total de até 3 hPa conta como estável; 10 hPa ou mais, instável
+function stabScore(r){return r==null?.6:r<=3?1:r>=10?.2:1-.8*(r-3)/7}
 function presScore(dp){if(dp==null)return .7;if(dp<-3)return .4;if(dp<-.5)return 1;if(dp<=.8)return .8;if(dp<=2)return .65;return .5}
 function solScore(ms){let best=.35,why=null;
  for(const ev of S.events){const dm=Math.abs(ev.t-ms)/60e3;if(dm>120)continue;
@@ -1567,6 +1574,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    let lo=1e9,hi=-1e9,rmax=0;for(let k=Math.max(0,i-12);k<=Math.min(n-1,i+12);k++){const v=tide.h[k];if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}if(rate[k]!=null)rmax=Math.max(rmax,Math.abs(rate[k]))}
    const lvl=tide.h[i]!=null&&hi>lo?(tide.h[i]-lo)/(hi-lo):null,mov=rate[i]!=null&&rmax>0?Math.abs(rate[i])/rmax:null,rising=rate[i]!=null?rate[i]>0:null;
    const dp=o.pres[i]!=null&&o.pres[i-3]!=null?o.pres[i]-o.pres[i-3]:null;
+   let p72=null;{let lo=1e9,hi=-1e9,nn=0;for(let k=Math.max(0,i-72);k<=i;k++){const v=o.pres[k];if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);nn++}}if(nn>=60)p72=hi-lo}
    let rain24=0;for(let k=Math.max(0,i-23);k<=i;k++)rain24+=o.rain[k]||0;
    const sol=solScore(t[i]),rf=tideRangeFactor(t[i]);
    const W=WEIGHTS[sp.t];
@@ -1576,7 +1584,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
     else mare=.15+.45*mov+.4*(lvl??.5);
     mare=mare*(.85+.15*rf)}
    const wi=waterInfo(o,i);
-   const c={agua:waterScore(wi),vento:eff!=null?windScore(eff):.5,mar:seaScore(sp.t,wave),mare:clamp(mare,0,1),sol:.65*sol.v+.35*rf,pres:presScore(dp),chuva:o.rain[i]==null?.8:o.rain[i]>5?.3:o.rain[i]>1.5?.65:1};
+   const c={agua:waterScore(wi),vento:eff!=null?windScore(eff):.5,mar:seaScore(sp.t,wave),mare:clamp(mare,0,1),sol:.65*sol.v+.35*rf,pres:p72==null?presScore(dp):.6*presScore(dp)+.4*stabScore(p72),chuva:o.rain[i]==null?.8:o.rain[i]>5?.3:o.rain[i]>1.5?.65:1};
    let sc=0;for(const k in W)sc+=W[k]*c[k];sc*=10;const adj=[];
    const bonus=[];const mon=+fmtKey.format(t[i]).slice(5,7);
    if([5,6,7].includes(mon)&&d!=null&&d>=150&&d<=250&&w>15&&(sp.t==="praia"||sp.t==="canal")){sc+=1;bonus.push("vento sul na safra da tainha");adj.push({t:"vento sul na safra da tainha",d:10})}
@@ -1584,7 +1592,7 @@ function computeSpot(sp){const t=S.data.t,n=t.length;
    if(sp.t==="costao"&&wave!=null&&wave>2.2)danger="mar grosso no costão";
    if(gc!=null&&gc>60)danger=(danger?danger+" e ":"")+"rajadas fortes";
    if(danger){sc=Math.min(sc,2);adj.push({t:"perigo: "+danger,d:null})}
-   rows.push({i,t:t[i],adj,rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],wi,rain:o.rain[i],pres:o.pres[i]})}
+   rows.push({i,t:t[i],adj,rain24,raw:w,rawModel:raw,all,d,g:gc,exp,eff,wave,hs:o.hs[i],wdir:o.wdir[i],tide:tide.h[i],obs:S.gObs&&(sp.t==="baia"||sp.t==="canal")?S.gObs.get(t[i])??null:null,rate:rate[i],lvl,mov,rising,dp,p72,sol,rf,c,score:clamp(sc,0,10),bonus,danger,sst:o.sst[i],wi,rain:o.rain[i],pres:o.pres[i]})}
   const ex=refineEx(tideExtremes(rows),tide.fn);
   if(S.fish!=="geral")applyFish(sp,rows,ex);
   applyFrontScores(rows);
@@ -1683,6 +1691,7 @@ function reasons(r,sp){const out=[];
  if(r.sol.why&&r.sol.v>.7)out.push(r.sol.why);
  if(r.wi&&r.wi.dT!=null&&r.wi.dT<=-1.5)out.push(`água esfriou ${Math.abs(r.wi.dT).toFixed(1).replace(".",",")} °C`);else if(r.wi&&r.wi.dT!=null&&r.wi.dT>=1)out.push("água esquentando");
  if(r.rf>.85)out.push(moonName(moonIllum(r.t).phase).toLowerCase()+" (maré grande)");
+ if(r.p72!=null&&r.p72<=3)out.push("pressão estável há 3 dias");else if(r.p72!=null&&r.p72>=10)out.push("pressão mexeu muito em 3 dias");
  r.bonus.forEach(b=>out.push(b));
  return out}
 function arrow(d,size=14){if(d==null)return"";return`<svg width="${size}" height="${size}" viewBox="-10 -10 20 20" aria-hidden="true"><g transform="rotate(${d+180})"><path d="M0 -8 L5 4 L0 1 L-5 4 Z" fill="currentColor"/></g></svg>`}
@@ -2363,6 +2372,57 @@ async function dropPin(lat,lon){
   MAP.closePopup(PIN);PIN=null;selectSpot(sp.id,false);openPopup(sp)}
  catch(err){PIN.setContent(`<div class="pop">Não consegui buscar a previsão deste ponto: ${esc(err.message)}</div>`)}}
 function saveCustom(){store("pf_custom",SPOTS.filter(s=>s.custom&&!s.temp))}
+/* ================== SINCRONIZAÇÃO NA CONTA ==================
+ Pontos, diário e agenda ficam no aparelho e também na sua conta (Firestore, documento privado/{uid}),
+ que só você lê: nem o painel do administrador acessa. Assim celular e PC mostram o mesmo.
+ Cada item guarda a hora em que mudou; na junção vale o mais novo, e o que foi apagado num aparelho some no outro. */
+var SY=null;
+const SY_KEYS=new Set(["pf_custom","pf_log","pf_agenda"]);
+function syncSoon(){if(!SY||!SY.on||SY.applying)return;clearTimeout(SY.tm);SY.tm=setTimeout(()=>syncNow().catch(e=>console.warn("sync",e)),1500)}
+const syHash=o=>{const s=JSON.stringify(o);let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h.toString(36)+"."+s.length};
+function syRaw(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function syMeta(kind,arr){const M=syRaw("pf_sy_"+kind)||{},D=syRaw("pf_sy_"+kind+"_del")||{},now=Date.now(),ids=new Set();
+ for(const o of arr){ids.add(o.id);const h=syHash(o);if(!M[o.id]||M[o.id].h!==h)M[o.id]={h,u:now}}
+ for(const id in M)if(!ids.has(id)){D[id]=now;delete M[id]}
+ syRaw("pf_sy_"+kind,M);syRaw("pf_sy_"+kind+"_del",D);return{M,D}}
+function syMerge(kind,local,rArr,rDel){const {M,D}=syMeta(kind,local),del={...D};for(const id in rDel||{})del[id]=Math.max(del[id]||0,rDel[id]);
+ const out=new Map();for(const o of local)out.set(o.id,{o,u:M[o.id].u});
+ for(const x of rArr||[]){if(!x||!x.o||!x.o.id)continue;const c=out.get(x.o.id);if(!c||x.u>c.u)out.set(x.o.id,{o:x.o,u:x.u})}
+ const res=[],M2={},lim=Date.now()-365*864e5;for(const [id,x] of out){if(del[id]&&del[id]>=x.u)continue;res.push(x);M2[id]={h:syHash(x.o),u:x.u}}
+ for(const id in del)if(M2[id]||del[id]<lim)delete del[id];
+ syRaw("pf_sy_"+kind,M2);syRaw("pf_sy_"+kind+"_del",del);return{res,del}}
+const syIds=a=>a.map(o=>o.id+":"+syHash(o)).sort().join("|");
+async function syncNow(remote){if(!SY||!SY.on)return;if(SY.busy){SY.again=remote||true;return}SY.busy=true;
+ try{const fb=CM.fb,path="privado/"+SY.uid;if(!remote||remote===true)remote=await fb.get(path)||{};
+  const J=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}};
+  const locP=SPOTS.filter(s=>s.custom&&!s.temp).map(s=>{const o={...s};delete o.sel;return o}),locL=S.log.slice();
+  const P=syMerge("p",locP,J(remote.pontos,[]),J(remote.pdel,{})),Lg=syMerge("l",locL,J(remote.diario,[]),J(remote.ldel,{}));
+  // agenda: vale a mais nova
+  const locA=store("pf_agenda"),am=syRaw("pf_sy_a")||{};const ha=locA?syHash(locA):"";if(ha&&am.h!==ha){am.h=ha;am.u=Date.now();syRaw("pf_sy_a",am)}
+  const rA=J(remote.agenda,null);let ag=locA?{v:locA,u:am.u||0}:null;if(rA&&rA.v&&(!ag||rA.u>ag.u)){ag=rA;syRaw("pf_sy_a",{h:syHash(rA.v),u:rA.u})}
+  // aplica no aparelho o que veio do outro
+  SY.applying=true;let reload=false;
+  try{const mp=P.res.map(x=>x.o);if(syIds(mp)!==syIds(locP)){SPOTS=[...SPOTS.filter(s=>!s.custom||s.temp),...mp];store("pf_custom",mp);
+     if(!SPOTS.some(s=>s.id===S.spot)){S.spot=HOME_SPOT;store("pf_spot",S.spot)}reload=true}
+   const ml=Lg.res.map(x=>x.o).sort((a,b)=>a.t-b.t);if(syIds(ml)!==syIds(locL)){S.log=ml;store("pf_log",S.log);if(!reload&&S.data){trainML();applyML();renderAll()}}
+   if(ag&&ag.v&&syHash(ag.v)!==ha){store("pf_agenda",ag.v);if(!reload&&S.data)renderAll()}}
+  finally{SY.applying=false}
+  // grava na conta se algo mudou
+  const out={pontos:JSON.stringify(P.res),pdel:JSON.stringify(P.del),diario:JSON.stringify(Lg.res),ldel:JSON.stringify(Lg.del),agenda:ag?JSON.stringify(ag):""};
+  const size=Object.values(out).reduce((a,v)=>a+v.length,0);
+  if(size>900000){out.diario=JSON.stringify(Lg.res.map(x=>{const o={...x.o};delete o.v;delete o.f;return{o,u:x.u}}))}
+  if(["pontos","pdel","diario","ldel","agenda"].some(k=>(remote[k]||"")!==out[k])){await fb.set(path,{...out,atualizado:fb.now()});SY.last=Date.now()}
+  SY.ok=Date.now();syncStatus();
+  if(reload)load()}
+ catch(e){console.warn("sincronização",e);SY.err=String(e.code||e.message||e);syncStatus()}
+ finally{SY.busy=false;if(SY.again){const r=SY.again;SY.again=null;syncNow(r)}}}
+function syncStart(){if(!CM.fb||!CM.user||!CM.profile||store("pf_sync")===false)return;if(SY&&SY.on&&SY.uid===CM.user.uid)return;syncStop();
+ SY={on:true,uid:CM.user.uid};syncNow().then(()=>{if(SY&&SY.on&&CM.fb.listenDoc)SY.unsub=CM.fb.listenDoc("privado/"+SY.uid,d=>{if(d&&SY&&SY.on&&!SY.busy)syncNow(d)})})}
+function syncStop(){if(SY){SY.on=false;clearTimeout(SY.tm);if(SY.unsub)SY.unsub()}SY=null}
+function syncStatus(){const el=$("#syncInfo");if(!el)return;if(!SY||!SY.on){el.textContent=store("pf_sync")===false?"Desligada: pontos, diário e agenda ficam só neste aparelho.":"";return}
+ el.textContent=SY.err&&(!SY.ok||SY.ok<Date.now()-60e3)?`Não consegui sincronizar agora (${SY.err.slice(0,40)}). Tento de novo sozinho.`:SY.ok?`Sincronizado ${ago(SY.ok)}. ${SPOTS.filter(s=>s.custom&&!s.temp).length} pontos, ${S.log.length} pescarias.`:"Sincronizando…"}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&SY&&SY.on)syncNow().catch(()=>{})});
+
 /* ---------- Meus pontos: lista, backup e importação (Google Maps KML / GeoJSON / CSV) ---------- */
 function renderBaseTog(){
  document.querySelectorAll(".basetog").forEach(b=>{b.textContent=S.allBase?"Mostrar só a Ponte e os meus":"Mostrar todos os pontos";b.setAttribute("aria-pressed",S.allBase)});
@@ -2485,7 +2545,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-28.10";
+const APP_VERSION="2026-10-30.1";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2610,7 +2670,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
   <div class="small">${corre}</div>
   ${cd}
   <div class="small">Períodos principais: ${maj.length?maj.map(p=>`<b>${fmtH.format(p.a)}–${fmtH.format(p.b)}</b>`).join(" e "):"–"}<br>Lua nasce ${ev("moonrise")} · se põe ${ev("moonset")} · distância <b>${Math.round(md.km/1000)} mil km</b>${md.txt?`<br><b>${md.txt}</b>`:""}</div>`;
- renderGreeting();renderFactors();renderWeather();renderPressure();renderWater();renderFront();renderFishCard();renderTimeline();renderHistory()}
+ renderGreeting();renderFactors();renderWeather();renderPressure();render3d();renderWater();renderFront();renderFishCard();renderTimeline();renderHistory()}
 /* tempo: temperatura, chuva, nuvens e umidade */
 function wxIcon(cloud,rain,night,sz=34){const sun=night?`<path d="M20 15.5A7 7 0 1 1 11.5 7a5.5 5.5 0 0 0 8.5 8.5z" fill="var(--moon-lit)" stroke="var(--ink-3)" stroke-width="1"/>`:`<circle cx="12" cy="12" r="5" fill="#f2c230"/><g stroke="#f2c230" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>`;
  const cl=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7 9.5 4.25 4.25 0 0 0 7 18z" fill="var(--surface-2)" stroke="var(--ink-3)" stroke-width="1.3"/>`;
@@ -2678,6 +2738,37 @@ function renderWater(){const el=$("#sumWater");if(!el||!S.data)return;const sp=s
   ${f5!=null?`<div class="small muted">Em 5 dias: ${br(f5)} °C</div>`:""}${cur?`<div class="small">${cur}</div>`:""}${sig?`<p class="small" style="margin:6px 0 0">${sig}</p>`:""}
   ${(()=>{const c=sp.m||[sp.lat,sp.lon],cr=tmCorr(c[0],c[1]),e=cr.near;const med=e&&e.d<=60?`<div class="small" style="margin-top:6px">Medida agora pela EPAGRI em ${esc(e.n)}${e.d>=3?` (${Math.round(e.d)} km)`:""}: <b>${br(e.last[1])} °C</b> <span class="muted">às ${fmtH.format(e.last[0]*1000)}</span></div>`:"";
    return med+`<p class="small muted" style="margin:6px 0 0">${cr.g>.02?`Modelo oceânico (Open-Meteo) ajustado pela água medida nos marégrafos da EPAGRI${Math.abs(cr.b)>=.3?` (${cr.b>0?"+":""}${br(cr.b)} °C aqui)`:""}.`:"Modelo oceânico (Open-Meteo), atualizado 3 vezes por semana; dentro das baías é estimada pelo mar mais próximo."}</p>`})()}`}
+/* Últimos 3 dias + o dia escolhido: pressão (estabilidade), vento, água e chuva, para ver a "sequência" do tempo */
+function render3d(){const el=$("#sum3d");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],D=S.derived[sp.id],t=S.data.t;
+ const keys=[...new Set(t.map(dayKey))],k0=keys.indexOf(S.day);if(k0<0)return;const ks=keys.slice(Math.max(0,k0-3),k0+1);
+ const nm=k=>k===dayKey(Date.now())?"Hoje":k===dayKey(Date.now()-864e5)?"Ontem":fmtD.format(noonOf(k)).replace(/\.,?\s*/," ");
+ const day=k=>{const ix=t.map((x,i)=>i).filter(i=>dayKey(t[i])===k),P=ix.map(i=>o.pres[i]).filter(v=>v!=null),R=ix.map(i=>D.rows[i]);
+  const E=R.map(r=>r.eff).filter(v=>v!=null),W=R.filter(r=>r.wi).map(r=>r.wi.t),dirs=R.filter(r=>r.d!=null&&r.raw>=8).map(r=>r.d);
+  let sx=0,cy=0;dirs.forEach(d=>{sx+=Math.sin(d*rad);cy+=Math.cos(d*rad)});const dd=dirs.length?(Math.atan2(sx,cy)/rad+360)%360:null;
+  return{k,pmin:P.length?Math.min(...P):null,pmax:P.length?Math.max(...P):null,pm:P.length?P.reduce((a,b)=>a+b,0)/P.length:null,
+   vmax:E.length?Math.max(...E):null,vm:E.length?E.reduce((a,b)=>a+b,0)/E.length:null,dir:dd,agua:W.length?W.reduce((a,b)=>a+b,0)/W.length:null,
+   chuva:ix.reduce((a,i)=>a+(o.rain[i]||0),0),rf:tideRangeFactor(noonOf(k))}};
+ const L=ks.map(day),Ps=L.flatMap(d=>d.pmin!=null?[d.pmin,d.pmax]:[]),rng=Ps.length?Math.max(...Ps)-Math.min(...Ps):null;
+ const first=L.find(d=>d.pm!=null),last=[...L].reverse().find(d=>d.pm!=null),tend=first&&last&&first!==last?(last.pm-first.pm)/(L.indexOf(last)-L.indexOf(first)):0;
+ const ag=L.filter(d=>d.agua!=null),dag=ag.length>1?ag[ag.length-1].agua-ag[0].agua:null;
+ const br=(v,n=0)=>v.toFixed(n).replace(".",",");
+ let v,cls;if(rng==null){v="Sem dado de pressão suficiente.";cls=""}
+ else if(rng<=3){v=`<b>Pressão estável</b>: variou só ${br(rng,1)} hPa nesses dias. O peixe não precisa se ajustar e costuma comer no ritmo normal. Boa sequência.`;cls="good"}
+ else if(tend<=-2){v=`<b>Pressão caindo</b> (${br(tend,1)} hPa por dia). Muitas vezes o peixe come forte antes da virada do tempo; depois da frente, costuma parar.`;cls="good"}
+ else if(tend>=2&&rng>=6){v=`<b>Pressão subindo forte</b> (+${br(tend,1)} hPa por dia), típico de pós-frente: o peixe costuma ficar mais parado por 1 ou 2 dias.`;cls="bad"}
+ else if(rng>=10){v=`<b>Pressão instável</b>: mexeu ${br(rng,0)} hPa nesses dias. Pode deixar o peixe arisco.`;cls="bad"}
+ else{v=`<b>Pressão com variação moderada</b> (${br(rng,1)} hPa nesses dias).`;cls=""}
+ const extra=[dag!=null&&Math.abs(dag)>=1?`Água ${dag>0?"esquentou":"esfriou"} ${br(Math.abs(dag),1)} °C no período.`:dag!=null?"Água estável.":"",
+  L.slice(0,-1).some(d=>d.chuva>=15)?"Choveu forte em algum dos dias anteriores: água pode estar turva nas baías e rios.":""].filter(Boolean).join(" ");
+ el.innerHTML=`<div class="sum-h"><h3>Últimos 3 dias ${S.day===dayKey(Date.now())?"+ hoje":"+ o dia escolhido"}</h3></div>
+  <div class="d3">${L.map(d=>`<div class="${d.k===S.day?"cur":""}"><b>${esc(nm(d.k))}</b>
+   <span>Pressão</span><strong class="num">${d.pm!=null?Math.round(d.pm):"–"}</strong><small class="num">${d.pmin!=null?`${Math.round(d.pmin)}–${Math.round(d.pmax)} hPa`:""}</small>
+   <span>Vento ${WU()}</span><strong class="num">${d.vm!=null?wv(d.vm):"–"}</strong><small>${d.vmax!=null?`máx ${wv(d.vmax)}`:""}${d.dir!=null?" · "+dir8(d.dir):""}</small>
+   <span>Água</span><strong class="num">${d.agua!=null?br(d.agua,1)+"°":"–"}</strong>
+   <span>Chuva</span><strong class="num">${br(d.chuva,0)} mm</strong>
+   <span>Maré</span><strong>${d.rf>.6?"grande":d.rf<.35?"pequena":"média"}</strong></div>`).join("")}</div>
+  <p class="small ${cls}" style="margin:8px 0 0">${v}</p>${extra?`<p class="small muted" style="margin:4px 0 0">${extra}</p>`:""}
+  <details class="small" style="margin-top:6px"><summary>Por que a pressão importa?</summary><p class="muted" style="margin:4px 0">Peixes com bexiga natatória (robalo, corvina, pescadas) sentem a mudança de pressão e precisam ajustar o gás dela. Com pressão estável por alguns dias, o peixe fica confortável e se alimenta no ritmo normal; pressão caindo antes de frente fria costuma estimular a alimentação, e a subida forte depois da frente costuma deixar o peixe parado. A pesquisa mostra que o efeito existe, mas varia por espécie e lugar, e vento, maré e temperatura da água costumam pesar mais. Por isso a estabilidade entra na nota com peso moderado, e o seu diário ensina o app o que vale no seu ponto.</p></details>`}
 function renderPressure(){const el=$("#sumPres");if(!el||!S.data)return;const sp=spot(),o=S.data.spots[sp.id],t=S.data.t,P=o.pres;
  const now=Date.now(),today=dayKey(now)===S.day;let i=today?t.findIndex(x=>x>=Math.floor(now/HOUR)*HOUR):t.findIndex(x=>dayKey(x)===S.day&&localHour(x)===7);if(i<0)i=0;
  const p=P[i],d3=P[i-3]!=null?p-P[i-3]:null,d24=P[i-24]!=null?p-P[i-24]:null;
@@ -2830,6 +2921,7 @@ async function fbInit(){if(CM.fb)return CM.fb;
   async feedSince(ms){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("criadoEm",">=",F.Timestamp.fromMillis(ms)),F.orderBy("criadoEm","desc"),F.limit(1000)));return r.docs.map(x=>({id:x.id,...x.data()}))},
   async feedMine(uid){const r=await F.getDocs(F.query(F.collection(db,"atividades"),F.where("uid","==",uid)));return r.docs.map(x=>x.id)},
   feedDel:id=>F.deleteDoc(d("atividades/"+id)),
+  listenDoc:(path,cb)=>F.onSnapshot(d(path),x=>{if(!x.metadata.hasPendingWrites)cb(x.exists()?x.data():null)},e=>console.warn("escuta",e)),
   feedCond:(id,cond)=>F.updateDoc(d("atividades/"+id),{cond}),
   kudo:(id,uid,nome,on)=>on?F.setDoc(d(`atividades/${id}/kudos/${uid}`),{nome,criadoEm:F.serverTimestamp()}):F.deleteDoc(d(`atividades/${id}/kudos/${uid}`)),
   async kudoList(id){const r=await F.getDocs(F.collection(db,"atividades",id,"kudos"));return r.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>tsMs(a.criadoEm)-tsMs(b.criadoEm))},
@@ -2849,7 +2941,7 @@ function gateUnlock(){if(!document.body.classList.contains("locked"))return;docu
 if(LOGIN_OBRIGATORIO&&!window.__NO_GATE&&(FB_CONFIG||window.__FAKE_FB)&&store("pf_logado")!==true)document.body.classList.add("locked");
 async function cmStart(){const box=$("#cmAuth");const fb=await fbInit().catch(e=>{console.warn(e);return null});
  if(!fb){gateUnlock();box.innerHTML=`<h2>Comunidade</h2><p class="small" style="margin:0">Em breve: grupos para trocar informação com outros pescadores da região, combinar saídas e conhecer lojas e guias parceiros. Para entrar, basta a conta Google ou um e-mail.</p>`;$("#cmFeed").hidden=true;cmPartners();return}
- if(CM.started)return;CM.started=true;fb.onAuth(async u=>{if(u&&u.isAnonymous)u=null;CM.user=u;CM.profile=null;CM.admin=false;if(u&&store("pf_cm_on")!==true){store("pf_cm_on",true);bellChat()}
+ if(CM.started)return;CM.started=true;fb.onAuth(async u=>{if(u&&u.isAnonymous)u=null;if(!u||(SY&&SY.uid!==u.uid))syncStop();CM.user=u;CM.profile=null;CM.admin=false;if(u&&store("pf_cm_on")!==true){store("pf_cm_on",true);bellChat()}
   if(u){try{CM.profile=await fb.get("users/"+u.uid);CM.admin=!!(await fb.get("admins/"+u.uid).catch(()=>null))}catch(e){console.warn(e)}}
   cmRender()})}
 const G_ICON='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>';
@@ -3095,10 +3187,13 @@ function cmRender(){const box=$("#cmAuth"),u=CM.user;{const ok=!!(u&&u.emailVeri
   <button class="btn ghost" type="button" id="cmOut">Sair</button></div>
   ${gameHTML()}
   <div class="row"><a class="btn" href="#grupos" data-view="grupos">Ir para a comunidade</a>${CM.admin?`<a class="btn ghost" href="#admin" data-view="admin">Painel do administrador</a>`:""}</div>
+  <div class="syncbox"><label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="syncOn"${store("pf_sync")===false?"":" checked"}> <b>Guardar meus pontos, diário e agenda na minha conta</b></label>
+   <div class="small muted" id="syncInfo"></div><div class="small muted">Assim aparecem iguais no celular e no computador. Só você vê: nem o administrador do app.</div></div>
   <details><summary class="small">Minha conta</summary><div class="small" style="margin-top:6px">Seu código de amigo: <b class="num" style="font-size:16px;letter-spacing:.08em">${esc(CM.profile.codigo||"…")}</b>. Passe para quem quiser te adicionar num grupo.</div><div class="small" style="margin-top:6px">Seu ID: <code>${esc(CM.user.uid)}</code> (para virar administrador, crie no Firestore o documento <code>admins/${esc(CM.user.uid)}</code>).</div>
    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="cmDel" style="color:var(--bad);border-color:var(--bad)">Apagar minha conta e minhas postagens</button></div><div class="small" id="cmDelMsg"></div></details>`;
  $("#cmOut").onclick=()=>CM.fb.signOut();$("#cmDel").onclick=cmDeleteAccount;
- $("#cmFeed").hidden=false;cmGroups();cmPartners();if(S.view==="grupos")comShow()}
+ $("#syncOn").onchange=async e=>{if(e.target.checked){store("pf_sync",true);syncStart()}else{store("pf_sync",false);const uid=CM.user.uid;syncStop();await CM.fb.del("privado/"+uid).catch(()=>{})}syncStatus()};
+ $("#cmFeed").hidden=false;cmGroups();cmPartners();if(S.view==="grupos")comShow();syncStart();syncStatus()}
 async function cmSaveProfile(e){e.preventDefault();const m=$("#cmProfMsg"),nome=$("#cmNome").value.trim().replace(/\s+/g," "),cep=$("#cmCep").value.replace(/\D/g,"");
  if(nome.length<2){m.textContent="Escreva seu nome.";return}if(cep.length!==8){m.textContent="O CEP tem 8 números.";return}if(!$("#cmOk").checked){m.textContent="Para participar é preciso aceitar a política.";return}
  const prof={nome,regiao:cep.slice(0,5),criadoEm:CM.fb.now(),consent:{versao:CONSENT_VER,em:CM.fb.now()}};
@@ -3203,6 +3298,7 @@ async function cmDeleteAccount(e){const b=e.currentTarget,m=$("#cmDelMsg");if(b.
  try{const mine=await CM.fb.list(`users/${uid}/meusPosts`);for(const x of mine){await CM.fb.del(`groups/${x.gid}/posts/${x.id}`).catch(()=>{});await CM.fb.del(`users/${uid}/meusPosts/${x.id}`).catch(()=>{})}
   for(const g of CM.groups.filter(x=>x.tipo==="privado")){if(g.dono===uid)await CM.fb.del("groups/"+g.id).catch(()=>{});else await CM.fb.removeMember(g.id,uid).catch(()=>{})}
   for(const id of await CM.fb.feedMine(uid).catch(()=>[]))await CM.fb.feedDel(id).catch(()=>{});
+  syncStop();await CM.fb.del("privado/"+uid).catch(()=>{});
   if(CM.profile&&CM.profile.codigo)await CM.fb.del("codigos/"+CM.profile.codigo).catch(()=>{});
   await CM.fb.del("limits/"+uid).catch(()=>{});await CM.fb.del("users/"+uid);await CM.fb.deleteUser();m.textContent="Conta apagada."}
  catch(err){console.warn(err);m.textContent=/recent-login/.test(err.code||"")?"Por segurança, saia, entre de novo e repita.":"Não consegui apagar tudo agora. Tente de novo.";b.disabled=false}}

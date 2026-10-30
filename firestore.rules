@@ -136,6 +136,15 @@ service cloud.firestore {
       allow update: if authed() && request.auth.uid == uid && request.resource.data.keys().hasOnly(['ultimo']) && request.resource.data.ultimo == request.time
         && request.time > resource.data.ultimo + duration.value(5, 's');
     }
+    // Pontos, diário e agenda do usuário (sincronização entre aparelhos): só o próprio dono lê e grava, nem o administrador
+    match /privado/{uid} {
+      allow read, delete: if signedIn() && me() == uid;
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['pontos', 'pdel', 'diario', 'ldel', 'agenda', 'atualizado'])
+        && request.resource.data.pontos is string && request.resource.data.diario is string
+        && request.resource.data.pdel is string && request.resource.data.ldel is string && request.resource.data.agenda is string;
+    }
+
     // Feed de pescarias (estilo Strava): sem o ponto, só uma área larga do litoral
     match /atividades/{id} {
       allow read: if signedIn();

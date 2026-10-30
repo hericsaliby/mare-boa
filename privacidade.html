@@ -29,7 +29,7 @@ th{color:var(--ink-2);font-weight:600}
   <p class="muted">Última atualização: 26 de outubro de 2026</p>
 
   <div class="card">
-    <p style="margin:0"><b>Em resumo:</b> para usar o Maré Boa é preciso uma conta (Google ou e-mail), com nome e CEP, do qual guardamos só a região. Seus pontos de pesca, seu diário e suas preferências ficam só no seu aparelho. Guardamos o mínimo necessário e você pode apagar sua conta quando quiser.</p>
+    <p style="margin:0"><b>Em resumo:</b> para usar o Maré Boa é preciso uma conta (Google ou e-mail), com nome e CEP, do qual guardamos só a região. Seus pontos de pesca, seu diário e suas preferências ficam no seu aparelho e, se você quiser, numa cópia privada na sua conta para aparecerem também no computador ou em outro celular. Ninguém mais tem acesso a eles. Guardamos o mínimo necessário e você pode apagar sua conta quando quiser.</p>
   </div>
 
   <h2>Quem é o responsável</h2>
@@ -51,6 +51,7 @@ th{color:var(--ink-2);font-weight:600}
     <tr><th>Dado</th><th>Para quê</th><th>Quem vê</th></tr>
     <tr><td>E-mail (ou conta Google)</td><td>Entrar na conta e confirmar que o e-mail é seu. Não usamos para propaganda</td><td>Ninguém no app. Fica no Firebase Authentication (Google)</td></tr>
     <tr><td>Nome</td><td>Aparecer nas suas mensagens</td><td>Membros dos grupos</td></tr>
+    <tr><td>Seus pontos, diário e agenda (cópia na sua conta, para usar em mais de um aparelho; dá para desligar na Conta)</td><td>Nome, posição e características dos seus pontos; suas pescarias e sua agenda</td><td>Só você. As regras do servidor não deixam nenhum outro usuário, nem o administrador pelo app, ler esses dados. Ao desligar a opção ou apagar a conta, a cópia é apagada</td></tr>
     <tr><td>Pescarias publicadas no feed (só se você escolher publicar)</td><td>Peixe, quantidade, tamanho, isca, condições do momento (maré, vento, lua, água), uma área larga do litoral (ex.: Grande Florianópolis) e a legenda. Nunca o ponto. "Boa!" e comentários ficam com o seu nome</td><td>Todos os usuários com conta. Você pode excluir quando quiser</td></tr>
     <tr><td>CEP</td><td>Só os 5 primeiros dígitos (região), para organizar a comunidade. O CEP completo não é guardado</td><td>Só você e o administrador</td></tr>
     <tr><td>Mensagens</td><td>Texto, e se você quiser o nome de um ponto e o peixe</td><td>Membros dos grupos</td></tr>
