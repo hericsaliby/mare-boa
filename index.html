@@ -149,6 +149,9 @@ summary{cursor:pointer;font-weight:600}
 .d3{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}.d3>div{border:1px solid var(--line);border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:1px;min-width:0}
 .d3>div.cur{border-color:var(--accent);background:var(--accent-soft)}.d3 b{font-size:13px;margin-bottom:4px}.d3 span{font-size:11px;color:var(--muted);margin-top:4px}.d3 strong{font-size:16px}.d3 small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 #sum3d p.good{color:var(--good)}#sum3d p.bad{color:var(--bad)}
+.runp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.runp>div{position:relative;border:1px solid var(--line);border-radius:10px;padding:8px 6px 10px;display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0}
+.runp>div.top{border-color:var(--accent);background:var(--accent-soft)}.runp b{font-size:12px;overflow-wrap:anywhere;hyphens:auto}.runp span{font-size:12px;color:var(--muted)}.runp strong{font-size:15px}.runp small{font-size:11px;color:var(--muted)}
+.runp i{position:absolute;left:0;bottom:0;height:4px;background:var(--accent);border-radius:0 2px 0 0}.runf{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.5}
 .tcalform{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.tcalform select,.tcalform input{flex:1 1 160px;min-width:0}.tcl{margin:6px 0 0;padding-left:18px}
 .actimg{border:0;padding:0;background:none;cursor:zoom-in;border-radius:12px;overflow:hidden;max-width:100%;align-self:flex-start}.actimg img{display:block;max-width:100%;max-height:320px;border-radius:12px}
 .fotobox{max-width:96vw;max-height:90vh;display:flex;align-items:center;justify-content:center;color:#fff}.fotobox img{max-width:96vw;max-height:88vh;border-radius:10px}
@@ -562,6 +565,7 @@ footer{font-size:12.5px;color:var(--ink-3);margin-top:24px;max-width:80ch}
         
       </div>
       </article>
+    <article class="card" id="runCard"></article>
     <article class="card" id="tcalCard"></article>
     <article class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3 id="tideTitle" style="margin:0">Maré (m, nível médio)</h3>
       <div class="chatgroups" role="group" aria-label="Referência da altura"><button type="button" class="chipbtn" data-tref="nmm" aria-pressed="true">Nível médio</button><button type="button" class="chipbtn" data-tref="tab" aria-pressed="false">Como na tábua</button></div></div>
@@ -1921,7 +1925,7 @@ const tideRefName=()=>TREF==="tab"?"zero da tábua EPAGRI":"nível médio";
 const dm=v=>`${Math.abs(v).toFixed(2).replace(".",",")} m`;
 const dur=ms=>{const m=Math.round(ms/60e3);return`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`};
 document.addEventListener("click",e=>{const b=e.target.closest("[data-tref]");if(!b)return;TREF=b.dataset.tref;store("pf_tref",TREF);renderAll();if(S.view==="mare")renderCharts()});
-function renderTide(sp,D,r){renderTcal();{const t=$("#tideTitle");if(t)t.textContent=`Maré (m, ${tideRefName()})`;document.querySelectorAll("[data-tref]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tref===TREF))}
+function renderTide(sp,D,r){renderTcal();renderRun();{const t=$("#tideTitle");if(t)t.textContent=`Maré (m, ${tideRefName()})`;document.querySelectorAll("[data-tref]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.tref===TREF))}
  $("#tideSrc").textContent="Fonte: "+D.tideSrc;
  const ex=D.ex,next=ex.find(e=>e.t>r.t),prev=[...ex].reverse().find(e=>e.t<=r.t);
  if(r.tide==null||!next){$("#tideNow").innerHTML=`<span class="muted">Sem previsão de maré para este ponto. Cole uma tábua na seção Dados.</span>`;$("#tideNext").innerHTML="";$("#tide7").innerHTML="";return}
@@ -2572,7 +2576,7 @@ setInterval(()=>{if(!document.hidden)refreshEpagri()},10*60e3);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(S.epAt||0)>10*60e3)refreshEpagri()});
 /* ================== TELAS (menu lateral / abas) ================== */
 const VIEWS=["resumo","mare","vento","lua","mapa","grupos","conta","admin","mais"];
-const APP_VERSION="2026-10-30.6";
+const APP_VERSION="2026-10-30.7";
 function showView(v,push=true){if(!VIEWS.includes(v))v="resumo";if(document.body.classList.contains("locked")&&v!=="conta"){GATE_NEXT=v;v="conta"}S.view=v;
  VIEWS.forEach(k=>{$("#v-"+k).hidden=k!==v});
  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===v?"page":"false"));
@@ -2667,6 +2671,7 @@ function renderSummary(){if(!S.data||!S.derived[spot().id])return;const sp=spot(
  else h+=`<div class="sum-big">${exDay.length} viradas</div>`;
  h+=`<ul class="turns">${exDay.map(e=>{const past=e.t<now,act=next&&e.t===next.t;
    return`<li class="${past?"past":""}${act?" act":""}"><b class="num">${fmtH.format(e.t)}</b><span><b>${e.hi?"Preamar":"Baixamar"}</b> <span class="num muted">${cmT(e.h)}</span> · começa a ${e.hi?"vazar":"encher"}${act?` <span class="small">(próxima)</span>`:""}</span></li>`}).join("")}</ul>`;
+ {const R=tideRun(spot(),S.day);if(R&&R.top)h+=`<div class="small" style="margin-top:6px">Corre mais forte: <b>${R.top.n.toLowerCase()}</b>, por volta das <b>${fmtH.format(R.top.best.t)}</b> (${Math.round(Math.abs(R.top.best.v)*100)} cm/h)</div>`}
  $("#sumTide").innerHTML=h;
  // ---- VENTO NO PONTO
  const ref=today?(D.rows.find(x=>x.t===nowH)||rows[0]):(rows.find(x=>localHour(x.t)===7)||rows[0]);
@@ -2965,6 +2970,29 @@ const ago=ms=>{const m=Math.round((Date.now()-ms)/60e3);return m<1?"agora":m<60?
 /* Login obrigatório: quem ainda não entrou vê só a tela da Conta. Sem Firebase (fora do ar/sem internet) não bloqueia. */
 const LOGIN_OBRIGATORIO=true;let GATE_NEXT="resumo";
 function gateLock(){if(!LOGIN_OBRIGATORIO||window.__NO_GATE)return;document.body.classList.add("locked");if(S.view!=="conta"){GATE_NEXT=S.view||"resumo";showView("conta")}}
+/* ===== Quando a maré corre mais forte =====
+ A água corre mais no meio da enchente e da vazante, quando o nível muda mais rápido (perto de 3 horas depois de cada virada).
+ Usa a curva contínua do ponto (medida pelo marégrafo e, depois, a previsão), de 10 em 10 minutos. */
+const PERIODOS=[["Madrugada",0,6],["Manhã",6,12],["Tarde",12,18],["Noite",18,24]];
+function tideRun(sp,dk){const D=S.derived[sp.id];if(!D||!D.tfn)return null;const f=D.tfn,t0=noonOf(dk)-12*HOUR+3*HOUR,pts=[];
+ for(let x=t0;x<=t0+24*HOUR;x+=10*60e3){const a=f(x-30*60e3),b=f(x+30*60e3);if(a==null||b==null){pts.push(null);continue}pts.push({t:x,v:b-a})} // m/h, em janela de 1 h (tira o ruído das leituras)
+ const per=PERIODOS.map(([n,h0,h1])=>{let best=null;for(const p of pts){if(!p)continue;const h=localHour(p.t);if(h<h0||h>=h1)continue;if(!best||Math.abs(p.v)>Math.abs(best.v))best=p}return{n,h0,h1,best}});
+ // cada enchente/vazante do dia: hora do pico
+ const ex=D.ex.filter(e=>e.t>=t0-8*HOUR&&e.t<=t0+32*HOUR),fases=[];
+ for(let i=0;i<ex.length-1;i++){const a=ex[i],b=ex[i+1];if(b.t<t0||a.t>t0+24*HOUR)continue;let pk=null;
+  for(const p of pts){if(!p||p.t<a.t||p.t>b.t)continue;if(!pk||Math.abs(p.v)>Math.abs(pk.v))pk=p}
+  if(pk)fases.push({enche:!a.hi,a:a.t,b:b.t,pk,amp:Math.abs(b.h-a.h)})}
+ const all=per.filter(x=>x.best),top=all.length?all.reduce((m,x)=>Math.abs(x.best.v)>Math.abs(m.best.v)?x:m):null;
+ return{per,fases,top}}
+function renderRun(){const el=$("#runCard");if(!el||!S.data)return;const sp=spot(),R=tideRun(sp,S.day);
+ if(!R||!R.top){el.innerHTML=`<h3>Quando a maré corre mais</h3><p class="small muted">Sem dado de maré para este dia.</p>`;return}
+ const mx=Math.max(...R.per.filter(x=>x.best).map(x=>Math.abs(x.best.v))),cm=v=>Math.round(Math.abs(v)*100),
+  forca=v=>{const r=Math.abs(v)/(mx||1);return r>.75?"forte":r>.45?"média":"fraca"};
+ el.innerHTML=`<h3>Quando a maré corre mais</h3>
+  <p class="small" style="margin:4px 0 8px">${S.day===dayKey(Date.now())?"Hoje":"Nesse dia"} a água corre mais forte de <b>${R.top.n.toLowerCase()}</b>, por volta das <b>${fmtH.format(R.top.best.t)}</b> (${R.top.best.v>0?"enchendo":"vazando"} ${cm(R.top.best.v)} cm por hora).</p>
+  <div class="runp">${R.per.map(x=>x.best?`<div class="${x===R.top?"top":""}"><b>${x.n}</b><span class="num">${fmtH.format(x.best.t)}</span><strong class="num">${cm(x.best.v)} cm/h</strong><small>${x.best.v>0?"▲ enchendo":"▼ vazando"} · ${forca(x.best.v)}</small><i style="width:${Math.round(100*Math.abs(x.best.v)/(mx||1))}%"></i></div>`:`<div><b>${x.n}</b><small>sem dado</small></div>`).join("")}</div>
+  ${R.fases.length?`<ul class="runf">${R.fases.map(f=>`<li><b>${f.enche?"Enchente":"Vazante"}</b> ${fmtH.format(f.a)}–${fmtH.format(f.b)}: mais forte às <b>${fmtH.format(f.pk.t)}</b> (${cm(f.pk.v)} cm/h, ${f.enche?"sobe":"desce"} ${String(f.amp.toFixed(2)).replace(".",",")} m no total)</li>`).join("")}</ul>`:""}
+  <p class="small muted" style="margin:6px 0 0">A correnteza acompanha a velocidade com que a água sobe ou desce: é mais forte no meio da enchente e da vazante e quase para no estofo (virada). Em canais e bocas de barra a diferença é maior. Nas marés grandes (lua cheia e nova) corre bem mais que nas marés pequenas.</p>`}
 /* ===== Calibrar a hora da maré no seu ponto =====
  Você marca quando a maré virou de verdade no ponto (parou de subir ou de descer). O app compara com a virada no marégrafo
  e aprende o atraso daquele lugar. Com 1 marcação ele anda metade do caminho; com mais, vale a média das marcações. */
