@@ -1,0 +1,7 @@
+2026-10-31T06:00:00+00:00
+GFS: rodada 2026103100 137 horários + 78 do passado
+ECMWF: rodada 2026103012 já processada
+Ondas: rodada 2026103100 57 horários + 62 do passado
+Região sc ok (água/correntes de 30/10 01:51)
+Região pr ok (água/correntes de 30/10 01:51)
+Região sp ok (água/correntes de 30/10 01:53)
